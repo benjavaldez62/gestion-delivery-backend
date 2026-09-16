@@ -103,9 +103,9 @@ El equipo trabaja bajo el flujo documentado en `.agents/rules/git-workflow.md`:
 ---
 
 ## 👥 Equipo (Grupo 2)
-- Valdez Benjamín Ezequiel
-- Alanis Fabricio
-- Berra Agustina Inés
-- Berra Panelo Florencia María
+- Valdez, Benjamín Ezequiel
+- Alanis, Fabricio
+- Berra, Agustina Inés
+- Berra, Panelo Florencia Maríagit
 
 Materia: **Programación IV**
