@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Flujo de Trabajo en GitHub (Git Workflow)
 
 Para mantener el orden en el repositorio, todos los agentes de IA y desarrolladores deben seguir el siguiente flujo de trabajo:
@@ -7,13 +11,26 @@ Para mantener el orden en el repositorio, todos los agentes de IA y desarrollado
 - `dev`: Rama principal de desarrollo. Todas las nuevas features y correcciones convergen aquí. **No se debe pushear directamente aquí.**
 
 ## Nomenclatura de Ramas
-Crea siempre una rama nueva partiendo de `dev` para trabajar. Utiliza los siguientes prefijos según corresponda:
-- `feature/<nombre-descriptivo>`: Para nuevas funcionalidades. Ej: `feature/auth-telegram`, `feature/crud-menus`.
-- `fix/<nombre-descriptivo>`: Para correcciones de bugs. Ej: `fix/error-login`, `fix/calculo-total-pedido`.
-- `hotfix/<nombre-descriptivo>`: Para correcciones urgentes en producción (estas son las únicas que pueden salir de `main`).
+Crea siempre una rama nueva partiendo de `dev` para trabajar (excepto hotfixes urgentes). La estructura obligatoria para los nombres de rama es:
+
+```text
+{nombre}/{seccion}/{alcance}
+```
+
+Donde:
+- **`{nombre}`**: Nombre o identificador del desarrollador o agente (ej: `benja`, `fabricio`, `agustina`, `florencia`).
+- **`{seccion}`**: Tipo o categoría del trabajo (`feature`, `fix`, `docs`, `refactor`, `chore`, `hotfix`).
+- **`{alcance}`**: Descripción concisa en kebab-case de la funcionalidad o corrección (ej: `auth-google`, `crud-menus`, `calculo-total-pedido`).
+
+### Ejemplos:
+- `benja/feature/auth-google`: Nueva funcionalidad de autenticación Google iniciada por Benja.
+- `fabricio/feature/crud-menus`: Alta, baja y modificación de menús.
+- `agustina/fix/calculo-total-pedido`: Corrección en el cálculo del total de órdenes.
+- `florencia/refactor/controlador-pedidos`: Refactorización de controladores de pedidos.
+- `benja/hotfix/error-login-produccion`: Corrección urgente en producción (única que sale de `main`).
 
 ## Flujo de Pull Requests (PR)
-1. **Desarrollo**: Escribe y prueba tu código localmente en tu rama (`feature/xxx` o `fix/xxx`).
+1. **Desarrollo**: Escribe y prueba tu código localmente en tu rama (`{nombre}/{seccion}/{alcance}`).
 2. **Commits**: Realiza commits pequeños y descriptivos usando Conventional Commits (ej: `feat: agrega modelo de Pedido`, `fix: corrige validación de teléfono`).
 3. **Pull Request**: Abre un PR hacia la rama destino correspondiente:
    - **Rama Base (Target)**: Debe ser **`dev`** para todas las features y fixes. *(¡Atención! GitHub suele preseleccionar `main` por defecto; verificar siempre que sea `base: dev` <- `compare: tu-rama`).*

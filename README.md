@@ -91,6 +91,16 @@ El servidor estará disponible en `http://localhost:8000`.
 
 ---
 
+## 🌿 Flujo de Trabajo (Git)
+
+El equipo trabaja bajo el flujo documentado en `.agents/rules/git-workflow.md`:
+- **Rama base de desarrollo**: `dev`
+- **Formato de ramas**: `{nombre}/{seccion}/{alcance}`
+  - Ejemplos: `benja/feature/auth-google`, `fabricio/fix/calculo-total`
+- **Pull Requests**: Siempre dirigidos hacia `dev` (salvo hotfixes a `main`), con Conventional Commits y sin emojis en la descripción.
+
+---
+
 ## 👥 Equipo (Grupo 2)
 - Valdez Benjamín Ezequiel
 - Alanis Fabricio
