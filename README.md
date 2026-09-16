@@ -98,6 +98,7 @@ El equipo trabaja bajo el flujo documentado en `.agents/rules/git-workflow.md`:
 - **Formato de ramas**: `{nombre}/{seccion}/{alcance}`
   - Ejemplos: `benja/feature/auth-google`, `fabricio/fix/calculo-total`
 - **Pull Requests**: Siempre dirigidos hacia `dev` (salvo hotfixes a `main`), con Conventional Commits y sin emojis en la descripción.
+- **Releases a producción (`main`)**: Gestionados exclusivamente por el Team Leader (Benja) al validar entregas en `dev`.
 
 ---
 
