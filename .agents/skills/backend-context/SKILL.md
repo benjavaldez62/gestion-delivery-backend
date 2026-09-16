@@ -38,3 +38,4 @@ El sistema maneja las siguientes entidades y tablas principales:
 - Cuando implementes lógica de negocio, ten en cuenta las restricciones de los roles.
 - Usa este archivo como referencia principal para los nombres de tablas y atributos a la hora de crear migraciones, modelos Eloquent, Request Validations o Factories.
 - Mantén la coherencia con los tipos de datos documentados en la propuesta original.
+- Respeta en todo momento el flujo de trabajo de Git y PRs definido en `.agents/rules/git-workflow.md` (ramas originadas en `dev` bajo el formato `{nombre}/{seccion}/{alcance}`, y PRs dirigidos siempre hacia `dev` sin emojis).

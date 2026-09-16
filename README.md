@@ -37,8 +37,9 @@ Sigue estos pasos para levantar el entorno de desarrollo del backend localmente:
 ### 1. Clonar el Repositorio
 
 ```bash
-git clone <url-del-repositorio>
-cd mi-nuevo-proyecto
+git clone https://github.com/benjavaldez62/gestion-delivery-backend.git
+cd gestion-delivery-backend
+git checkout dev
 ```
 
 ### 2. Instalar Dependencias
@@ -87,6 +88,16 @@ php artisan migrate
 php artisan serve
 ```
 El servidor estará disponible en `http://localhost:8000`.
+
+---
+
+## 🌿 Flujo de Trabajo (Git)
+
+El equipo trabaja bajo el flujo documentado en `.agents/rules/git-workflow.md`:
+- **Rama base de desarrollo**: `dev`
+- **Formato de ramas**: `{nombre}/{seccion}/{alcance}`
+  - Ejemplos: `benja/feature/auth-google`, `fabricio/fix/calculo-total`
+- **Pull Requests**: Siempre dirigidos hacia `dev` (salvo hotfixes a `main`), con Conventional Commits y sin emojis en la descripción.
 
 ---
 
