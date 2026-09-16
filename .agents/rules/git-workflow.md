@@ -61,15 +61,21 @@ Donde:
    ```bash
    git checkout dev
    git pull origin dev
-   git branch -d feature/<nombre-rama>
+   git branch -d <nombre>/<seccion>/<alcance>
    ```
+
+## Releases a Producción (`main`)
+- **Responsabilidad exclusiva del Team Leader / Administrador**: Los pases de cambios desde `dev` hacia `main` (despliegues a producción o entregas de versión) son gestionados únicamente por el Team Leader (Benja).
+- Ningún desarrollador ni agente de IA debe promover o fusionar cambios hacia `main` de manera autónoma.
+- Los releases se realizan periódicamente o al cerrar hitos, una vez que las funcionalidades integradas en `dev` hayan sido validadas y se encuentren estables.
 
 ## Directrices Específicas para la IA y Automatizaciones
 - **NO hagas commits directamente a `dev` ni a `main`.**
-- Si se te pide escribir código y subirlo, asegúrate de crear primero una rama apropiada desde `dev` (ej. `git checkout -b feature/nuevo-modelo`).
+- **NO realices merges hacia `main`**: Toda integración hacia `main` queda reservada al Team Leader.
+- Si se te pide escribir código y subirlo, asegúrate de crear primero una rama apropiada desde `dev` siguiendo el formato `{nombre}/{seccion}/{alcance}` (ej. `benja/feature/nuevo-modelo` o `ai/feature/nuevo-modelo`).
 - Al ejecutar comandos de git, genera mensajes de commit claros y en español explicando *qué* y *por qué* se cambió.
 - **Sin emojis**: No incluyas emojis en títulos de PR, descripciones ni mensajes de commit.
-- **Creación automatizada de PRs**: Si se utiliza GitHub CLI (`gh`), especificar siempre la base branch explícitamente y sin emojis:
+- **Creación automatizada de PRs**: Si se utiliza GitHub CLI (`gh`), especificar siempre la base branch explícitamente (`dev`) y sin emojis:
   ```bash
   gh pr create --base dev --title "tipo: descripcion corta" --body "..."
   ```
