@@ -106,6 +106,6 @@ El equipo trabaja bajo el flujo documentado en `.agents/rules/git-workflow.md`:
 - Valdez, Benjamín Ezequiel
 - Alanis, Fabricio
 - Berra, Agustina Inés
-- Berra, Panelo Florencia Maríagit
+- Berra, Panelo Florencia María
 
 Materia: **Programación IV**
