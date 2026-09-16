@@ -37,8 +37,9 @@ Sigue estos pasos para levantar el entorno de desarrollo del backend localmente:
 ### 1. Clonar el Repositorio
 
 ```bash
-git clone <url-del-repositorio>
-cd mi-nuevo-proyecto
+git clone https://github.com/benjavaldez62/gestion-delivery-backend.git
+cd gestion-delivery-backend
+git checkout dev
 ```
 
 ### 2. Instalar Dependencias
