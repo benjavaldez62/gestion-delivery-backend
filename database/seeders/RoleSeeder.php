@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Role;
+use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
 {
@@ -15,13 +15,13 @@ class RoleSeeder extends Seeder
         ]);
 
         Role::create([
-            'nombre' => 'Vendedor',
-            'descripcion' => 'Gestión de ventas y clientes',
+            'nombre' => 'Cocinero',
+            'descripcion' => 'Preparación de alimentos',
         ]);
 
         Role::create([
-            'nombre' => 'Supervisor',
-            'descripcion' => 'Supervisión de ventas y stock',
+            'nombre' => 'Repartidor',
+            'descripcion' => 'Entrega de pedidos a los clientes',
         ]);
     }
 }
