@@ -19,22 +19,23 @@ Crea siempre una rama nueva partiendo de `dev` para trabajar. Utiliza los siguie
    - **Rama Base (Target)**: Debe ser **`dev`** para todas las features y fixes. *(¡Atención! GitHub suele preseleccionar `main` por defecto; verificar siempre que sea `base: dev` <- `compare: tu-rama`).*
    - Los únicos PRs con destino a `main` son los de tipo `hotfix/*` o los releases desde `dev`.
 4. **Formato del PR**:
-   - **Título**: Seguir Conventional Commits (ej: `feat: endpoint de checkout de pedidos`).
+   - **Título**: Seguir Conventional Commits sin emojis (ej: `feat: endpoint de checkout de pedidos`).
+   - **Estilo**: Mantener un tono sobrio, claro y profesional. **No utilizar emojis** en el título ni en el cuerpo del PR ni en los mensajes de commit.
    - **Cuerpo / Descripción corta**: Utilizar la siguiente estructura concisa:
      ```markdown
-     ### 📝 Descripción
+     ### Descripcion
      Resumen breve de qué cambios introduce este PR y por qué son necesarios.
 
-     ### 🔍 Cambios principales
+     ### Cambios principales
      - Detalle de cambios clave 1
      - Detalle de cambios clave 2
 
-     ### 🧪 Cómo probarlo / Verificación
+     ### Como probarlo / Verificacion
      Pasos para reproducir o testear localmente (comandos de test, endpoints, etc.).
 
-     ### ✅ Checklist
+     ### Checklist
      - [ ] Apunta a la rama `dev` (o `main` si es hotfix)
-     - [ ] Código probado localmente
+     - [ ] Codigo probado localmente
      - [ ] Sin credenciales ni datos sensibles commiteados
      ```
 5. **Revisión**: Espera la revisión (Code Review) de los compañeros.
@@ -50,9 +51,10 @@ Crea siempre una rama nueva partiendo de `dev` para trabajar. Utiliza los siguie
 - **NO hagas commits directamente a `dev` ni a `main`.**
 - Si se te pide escribir código y subirlo, asegúrate de crear primero una rama apropiada desde `dev` (ej. `git checkout -b feature/nuevo-modelo`).
 - Al ejecutar comandos de git, genera mensajes de commit claros y en español explicando *qué* y *por qué* se cambió.
-- **Creación automatizada de PRs**: Si se utiliza GitHub CLI (`gh`), especificar siempre la base branch explícitamente:
+- **Sin emojis**: No incluyas emojis en títulos de PR, descripciones ni mensajes de commit.
+- **Creación automatizada de PRs**: Si se utiliza GitHub CLI (`gh`), especificar siempre la base branch explícitamente y sin emojis:
   ```bash
-  gh pr create --base dev --title "tipo: descripción corta" --body "..."
+  gh pr create --base dev --title "tipo: descripcion corta" --body "..."
   ```
 - Al sugerir o generar links de PR al usuario, recordar siempre comprobar que la rama base apunte a `dev`.
 
