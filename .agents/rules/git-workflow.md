@@ -13,13 +13,46 @@ Crea siempre una rama nueva partiendo de `dev` para trabajar. Utiliza los siguie
 - `hotfix/<nombre-descriptivo>`: Para correcciones urgentes en producción (estas son las únicas que pueden salir de `main`).
 
 ## Flujo de Pull Requests (PR)
-1. **Desarrollo**: Escribe y prueba tu código localmente en tu rama (`feature/xxx`).
+1. **Desarrollo**: Escribe y prueba tu código localmente en tu rama (`feature/xxx` o `fix/xxx`).
 2. **Commits**: Realiza commits pequeños y descriptivos usando Conventional Commits (ej: `feat: agrega modelo de Pedido`, `fix: corrige validación de teléfono`).
-3. **Pull Request**: Abre un PR hacia la rama `dev` (o `main` si es un hotfix).
-4. **Revisión**: Espera la revisión (Code Review) de los compañeros.
-5. **Merge**: Una vez aprobado, se realizará el merge (preferiblemente con "Squash and Merge").
+3. **Pull Request**: Abre un PR hacia la rama destino correspondiente:
+   - **Rama Base (Target)**: Debe ser **`dev`** para todas las features y fixes. *(¡Atención! GitHub suele preseleccionar `main` por defecto; verificar siempre que sea `base: dev` <- `compare: tu-rama`).*
+   - Los únicos PRs con destino a `main` son los de tipo `hotfix/*` o los releases desde `dev`.
+4. **Formato del PR**:
+   - **Título**: Seguir Conventional Commits (ej: `feat: endpoint de checkout de pedidos`).
+   - **Cuerpo / Descripción corta**: Utilizar la siguiente estructura concisa:
+     ```markdown
+     ### 📝 Descripción
+     Resumen breve de qué cambios introduce este PR y por qué son necesarios.
 
-## Directrices Específicas para la IA
+     ### 🔍 Cambios principales
+     - Detalle de cambios clave 1
+     - Detalle de cambios clave 2
+
+     ### 🧪 Cómo probarlo / Verificación
+     Pasos para reproducir o testear localmente (comandos de test, endpoints, etc.).
+
+     ### ✅ Checklist
+     - [ ] Apunta a la rama `dev` (o `main` si es hotfix)
+     - [ ] Código probado localmente
+     - [ ] Sin credenciales ni datos sensibles commiteados
+     ```
+5. **Revisión**: Espera la revisión (Code Review) de los compañeros.
+6. **Merge**: Una vez aprobado, se realizará el merge (preferiblemente con "Squash and Merge").
+7. **Limpieza Post-Merge**:
+   ```bash
+   git checkout dev
+   git pull origin dev
+   git branch -d feature/<nombre-rama>
+   ```
+
+## Directrices Específicas para la IA y Automatizaciones
 - **NO hagas commits directamente a `dev` ni a `main`.**
-- Si se te pide escribir código y subirlo, asegúrate de crear primero una rama apropiada (ej. `git checkout -b feature/nuevo-modelo`).
+- Si se te pide escribir código y subirlo, asegúrate de crear primero una rama apropiada desde `dev` (ej. `git checkout -b feature/nuevo-modelo`).
 - Al ejecutar comandos de git, genera mensajes de commit claros y en español explicando *qué* y *por qué* se cambió.
+- **Creación automatizada de PRs**: Si se utiliza GitHub CLI (`gh`), especificar siempre la base branch explícitamente:
+  ```bash
+  gh pr create --base dev --title "tipo: descripción corta" --body "..."
+  ```
+- Al sugerir o generar links de PR al usuario, recordar siempre comprobar que la rama base apunte a `dev`.
+
