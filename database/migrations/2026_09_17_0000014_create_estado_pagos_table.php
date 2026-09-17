@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('adicionals', function (Blueprint $table) {
+        Schema::create('estado_pagos', function (Blueprint $table) {
             $table->id();
-            $table->text('descripcion')->nullable();
-            $table->boolean('activo')->default(true);
+            $table->string('nombre', 50);
+            $table->string('descripcion')->nullable();
             $table->timestamps();
         });
     }
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('adicionals');
+        Schema::dropIfExists('estado_pagos');
     }
 };

@@ -31,8 +31,8 @@ return new class extends Migration
             $table->date('fecha_pago');
 
             // Relación con el estado del pago
-            $table->foreignId('estado_id')
-                ->constrained('estados')
+            $table->foreignId('estado_pago_id')
+                ->constrained('estado_pagos')
                 ->restrictOnDelete();
             
             // Timestamps created_at y updated_at
