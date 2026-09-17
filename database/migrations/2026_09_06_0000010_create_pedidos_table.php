@@ -35,8 +35,8 @@ return new class extends Migration
             
             
             // estado del pedido
-            $table->foreignId('estado_id')
-                ->constrained('estados')
+            $table->foreignId('estado_pedidos_id')
+                ->constrained('estado_pedidos')
                 ->restrictOnDelete();
 
 
