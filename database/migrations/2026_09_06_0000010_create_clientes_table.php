@@ -14,16 +14,13 @@ return new class extends Migration
         Schema::create('clientes', function (Blueprint $table) {
             $table->id();
 
-            $table->string('nombre', 100);
-            $table->string('apellido', 100);
-            $table->string('dni', 30)->unique();
-            $table->string('email', 150)->nullable()->unique();
+            $table->string('username', 30)->unique();
             $table->string('telefono', 30)->nullable();
             $table->string('direccion', 255)->nullable();
-            $table->boolean('estado')->default(true);
+            //$table->boolean('activo')->default(true);
             $table->timestamps();
             $table->softDeletes();
-            $table->index(['apellido', 'nombre']);
+            $table->index(['username']);
         });
     }
 
