@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\MovimientoStock;
+use App\Models\EstadoPagos;
 use Illuminate\Http\Request;
 
-class MovimientoStockController extends Controller
+class EstadoPagosController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +34,7 @@ class MovimientoStockController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(MovimientoStock $movimientoStock)
+    public function show(EstadoPagos $estadoPagos)
     {
         //
     }
@@ -42,7 +42,7 @@ class MovimientoStockController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(MovimientoStock $movimientoStock)
+    public function edit(EstadoPagos $estadoPagos)
     {
         //
     }
@@ -50,7 +50,7 @@ class MovimientoStockController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, MovimientoStock $movimientoStock)
+    public function update(Request $request, EstadoPagos $estadoPagos)
     {
         //
     }
@@ -58,7 +58,7 @@ class MovimientoStockController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(MovimientoStock $movimientoStock)
+    public function destroy(EstadoPagos $estadoPagos)
     {
         //
     }

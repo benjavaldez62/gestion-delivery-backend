@@ -15,21 +15,16 @@ return new class extends Migration
             $table->id();
 
             // Información del producto
-            $table->string('codigo', 50)->unique();
             $table->string('nombre', 150);
             $table->text('descripcion')->nullable();
             $table->string('imagen')->nullable();
-
+            
             // Precios
-            $table->decimal('precio_compra', 12, 2);
-            $table->decimal('precio_venta', 12, 2);
-
-            // Stock
-            $table->unsignedInteger('stock')->default(0);
-            $table->unsignedInteger('stock_minimo')->default(0);
+            $table->decimal('precio', 10, 2);
+     
 
             // Estado
-            $table->boolean('estado')->default(true);
+            $table->boolean('activo')->default(true);
 
             // Relación con categorías
             $table->foreignId('categoria_id')
@@ -40,7 +35,7 @@ return new class extends Migration
             $table->softDeletes();
             // Índices
             $table->index('nombre');
-            $table->index('estado');
+            $table->index('activo');
         });
     }
 

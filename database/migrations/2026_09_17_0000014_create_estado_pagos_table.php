@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tipos_movimiento_stock', function (Blueprint $table) {
+        Schema::create('estado_pagos', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre', 50)->unique();
-            $table->string('descripcion', 255)->nullable();
-            $table->boolean('activo')->default(true);
+            $table->string('nombre', 50);
+            $table->string('descripcion')->nullable();
             $table->timestamps();
         });
     }
@@ -25,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tipo_movimiento_stocks');
+        Schema::dropIfExists('estado_pagos');
     }
 };

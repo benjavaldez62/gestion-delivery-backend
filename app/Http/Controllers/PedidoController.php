@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\EstadoPago;
+use App\Models\Pedido;
 use Illuminate\Http\Request;
 
-class EstadoPagoController extends Controller
+class PedidoController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +34,7 @@ class EstadoPagoController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(EstadoPago $estadoPago)
+    public function show(Pedido $pedido)
     {
         //
     }
@@ -42,7 +42,7 @@ class EstadoPagoController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(EstadoPago $estadoPago)
+    public function edit(Pedido $pedido)
     {
         //
     }
@@ -50,7 +50,7 @@ class EstadoPagoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, EstadoPago $estadoPago)
+    public function update(Request $request, Pedido $pedido)
     {
         //
     }
@@ -58,7 +58,7 @@ class EstadoPagoController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(EstadoPago $estadoPago)
+    public function destroy(Pedido $pedido)
     {
         //
     }

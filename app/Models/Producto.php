@@ -15,20 +15,15 @@ class Producto extends Model
 
     protected $fillable = [
         'categoria_id',
-        'codigo',
         'nombre',
         'descripcion',
         'imagen',
-        'precio_compra',
-        'precio_venta',
-        'stock',
-        'stock_minimo',
+        'precio',
         'activo',
     ];
 
     protected $casts = [
-        'precio_compra' => 'decimal:2',
-        'precio_venta' => 'decimal:2',
+        'precio' => 'decimal:2',
         'activo' => 'boolean',
     ];
 
@@ -37,13 +32,5 @@ class Producto extends Model
         return $this->belongsTo(Categoria::class);
     }
 
-    public function ventaDetalles(): HasMany
-    {
-        return $this->hasMany(VentaDetalle::class);
-    }
-
-    public function movimientosStock(): HasMany
-    {
-        return $this->hasMany(MovimientoStock::class);
-    }
+    
 }

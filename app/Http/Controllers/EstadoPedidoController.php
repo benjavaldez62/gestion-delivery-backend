@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TipoMovimientoStock;
+use App\Models\EstadoPedido;
 use Illuminate\Http\Request;
 
-class TipoMovimientoStockController extends Controller
+class EstadoPedidoController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +34,7 @@ class TipoMovimientoStockController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(TipoMovimientoStock $tipoMovimientoStock)
+    public function show(EstadoPedido $estadoPedido)
     {
         //
     }
@@ -42,7 +42,7 @@ class TipoMovimientoStockController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(TipoMovimientoStock $tipoMovimientoStock)
+    public function edit(EstadoPedido $estadoPedido)
     {
         //
     }
@@ -50,7 +50,7 @@ class TipoMovimientoStockController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, TipoMovimientoStock $tipoMovimientoStock)
+    public function update(Request $request, EstadoPedido $estadoPedido)
     {
         //
     }
@@ -58,7 +58,7 @@ class TipoMovimientoStockController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(TipoMovimientoStock $tipoMovimientoStock)
+    public function destroy(EstadoPedido $estadoPedido)
     {
         //
     }

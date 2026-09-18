@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\VentaDetalle;
+use App\Models\Comprobante;
 use Illuminate\Http\Request;
 
-class VentaDetalleController extends Controller
+class ComprobanteController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +34,7 @@ class VentaDetalleController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(VentaDetalle $ventaDetalle)
+    public function show(Comprobante $comprobante)
     {
         //
     }
@@ -42,7 +42,7 @@ class VentaDetalleController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(VentaDetalle $ventaDetalle)
+    public function edit(Comprobante $comprobante)
     {
         //
     }
@@ -50,7 +50,7 @@ class VentaDetalleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, VentaDetalle $ventaDetalle)
+    public function update(Request $request, Comprobante $comprobante)
     {
         //
     }
@@ -58,7 +58,7 @@ class VentaDetalleController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(VentaDetalle $ventaDetalle)
+    public function destroy(Comprobante $comprobante)
     {
         //
     }

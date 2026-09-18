@@ -10,7 +10,7 @@ El Sistema de Gestión de Delivery tiene como objetivo permitir a los clientes e
 
 ### Funcionalidades Principales
 
-- **Autenticación y Control de Acceso**: Registro e inicio de sesión de clientes y personal. Integración planificada con Google (OAuth).
+- **Autenticación y Control de Acceso**: Registro e inicio de sesión del personal. Integración planificada con Google (OAuth).
 - **Roles y Permisos**:
   - **Cliente**: Visualización de menú público, carrito de compras y seguimiento de órdenes.
   - **SuperAdministrador / Administrador**: Gestión de personal (CRUD), gestión del menú y operaciones globales.
@@ -103,9 +103,9 @@ El equipo trabaja bajo el flujo documentado en `.agents/rules/git-workflow.md`:
 ---
 
 ## 👥 Equipo (Grupo 2)
-- Valdez Benjamín Ezequiel
-- Alanis Fabricio
-- Berra Agustina Inés
-- Berra Panelo Florencia María
+- Valdez, Benjamín Ezequiel
+- Alanis, Fabricio
+- Berra, Agustina Inés
+- Berra, Panelo Florencia María
 
 Materia: **Programación IV**

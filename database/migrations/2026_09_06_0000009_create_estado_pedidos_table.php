@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('estados_venta', function (Blueprint $table) {
+        Schema::create('estado_pedidos', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre', 50)->unique();
-            $table->string('descripcion', 255)->nullable();
-            $table->boolean('activo')->default(true);
+            $table->string('nombre', 50);
+            $table->string('descripcion')->nullable();
             $table->timestamps();
         });
     }
@@ -25,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('estado_ventas');
+        Schema::dropIfExists('estado_pedidos');
     }
 };

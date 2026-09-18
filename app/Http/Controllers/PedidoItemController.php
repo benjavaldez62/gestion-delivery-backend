@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\EstadoVenta;
+use App\Models\PedidoItem;
 use Illuminate\Http\Request;
 
-class EstadoVentaController extends Controller
+class PedidoItemController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +34,7 @@ class EstadoVentaController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(EstadoVenta $estadoVenta)
+    public function show(PedidoItem $pedidoItem)
     {
         //
     }
@@ -42,7 +42,7 @@ class EstadoVentaController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(EstadoVenta $estadoVenta)
+    public function edit(PedidoItem $pedidoItem)
     {
         //
     }
@@ -50,7 +50,7 @@ class EstadoVentaController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, EstadoVenta $estadoVenta)
+    public function update(Request $request, PedidoItem $pedidoItem)
     {
         //
     }
@@ -58,7 +58,7 @@ class EstadoVentaController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(EstadoVenta $estadoVenta)
+    public function destroy(PedidoItem $pedidoItem)
     {
         //
     }

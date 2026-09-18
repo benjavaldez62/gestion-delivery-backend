@@ -13,32 +13,33 @@ return new class extends Migration
     {
         Schema::create('pagos', function (Blueprint $table) {
             $table->id();
-
-            // Venta asociada
-            $table->foreignId('venta_id')
-                ->constrained('ventas')
-                ->cascadeOnDelete();
-
-            // Método de pago
+            
+            // Relación con el pedido
+            $table->foreignId('pedido_id')
+                ->constrained('pedidos')
+                ->restrictOnDelete();
+            
+            // Relacion con el método de pago
             $table->foreignId('metodo_pago_id')
                 ->constrained('metodos_pago')
                 ->restrictOnDelete();
+            
+            // Monto a pagar
+            $table->decimal('monto', 10, 2);
+            
+            // Fecha de pago
+            $table->date('fecha_pago');
 
-            // Estado del pago
+            // Relación con el estado del pago
             $table->foreignId('estado_pago_id')
-                ->constrained('estados_pago')
+                ->constrained('estado_pagos')
                 ->restrictOnDelete();
-
-            // Información del pago
-            $table->decimal('importe', 12, 2);
-            $table->dateTime('fecha');
-            $table->string('referencia', 100)->nullable();
-
+            
+            // Timestamps created_at y updated_at
             $table->timestamps();
 
-            // Índices
-            $table->index('venta_id');
-            $table->index('fecha');
+            // Indices --para optimizar las consultas
+            $table->index('fecha_pago');
         });
     }
 
