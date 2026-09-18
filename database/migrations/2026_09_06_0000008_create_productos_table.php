@@ -20,12 +20,8 @@ return new class extends Migration
             $table->string('imagen')->nullable();
             
             // Precios
-            $table->decimal('precio_unitario', 10, 2);
+            $table->decimal('precio', 10, 2);
      
-
-            // Stock
-            $table->unsignedInteger('stock')->default(0);
-            $table->unsignedInteger('stock_minimo')->default(0);
 
             // Estado
             $table->boolean('activo')->default(true);
