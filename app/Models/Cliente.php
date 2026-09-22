@@ -13,21 +13,13 @@ class Cliente extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'nombre',
-        'apellido',
-        'documento',
-        'email',
+        'username',
         'telefono',
         'direccion',
-        'activo',
     ];
 
-    protected $casts = [
-        'activo' => 'boolean',
-    ];
-
-    public function ventas(): HasMany
+    public function pedidos(): HasMany
     {
-        return $this->hasMany(Venta::class);
+        return $this->hasMany(Pedido::class);
     }
 }
