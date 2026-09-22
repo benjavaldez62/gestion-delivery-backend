@@ -12,7 +12,6 @@ class Comprobante extends Model
 
     protected $table = 'comprobantes';
 
-    // The migration only creates `created_at`, no `updated_at`
     public const UPDATED_AT = null;
 
     protected $fillable = [
