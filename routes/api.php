@@ -15,3 +15,7 @@ Route::get('/categorias/{id}', [CategoriaController::class, 'show']);
 Route::put('/categorias/{id}', [CategoriaController::class, 'update']);
 Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy']);
 Route::put('/categorias/{id}/restore', [CategoriaController::class, 'restore']);
+
+
+//Rutas para MetodoPago
+Route::get('/metodos-pago', [MetodoPagoController::class, 'index']);
