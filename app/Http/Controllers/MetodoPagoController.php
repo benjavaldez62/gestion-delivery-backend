@@ -12,7 +12,32 @@ class MetodoPagoController extends Controller
      */
     public function index()
     {
-        //
+        // es un select *, le restrinjo los campos de todo lo que quiero ver
+        try{
+            
+            $metodosPago = MetodoPago::select(
+                'id',
+                'nombre',
+                'descripcion',
+                'estado'
+            )->get();
+
+            if ($metodosPago->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay métodos de pago disponibles.'
+                ], 404);
+            }
+
+            return response()->json([
+                'message' => 'Métodos de pago obtenidos correctamente.',
+                'metodosPago' => $metodosPago
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'message' => 'Error interno al obtener los métodos de pago.'
+            ], 500);
+        }
     }
 
     /**
@@ -26,9 +51,12 @@ class MetodoPagoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request) 
     {
-        //
+        try{
+            
+        }
+
     }
 
     /**
