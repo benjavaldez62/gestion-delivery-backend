@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\MetodoPagoController;
+use App\Http\Controllers\EstadoPagosController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -25,3 +26,11 @@ Route::get('/metodos-pago/{id}', [MetodoPagoController::class, 'show']);
 Route::put('/metodos-pago/{id}', [MetodoPagoController::class, 'update']);
 Route::delete('/metodos-pago/{id}', [MetodoPagoController::class, 'destroy']);
 Route::put('/metodos-pago/{id}/restore', [MetodoPagoController::class, 'restore']);
+
+//Rutas para EstadoPagos
+Route::get('/estado-pagos', [EstadoPagosController::class, 'index']);
+Route::post('/estado-pagos', [EstadoPagosController::class, 'store']);
+Route::get('/estado-pagos/{id}', [EstadoPagosController::class, 'show']);
+Route::put('/estado-pagos/{id}', [EstadoPagosController::class, 'update']);
+Route::delete('/estado-pagos/{id}', [EstadoPagosController::class, 'destroy']);
+Route::put('/estado-pagos/{id}/restore', [EstadoPagosController::class, 'restore']);
