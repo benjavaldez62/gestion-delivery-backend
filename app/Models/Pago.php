@@ -5,29 +5,30 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Pago extends Model
 {
-    /** @use HasFactory<\Database\Factories\PagoFactory> */
     use HasFactory;
 
+    protected $table = 'pagos';
+
     protected $fillable = [
-        'venta_id',
+        'pedido_id',
         'metodo_pago_id',
+        'monto',
+        'fecha_pago',
         'estado_pago_id',
-        'importe',
-        'fecha',
-        'referencia',
     ];
 
     protected $casts = [
-        'importe' => 'decimal:2',
-        'fecha' => 'datetime',
+        'monto' => 'decimal:2',
+        'fecha_pago' => 'date',
     ];
 
-    public function venta(): BelongsTo
+    public function pedido(): BelongsTo
     {
-        return $this->belongsTo(Venta::class);
+        return $this->belongsTo(Pedido::class);
     }
 
     public function metodoPago(): BelongsTo
@@ -37,6 +38,11 @@ class Pago extends Model
 
     public function estadoPago(): BelongsTo
     {
-        return $this->belongsTo(EstadoPago::class);
+        return $this->belongsTo(EstadoPagos::class, 'estado_pago_id');
+    }
+
+    public function comprobantes(): HasMany
+    {
+        return $this->hasMany(Comprobante::class);
     }
 }

@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Producto extends Model
 {
-    /** @use HasFactory<\Database\Factories\ProductoFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -32,5 +31,9 @@ class Producto extends Model
         return $this->belongsTo(Categoria::class);
     }
 
-    
+    public function pedidoItems(): HasMany
+    {
+        return $this->hasMany(PedidoItem::class);
+    }
 }
+
