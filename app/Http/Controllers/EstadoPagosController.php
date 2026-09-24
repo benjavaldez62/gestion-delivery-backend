@@ -14,7 +14,7 @@ class EstadoPagosController extends Controller
     public function index()
     {
         try{
-            $estadoPagos = EstadoPagoa::select(
+            $estadoPagos = EstadoPagos::select(
                 'id',
                 'nombre',
                 'descripcion',
