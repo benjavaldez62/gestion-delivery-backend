@@ -13,6 +13,31 @@ class ProductoController extends Controller
     public function index()
     {
         //
+        try {
+            $productos = Producto::select(
+                'id',
+                'nombre',
+                'descripcion',
+                'precio',
+                'estado'
+            )->get();
+
+            if ($productos->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay productos disponibles para mostrar.'
+                ], 404);
+            }
+
+            return response()->json([
+                'message' => 'Productos obtenidos correctamente.',
+                'productos' => $productos
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'message' => 'Error al obtener los productos.'
+            ], 500);
+        }
     }
 
     /**
@@ -37,6 +62,19 @@ class ProductoController extends Controller
     public function show(Producto $producto)
     {
         //
+        try {
+
+            $producto = Producto::findOrFail($producto->id);
+
+            return response()->json([
+                'message' => 'Producto obtenido correctamente.',
+                'producto' => $producto
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener el producto.'
+            ], 500);
+        }
     }
 
     /**
