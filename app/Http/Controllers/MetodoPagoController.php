@@ -122,7 +122,7 @@ class MetodoPagoController extends Controller
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error interno al obtener el método de pago.'
+                'message' => 'Error interno al obtener el método de pago.',
                 'error' => $e->getMessage()  
             ], 500);
         }
@@ -154,7 +154,7 @@ class MetodoPagoController extends Controller
                     'max:50',
                     'unique:metodos_pago,nombre,' . $metodoPago->id,
                     Rule::unique('categorias', 'nombre')
-                        ->ignore($categoria->id),
+                        ->ignore($metodoPago->id),
                     ],
                 'descripcion' => 'nullable|string|max:255',
                 'estado' => [
