@@ -109,8 +109,7 @@ class EstadoPagosController extends Controller
             return response()->json([
                     'id' => $estadoPago->id,
                     'nombre' => $estadoPago->nombre,
-                    'descripcion' => $estadoPago->descripcion,
-                ]
+                    'descripcion' => $estadoPago->descripcion
             ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
