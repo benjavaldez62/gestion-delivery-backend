@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\PedidoItemResource;
 use App\Models\PedidoItem;
 use Illuminate\Http\Request;
 

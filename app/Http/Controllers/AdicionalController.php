@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\AdicionalResource;
 use App\Models\Adicional;
 use Illuminate\Http\Request;
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\RoleResource;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -21,14 +22,8 @@ class RoleController extends Controller
     )]
     public function index()
     {
-        //
         try {
-
-            $roles = Role::select(
-                'id',
-                'nombre',
-                'descripcion',
-            )->get();
+            $roles = Role::all();
 
             if ($roles->isEmpty()) {
                 return response()->json([
@@ -38,10 +33,9 @@ class RoleController extends Controller
 
             return response()->json([
                 'message' => 'Roles obtenidos correctamente.',
-                'roles' => $roles
+                'roles' => RoleResource::collection($roles)
             ], 200);
         } catch (\Exception $e) {
-
             return response()->json([
                 'message' => 'Error interno al obtener los roles.'
             ], 500);
@@ -98,14 +92,9 @@ class RoleController extends Controller
             $role->descripcion = $validated['descripcion'];
             $role->save();
 
-            $role->refresh();
-
             return response()->json([
                 'message' => 'Rol creado correctamente',
-                'rol' => [
-                    'nombre' => $role->nombre,
-                    'descripcion' => $role->descripcion,
-                ]
+                'rol' => new RoleResource($role)
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             //Captura errores de validación    
@@ -143,13 +132,11 @@ class RoleController extends Controller
     )]
     public function show($id)
     {
-        //
         try {
             $roles = Role::findOrFail($id);
 
             return response()->json([
-                'nombre' => $roles->nombre,
-                'descripcion' => $roles->descripcion
+                'rol' => new RoleResource($roles)
             ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
