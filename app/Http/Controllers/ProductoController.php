@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ProductoResource;
 use App\Models\Producto;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -20,16 +21,8 @@ class ProductoController extends Controller
     )]
     public function index()
     {
-        //
         try {
-            $productos = Producto::select(
-                'id',
-                'nombre',
-                'categoria_id',
-                'descripcion',
-                'precio',
-                'activo'
-            )->get();
+            $productos = Producto::with('categoria')->get();
 
             if ($productos->isEmpty()) {
                 return response()->json([
@@ -39,10 +32,9 @@ class ProductoController extends Controller
 
             return response()->json([
                 'message' => 'Productos obtenidos correctamente.',
-                'productos' => $productos
+                'productos' => ProductoResource::collection($productos)
             ], 200);
         } catch (\Exception $e) {
-
             return response()->json([
                 'message' => 'Error al obtener los productos.'
             ], 500);
@@ -121,7 +113,10 @@ class ProductoController extends Controller
             $producto->categoria_id = $validated['categoria_id'];
             $producto -> save();
 
-            $producto -> refresh();
+            return response()->json([
+                'message' => 'Producto creado correctamente.',
+                'producto' => new ProductoResource($producto->load('categoria'))
+            ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             //Captura errores de validación    
             return response()->json([
@@ -158,20 +153,12 @@ class ProductoController extends Controller
     )]
     public function show($id)
     {
-        //
         try {
-            $producto = Producto::findOrFail($id);
+            $producto = Producto::with('categoria')->findOrFail($id);
 
             return response()->json([
                 'message' => 'Producto obtenido correctamente.',
-                'producto' => [
-                    'imagen' => $producto->imagen,
-                    'nombre' => $producto->nombre,
-                    'descripcion' =>  $producto->descripcion,
-                    'categoria' => $producto->categoria->select('id','nombre')->first(),
-                    'precio' => $producto->precio,
-                    'activo' => $producto->activo
-                ]
+                'producto' => new ProductoResource($producto)
             ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([

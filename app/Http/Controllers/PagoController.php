@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\PagoResource;
 use App\Models\Pago;
 use Illuminate\Http\Request;
 
