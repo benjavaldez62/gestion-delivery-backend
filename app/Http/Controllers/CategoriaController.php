@@ -5,12 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use OpenApi\Attributes as OA;
 
 class CategoriaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    #[OA\Get(
+        path: '/api/categorias',
+        summary: 'Listar todas las categorías',
+        tags: ['Categorías'],
+        responses: [
+            new OA\Response(response: 200, description: 'Categorías obtenidas correctamente.'),
+            new OA\Response(response: 404, description: 'No hay categorías disponibles.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor.')
+        ]
+    )]
     public function index()
     {
         try {
@@ -40,9 +48,26 @@ class CategoriaController extends Controller
         }
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    #[OA\Post(
+        path: '/api/categorias',
+        summary: 'Crear una nueva categoría',
+        tags: ['Categorías'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['nombre'],
+                properties: [
+                    new OA\Property(property: 'nombre', type: 'string', maxLength: 50, example: 'Hamburguesas'),
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Categoría de hamburguesas caseras')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Categoría creada correctamente.'),
+            new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
+            new OA\Response(response: 500, description: 'Error interno al crear la categoría.')
+        ]
+    )]
     public function store(Request $request)
     {
         try {
@@ -89,9 +114,25 @@ class CategoriaController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
+    #[OA\Get(
+        path: '/api/categorias/{id}',
+        summary: 'Obtener una categoría por ID',
+        tags: ['Categorías'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID de la categoría',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Categoría obtenida correctamente.'),
+            new OA\Response(response: 404, description: 'Categoría no encontrada.'),
+            new OA\Response(response: 500, description: 'Error interno al obtener la categoría.')
+        ]
+    )]
     public function show($id)
     {
         try {
@@ -116,9 +157,37 @@ class CategoriaController extends Controller
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+    #[OA\Put(
+        path: '/api/categorias/{id}',
+        summary: 'Actualizar una categoría por ID',
+        tags: ['Categorías'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID de la categoría a actualizar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['nombre', 'estado'],
+                properties: [
+                    new OA\Property(property: 'nombre', type: 'string', minLength: 2, maxLength: 50, example: 'Bebidas'),
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Gaseosas y aguas'),
+                    new OA\Property(property: 'estado', type: 'integer', enum: [0, 1], example: 1, description: '1: Activo, 0: Inactivo')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Categoría actualizada correctamente.'),
+            new OA\Response(response: 404, description: 'Categoría no encontrada.'),
+            new OA\Response(response: 422, description: 'Datos inválidos.'),
+            new OA\Response(response: 500, description: 'Error interno al actualizar la categoría.')
+        ]
+    )]
     public function update(Request $request, $id)
     {
         try {
@@ -188,9 +257,27 @@ class CategoriaController extends Controller
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    #[OA\Delete(
+        path: '/api/categorias/{id}',
+        summary: 'Eliminar una categoría por ID',
+        tags: ['Categorías'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID de la categoría a eliminar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Categoría eliminada correctamente.'),
+            new OA\Response(response: 404, description: 'Categoría no encontrada.'),
+            new OA\Response(response: 409, description: 'No se puede eliminar la categoría porque está siendo utilizada por otros registros.'),
+            new OA\Response(response: 422, description: 'ID no válido.'),
+            new OA\Response(response: 500, description: 'Error interno al eliminar la categoría.')
+        ]
+    )]
     public function destroy($id)
     {
         try {
@@ -234,6 +321,27 @@ class CategoriaController extends Controller
         }
     }
 
+    #[OA\Put(
+        path: '/api/categorias/{id}/restore',
+        summary: 'Restaurar una categoría eliminada',
+        tags: ['Categorías'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID de la categoría a restaurar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Categoría restaurada correctamente.'),
+            new OA\Response(response: 404, description: 'Categoría no encontrada.'),
+            new OA\Response(response: 409, description: 'La categoría no está eliminada.'),
+            new OA\Response(response: 422, description: 'El ID no es válido.'),
+            new OA\Response(response: 500, description: 'Error interno al restaurar la categoría.')
+        ]
+    )]
     public function restore($id)
     {
         try {

@@ -1,0 +1,1201 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API Sistema de Delivery",
+        "description": "API del Sistema de Gestión de Delivery",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://127.0.0.1:8000",
+            "description": "Servidor local"
+        }
+    ],
+    "paths": {
+        "/api/categorias": {
+            "get": {
+                "tags": [
+                    "Categorías"
+                ],
+                "summary": "Listar todas las categorías",
+                "operationId": "66bfb3e0bf7747700be142ec5329dfae",
+                "responses": {
+                    "200": {
+                        "description": "Categorías obtenidas correctamente."
+                    },
+                    "404": {
+                        "description": "No hay categorías disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Categorías"
+                ],
+                "summary": "Crear una nueva categoría",
+                "operationId": "acace4e67a5f9bbaa41b456c95b2bd05",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Hamburguesas",
+                                        "maxLength": 50
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Categoría de hamburguesas caseras",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Categoría creada correctamente."
+                    },
+                    "422": {
+                        "description": "Datos inválidos o error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al crear la categoría."
+                    }
+                }
+            }
+        },
+        "/api/categorias/{id}": {
+            "get": {
+                "tags": [
+                    "Categorías"
+                ],
+                "summary": "Obtener una categoría por ID",
+                "operationId": "af067e125b5f9a1b1306d9e5c2a5867e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la categoría",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Categoría obtenida correctamente."
+                    },
+                    "404": {
+                        "description": "Categoría no encontrada."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener la categoría."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Categorías"
+                ],
+                "summary": "Actualizar una categoría por ID",
+                "operationId": "3465ccc7d2520d34b4c457d4158ae6ac",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la categoría a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre",
+                                    "estado"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Bebidas",
+                                        "maxLength": 50,
+                                        "minLength": 2
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Gaseosas y aguas",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    },
+                                    "estado": {
+                                        "description": "1: Activo, 0: Inactivo",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "enum": [
+                                            0,
+                                            1
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Categoría actualizada correctamente."
+                    },
+                    "404": {
+                        "description": "Categoría no encontrada."
+                    },
+                    "422": {
+                        "description": "Datos inválidos."
+                    },
+                    "500": {
+                        "description": "Error interno al actualizar la categoría."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Categorías"
+                ],
+                "summary": "Eliminar una categoría por ID",
+                "operationId": "a37893cb60d6b5ca9b1d6d23dbe83041",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la categoría a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Categoría eliminada correctamente."
+                    },
+                    "404": {
+                        "description": "Categoría no encontrada."
+                    },
+                    "409": {
+                        "description": "No se puede eliminar la categoría porque está siendo utilizada por otros registros."
+                    },
+                    "422": {
+                        "description": "ID no válido."
+                    },
+                    "500": {
+                        "description": "Error interno al eliminar la categoría."
+                    }
+                }
+            }
+        },
+        "/api/categorias/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Categorías"
+                ],
+                "summary": "Restaurar una categoría eliminada",
+                "operationId": "942d6b4bef0d209d2585432f2b34723f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la categoría a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Categoría restaurada correctamente."
+                    },
+                    "404": {
+                        "description": "Categoría no encontrada."
+                    },
+                    "409": {
+                        "description": "La categoría no está eliminada."
+                    },
+                    "422": {
+                        "description": "El ID no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar la categoría."
+                    }
+                }
+            }
+        },
+        "/api/estado-pagos": {
+            "get": {
+                "tags": [
+                    "Estados de Pago"
+                ],
+                "summary": "Listar todos los estados de pago",
+                "operationId": "daba8934bb2d4988b628a9dc4be8c92f",
+                "responses": {
+                    "200": {
+                        "description": "Estados de pagos obtenidos exitosamente."
+                    },
+                    "404": {
+                        "description": "No se encontraron estados de pagos."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Estados de Pago"
+                ],
+                "summary": "Crear un nuevo estado de pago",
+                "operationId": "a0c6e2abf363363469ed9b1a6fb4d351",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Aprobado",
+                                        "maxLength": 50
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "El pago fue procesado correctamente",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Estado de pago creado exitosamente."
+                    },
+                    "422": {
+                        "description": "Error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al crear el estado de pago."
+                    }
+                }
+            }
+        },
+        "/api/estado-pagos/{id}": {
+            "get": {
+                "tags": [
+                    "Estados de Pago"
+                ],
+                "summary": "Obtener un estado de pago por ID",
+                "operationId": "303fae5160d23fbc12e73ceb095cd6d2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del estado de pago",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Estado de pago obtenido exitosamente."
+                    },
+                    "404": {
+                        "description": "Estado de pago no encontrado."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el estado de pago."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Estados de Pago"
+                ],
+                "summary": "Actualizar un estado de pago por ID",
+                "operationId": "1cf290e524676817615a334514bd52fe",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del estado de pago a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Rechazado",
+                                        "maxLength": 50,
+                                        "minLength": 4
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "El pago fue rechazado",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Estado de pago actualizado exitosamente."
+                    },
+                    "404": {
+                        "description": "Estado de pago no encontrado."
+                    },
+                    "422": {
+                        "description": "Error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al actualizar el estado de pago."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Estados de Pago"
+                ],
+                "summary": "Eliminar un estado de pago por ID",
+                "operationId": "284db45dbf0db0f4c24867eb2597a151",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del estado de pago a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Estado de pago eliminado exitosamente."
+                    },
+                    "404": {
+                        "description": "Estado de pago no encontrado."
+                    },
+                    "409": {
+                        "description": "No se puede eliminar el estado de pago porque está en uso."
+                    },
+                    "422": {
+                        "description": "ID no válido."
+                    },
+                    "500": {
+                        "description": "Error interno al eliminar el estado de pago."
+                    }
+                }
+            }
+        },
+        "/api/estado-pagos/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Estados de Pago"
+                ],
+                "summary": "Restaurar un estado de pago eliminado",
+                "operationId": "cb41bf27a16de2ff2ee47473a90176ec",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del estado de pago a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Estado de pago restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Estado de pago no encontrado."
+                    },
+                    "409": {
+                        "description": "El estado de pago no está eliminado."
+                    },
+                    "422": {
+                        "description": "El ID no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar el estado de pago."
+                    }
+                }
+            }
+        },
+        "/api/metodos-pago": {
+            "get": {
+                "tags": [
+                    "Métodos de Pago"
+                ],
+                "summary": "Listar todos los métodos de pago",
+                "operationId": "13358025fc8c0a8ec473f961fcabed7a",
+                "responses": {
+                    "200": {
+                        "description": "Métodos de pago obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay métodos de pago disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Métodos de Pago"
+                ],
+                "summary": "Crear un nuevo método de pago",
+                "operationId": "34f78f41fd3eaaf65eccccad89e30792",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Efectivo",
+                                        "maxLength": 50
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Pago en efectivo al recibir",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Método de pago creado correctamente."
+                    },
+                    "422": {
+                        "description": "Datos inválidos o error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al crear el método de pago."
+                    }
+                }
+            }
+        },
+        "/api/metodos-pago/{id}": {
+            "get": {
+                "tags": [
+                    "Métodos de Pago"
+                ],
+                "summary": "Obtener un método de pago por ID",
+                "operationId": "7e2b330b8c2395595a1851da53dd7ef7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del método de pago",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Método de pago obtenido correctamente."
+                    },
+                    "404": {
+                        "description": "Método de pago no encontrado."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el método de pago."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Métodos de Pago"
+                ],
+                "summary": "Actualizar un método de pago por ID",
+                "operationId": "c54b3e789440705f4ba24e097a930e6a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del método de pago a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre",
+                                    "estado"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Tarjeta de Débito",
+                                        "maxLength": 50,
+                                        "minLength": 5
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Pago con tarjeta",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    },
+                                    "estado": {
+                                        "description": "1: Activo, 0: Inactivo",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "enum": [
+                                            0,
+                                            1
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Método de pago actualizado correctamente."
+                    },
+                    "404": {
+                        "description": "Método de pago no encontrado."
+                    },
+                    "422": {
+                        "description": "Datos inválidos."
+                    },
+                    "500": {
+                        "description": "Error interno al actualizar el método de pago."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Métodos de Pago"
+                ],
+                "summary": "Eliminar un método de pago por ID",
+                "operationId": "a8cbd71ed520e1a0bed37cddea47cc49",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del método de pago a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Método de pago eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Método de pago no encontrado."
+                    },
+                    "409": {
+                        "description": "Error de integridad referencial."
+                    },
+                    "422": {
+                        "description": "ID no válido."
+                    },
+                    "500": {
+                        "description": "Error interno al eliminar el método de pago."
+                    }
+                }
+            }
+        },
+        "/api/metodos-pago/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Métodos de Pago"
+                ],
+                "summary": "Restaurar un método de pago eliminado",
+                "operationId": "44c76d87a1b6c52e8d3c04384a135aec",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del método de pago a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Método de pago restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Método de pago no encontrado."
+                    },
+                    "409": {
+                        "description": "El método de pago no está eliminado."
+                    },
+                    "422": {
+                        "description": "El ID no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar el método de pago."
+                    }
+                }
+            }
+        },
+        "/api/productos": {
+            "get": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Listar todos los productos",
+                "operationId": "496dc08306524d77f18d124d1d6838aa",
+                "responses": {
+                    "200": {
+                        "description": "Productos obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay productos disponibles para mostrar."
+                    },
+                    "500": {
+                        "description": "Error al obtener los productos."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Crear un nuevo producto",
+                "operationId": "48b59f126c849beb4d4de4ff83b7945f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "categoria_id",
+                                    "nombre",
+                                    "precio"
+                                ],
+                                "properties": {
+                                    "categoria_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Hamburguesa Doble",
+                                        "maxLength": 100
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Doble carne, queso cheddar y panceta",
+                                        "nullable": true
+                                    },
+                                    "precio": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 4500.5
+                                    },
+                                    "imagen": {
+                                        "type": "string",
+                                        "example": "hamburguesa-doble.jpg",
+                                        "nullable": true
+                                    },
+                                    "activo": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Producto creado correctamente."
+                    },
+                    "422": {
+                        "description": "Error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al crear el producto."
+                    }
+                }
+            }
+        },
+        "/api/productos/{id}": {
+            "get": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Obtener un producto por ID",
+                "operationId": "672fde814ef8716ee902835cc96ae595",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del producto",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Producto obtenido correctamente."
+                    },
+                    "404": {
+                        "description": "Producto no encontrado."
+                    },
+                    "500": {
+                        "description": "Error al obtener el producto."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Actualizar un producto por ID",
+                "operationId": "20b20d8e59992eb88abad7dcef3db6d7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del producto a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "categoria_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Hamburguesa Triple",
+                                        "maxLength": 100
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Triple carne y queso",
+                                        "nullable": true
+                                    },
+                                    "precio": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 5500
+                                    },
+                                    "activo": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Producto actualizado correctamente."
+                    },
+                    "404": {
+                        "description": "Producto no encontrado."
+                    },
+                    "422": {
+                        "description": "Error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Eliminar un producto por ID",
+                "operationId": "4c0c7680428675134afd4d793f934f67",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del producto a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Producto eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Producto no encontrado."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            }
+        },
+        "/api/productos/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Restaurar un producto eliminado",
+                "operationId": "2a6854a610367c3f8d2310e72a81b3c3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del producto a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Producto restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Producto no encontrado."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            }
+        },
+        "/api/roles": {
+            "get": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Listar todos los roles",
+                "operationId": "77e3636d8592997ce9d6d27b50857a69",
+                "responses": {
+                    "200": {
+                        "description": "Roles obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay roles disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Crear un nuevo rol",
+                "operationId": "4a563842fbfcad237f63da43065fca3d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Administrador",
+                                        "maxLength": 30
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Rol con todos los permisos",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Rol creado correctamente."
+                    },
+                    "422": {
+                        "description": "Error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al crear el rol."
+                    }
+                }
+            }
+        },
+        "/api/roles/{id}": {
+            "get": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Obtener un rol por ID",
+                "operationId": "7fb0667a295b7678a30353aa11739683",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del rol",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rol obtenido exitosamente."
+                    },
+                    "404": {
+                        "description": "Rol no encontrado."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el rol."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Actualizar un rol por ID",
+                "operationId": "786d6990093a8eb3a56931f19a827e43",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del rol a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Cajero",
+                                        "maxLength": 30
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Rol para gestión de cobros",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Rol actualizado correctamente."
+                    },
+                    "404": {
+                        "description": "Rol no encontrado."
+                    },
+                    "422": {
+                        "description": "Error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al actualizar el rol."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Eliminar un rol por ID",
+                "operationId": "8285c46981c60ad600aa4077307aec04",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del rol a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rol eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Rol no encontrado."
+                    },
+                    "409": {
+                        "description": "No se puede eliminar el rol porque está siendo utilizado por otros registros."
+                    },
+                    "422": {
+                        "description": "El ID del rol no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al eliminar el rol."
+                    }
+                }
+            }
+        },
+        "/api/user": {
+            "get": {
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Obtener datos del usuario autenticado",
+                "operationId": "a5098d926f3049dfe9d91a22afd17b51",
+                "responses": {
+                    "200": {
+                        "description": "Datos del usuario autenticado"
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "sanctum": {
+                "type": "http",
+                "description": "Token de autenticación generado por Laravel Sanctum.",
+                "bearerFormat": "Token Sanctum",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Categorías",
+            "description": "Categorías"
+        },
+        {
+            "name": "Estados de Pago",
+            "description": "Estados de Pago"
+        },
+        {
+            "name": "Métodos de Pago",
+            "description": "Métodos de Pago"
+        },
+        {
+            "name": "Productos",
+            "description": "Productos"
+        },
+        {
+            "name": "Roles",
+            "description": "Roles"
+        },
+        {
+            "name": "Autenticación",
+            "description": "Autenticación"
+        }
+    ]
+}

@@ -5,12 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use OpenApi\Attributes as OA;
 
 class RoleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    #[OA\Get(
+        path: '/api/roles',
+        summary: 'Listar todos los roles',
+        tags: ['Roles'],
+        responses: [
+            new OA\Response(response: 200, description: 'Roles obtenidos correctamente.'),
+            new OA\Response(response: 404, description: 'No hay roles disponibles.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor.')
+        ]
+    )]
     public function index()
     {
         //
@@ -48,9 +56,26 @@ class RoleController extends Controller
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    #[OA\Post(
+        path: '/api/roles',
+        summary: 'Crear un nuevo rol',
+        tags: ['Roles'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['nombre'],
+                properties: [
+                    new OA\Property(property: 'nombre', type: 'string', maxLength: 30, example: 'Administrador'),
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Rol con todos los permisos')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Rol creado correctamente.'),
+            new OA\Response(response: 422, description: 'Error de validación.'),
+            new OA\Response(response: 500, description: 'Error interno al crear el rol.')
+        ]
+    )]
     public function store(Request $request)
     {
         //
@@ -97,9 +122,25 @@ class RoleController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
+    #[OA\Get(
+        path: '/api/roles/{id}',
+        summary: 'Obtener un rol por ID',
+        tags: ['Roles'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del rol',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Rol obtenido exitosamente.'),
+            new OA\Response(response: 404, description: 'Rol no encontrado.'),
+            new OA\Response(response: 500, description: 'Error interno al obtener el rol.')
+        ]
+    )]
     public function show($id)
     {
         //
@@ -130,9 +171,36 @@ class RoleController extends Controller
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+    #[OA\Put(
+        path: '/api/roles/{id}',
+        summary: 'Actualizar un rol por ID',
+        tags: ['Roles'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del rol a actualizar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['nombre'],
+                properties: [
+                    new OA\Property(property: 'nombre', type: 'string', maxLength: 30, example: 'Cajero'),
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Rol para gestión de cobros')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Rol actualizado correctamente.'),
+            new OA\Response(response: 404, description: 'Rol no encontrado.'),
+            new OA\Response(response: 422, description: 'Error de validación.'),
+            new OA\Response(response: 500, description: 'Error interno al actualizar el rol.')
+        ]
+    )]
     public function update(Request $request, $id)
     {
         try {
@@ -191,9 +259,27 @@ class RoleController extends Controller
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    #[OA\Delete(
+        path: '/api/roles/{id}',
+        summary: 'Eliminar un rol por ID',
+        tags: ['Roles'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del rol a eliminar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Rol eliminado correctamente.'),
+            new OA\Response(response: 404, description: 'Rol no encontrado.'),
+            new OA\Response(response: 409, description: 'No se puede eliminar el rol porque está siendo utilizado por otros registros.'),
+            new OA\Response(response: 422, description: 'El ID del rol no es válido.'),
+            new OA\Response(response: 500, description: 'Error interno al eliminar el rol.')
+        ]
+    )]
     public function destroy($id)
     {
         try {

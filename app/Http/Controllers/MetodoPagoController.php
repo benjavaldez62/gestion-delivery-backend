@@ -5,12 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\MetodoPago;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use OpenApi\Attributes as OA;
 
 class MetodoPagoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    #[OA\Get(
+        path: '/api/metodos-pago',
+        summary: 'Listar todos los métodos de pago',
+        tags: ['Métodos de Pago'],
+        responses: [
+            new OA\Response(response: 200, description: 'Métodos de pago obtenidos correctamente.'),
+            new OA\Response(response: 404, description: 'No hay métodos de pago disponibles.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor.')
+        ]
+    )]
     public function index()
     {
         // es un select *, le restrinjo los campos de todo lo que quiero ver
@@ -49,9 +57,26 @@ class MetodoPagoController extends Controller
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    #[OA\Post(
+        path: '/api/metodos-pago',
+        summary: 'Crear un nuevo método de pago',
+        tags: ['Métodos de Pago'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['nombre'],
+                properties: [
+                    new OA\Property(property: 'nombre', type: 'string', maxLength: 50, example: 'Efectivo'),
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Pago en efectivo al recibir')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Método de pago creado correctamente.'),
+            new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
+            new OA\Response(response: 500, description: 'Error interno al crear el método de pago.')
+        ]
+    )]
     public function store(Request $request) 
     {
         try{
@@ -100,9 +125,25 @@ class MetodoPagoController extends Controller
 
     
 
-    /**
-     * Display the specified resource.
-     */
+    #[OA\Get(
+        path: '/api/metodos-pago/{id}',
+        summary: 'Obtener un método de pago por ID',
+        tags: ['Métodos de Pago'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del método de pago',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Método de pago obtenido correctamente.'),
+            new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
+            new OA\Response(response: 500, description: 'Error interno al obtener el método de pago.')
+        ]
+    )]
     public function show($id)    
     {
         try {
@@ -137,9 +178,37 @@ class MetodoPagoController extends Controller
         //ESTE SE BORRA?
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+    #[OA\Put(
+        path: '/api/metodos-pago/{id}',
+        summary: 'Actualizar un método de pago por ID',
+        tags: ['Métodos de Pago'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del método de pago a actualizar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['nombre', 'estado'],
+                properties: [
+                    new OA\Property(property: 'nombre', type: 'string', minLength: 5, maxLength: 50, example: 'Tarjeta de Débito'),
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Pago con tarjeta'),
+                    new OA\Property(property: 'estado', type: 'integer', enum: [0, 1], example: 1, description: '1: Activo, 0: Inactivo')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Método de pago actualizado correctamente.'),
+            new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
+            new OA\Response(response: 422, description: 'Datos inválidos.'),
+            new OA\Response(response: 500, description: 'Error interno al actualizar el método de pago.')
+        ]
+    )]
     public function update(Request $request, $id)
     {
         try {
@@ -202,10 +271,28 @@ class MetodoPagoController extends Controller
             ], 500);
         }
     }
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(MetodoPago $metodoPago)
+    #[OA\Delete(
+        path: '/api/metodos-pago/{id}',
+        summary: 'Eliminar un método de pago por ID',
+        tags: ['Métodos de Pago'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del método de pago a eliminar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Método de pago eliminado correctamente.'),
+            new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
+            new OA\Response(response: 409, description: 'Error de integridad referencial.'),
+            new OA\Response(response: 422, description: 'ID no válido.'),
+            new OA\Response(response: 500, description: 'Error interno al eliminar el método de pago.')
+        ]
+    )]
+    public function destroy($id = null)
     {
         try{
             //Verificar que el ID sea válido
@@ -244,6 +331,27 @@ class MetodoPagoController extends Controller
             ], 500);
         }
     }
+    #[OA\Put(
+        path: '/api/metodos-pago/{id}/restore',
+        summary: 'Restaurar un método de pago eliminado',
+        tags: ['Métodos de Pago'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del método de pago a restaurar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Método de pago restaurado correctamente.'),
+            new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
+            new OA\Response(response: 409, description: 'El método de pago no está eliminado.'),
+            new OA\Response(response: 422, description: 'El ID no es válido.'),
+            new OA\Response(response: 500, description: 'Error interno al restaurar el método de pago.')
+        ]
+    )]
     public function restore($id)
     {
         try {
