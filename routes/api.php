@@ -28,9 +28,9 @@ Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy']);
 Route::put('/categorias/{id}/restore', [CategoriaController::class, 'restore']);
 
 //Rutas para productos
-Route::get('/productos', [ProductoController::class, 'index']);
+Route::get('/productos', [ProductoController::class, 'index']); //listo
 Route::post('/productos', [ProductoController::class, 'store']);
-Route::get('/productos/{id}', [ProductoController::class, 'show']);
+Route::get('/productos/{id}', [ProductoController::class, 'show']); //listo
 Route::put('/productos/{id}', [ProductoController::class, 'update']);
 Route::delete('/productos/{id}', [ProductoController::class, 'destroy']);
 Route::put('/productos/{id}/restore', [ProductoController::class, 'restore']);
