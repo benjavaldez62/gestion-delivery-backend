@@ -5,12 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\EstadoPagos;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use OpenApi\Attributes as OA;
 
 class EstadoPagosController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    #[OA\Get(
+        path: '/api/estado-pagos',
+        summary: 'Listar todos los estados de pago',
+        tags: ['Estados de Pago'],
+        responses: [
+            new OA\Response(response: 200, description: 'Estados de pagos obtenidos exitosamente.'),
+            new OA\Response(response: 404, description: 'No se encontraron estados de pagos.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor.')
+        ]
+    )]
     public function index()
     {
         try{
@@ -45,9 +53,26 @@ class EstadoPagosController extends Controller
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    #[OA\Post(
+        path: '/api/estado-pagos',
+        summary: 'Crear un nuevo estado de pago',
+        tags: ['Estados de Pago'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['nombre'],
+                properties: [
+                    new OA\Property(property: 'nombre', type: 'string', maxLength: 50, example: 'Aprobado'),
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'El pago fue procesado correctamente')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Estado de pago creado exitosamente.'),
+            new OA\Response(response: 422, description: 'Error de validación.'),
+            new OA\Response(response: 500, description: 'Error interno al crear el estado de pago.')
+        ]
+    )]
     public function store(Request $request)
     {
         try {
@@ -98,9 +123,25 @@ class EstadoPagosController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
+    #[OA\Get(
+        path: '/api/estado-pagos/{id}',
+        summary: 'Obtener un estado de pago por ID',
+        tags: ['Estados de Pago'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del estado de pago',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Estado de pago obtenido exitosamente.'),
+            new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
+            new OA\Response(response: 500, description: 'Error interno al obtener el estado de pago.')
+        ]
+    )]
     public function show($id)
     {
         try{
@@ -132,9 +173,36 @@ class EstadoPagosController extends Controller
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+    #[OA\Put(
+        path: '/api/estado-pagos/{id}',
+        summary: 'Actualizar un estado de pago por ID',
+        tags: ['Estados de Pago'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del estado de pago a actualizar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['nombre'],
+                properties: [
+                    new OA\Property(property: 'nombre', type: 'string', minLength: 4, maxLength: 50, example: 'Rechazado'),
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'El pago fue rechazado')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Estado de pago actualizado exitosamente.'),
+            new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
+            new OA\Response(response: 422, description: 'Error de validación.'),
+            new OA\Response(response: 500, description: 'Error interno al actualizar el estado de pago.')
+        ]
+    )]
     public function update(Request $request, $id)
     {
         try{
@@ -192,9 +260,27 @@ class EstadoPagosController extends Controller
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    #[OA\Delete(
+        path: '/api/estado-pagos/{id}',
+        summary: 'Eliminar un estado de pago por ID',
+        tags: ['Estados de Pago'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del estado de pago a eliminar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Estado de pago eliminado exitosamente.'),
+            new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
+            new OA\Response(response: 409, description: 'No se puede eliminar el estado de pago porque está en uso.'),
+            new OA\Response(response: 422, description: 'ID no válido.'),
+            new OA\Response(response: 500, description: 'Error interno al eliminar el estado de pago.')
+        ]
+    )]
     public function destroy($id)
     {
         try {
@@ -235,6 +321,27 @@ class EstadoPagosController extends Controller
         }
     }
 
+    #[OA\Put(
+        path: '/api/estado-pagos/{id}/restore',
+        summary: 'Restaurar un estado de pago eliminado',
+        tags: ['Estados de Pago'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del estado de pago a restaurar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Estado de pago restaurado correctamente.'),
+            new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
+            new OA\Response(response: 409, description: 'El estado de pago no está eliminado.'),
+            new OA\Response(response: 422, description: 'El ID no es válido.'),
+            new OA\Response(response: 500, description: 'Error interno al restaurar el estado de pago.')
+        ]
+    )]
     public function restore($id)
     {
         try {
