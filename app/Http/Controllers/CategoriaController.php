@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\CategoriaResource;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -22,13 +23,7 @@ class CategoriaController extends Controller
     public function index()
     {
         try {
-
-            $categorias = Categoria::select(
-                'id',
-                'nombre',
-                'descripcion',
-                'estado'
-            )->get();
+            $categorias = Categoria::all();
 
             if ($categorias->isEmpty()) {
                 return response()->json([
@@ -38,10 +33,9 @@ class CategoriaController extends Controller
 
             return response()->json([
                 'message' => 'Categorías obtenidas correctamente.',
-                'categorias' => $categorias
+                'categorias' => CategoriaResource::collection($categorias)
             ], 200);
         } catch (\Exception $e) {
-
             return response()->json([
                 'message' => 'Error interno al obtener las categorías.'
             ], 500);
@@ -89,15 +83,9 @@ class CategoriaController extends Controller
             $categoria->descripcion = $validated['descripcion'];
             $categoria->save();
 
-            $categoria->refresh();
-
             return response()->json([
                 'message' => 'Categoría creada correctamente',
-                'categoria' => [
-                    'nombre' => $categoria->nombre,
-                    'estado' => $categoria->estado == 1 ? 'Activo' : 'Inactivo',
-                    'descripcion' => $categoria->descripcion
-                ]
+                'categoria' => new CategoriaResource($categoria)
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Captura errores de validación
@@ -139,11 +127,7 @@ class CategoriaController extends Controller
             $categoria = Categoria::findOrFail($id);
 
             return response()->json([
-                'nombre' => $categoria->nombre,
-                'descripcion' => $categoria->descripcion,
-                'estado' => $categoria->estado == 1 ? 'Activo' : 'Inactivo',
-
-                //'estado' => $categoria->estado
+                'categoria' => new CategoriaResource($categoria)
             ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
@@ -229,14 +213,9 @@ class CategoriaController extends Controller
 
             $categoria->save();
 
-            // Respuesta
             return response()->json([
                 'message' => 'Categoría actualizada correctamente.',
-                'categoria' => [
-                    'nombre' => $categoria->nombre,
-                    'estado' => $categoria->estado == 1 ? 'Activo' : 'Inactivo',
-                    'descripcion' => $categoria->descripcion
-                ]
+                'categoria' => new CategoriaResource($categoria)
             ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
 

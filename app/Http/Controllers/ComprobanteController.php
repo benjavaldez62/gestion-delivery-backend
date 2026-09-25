@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ComprobanteResource;
 use App\Models\Comprobante;
 use Illuminate\Http\Request;
 
