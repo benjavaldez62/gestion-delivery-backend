@@ -28,7 +28,7 @@ class MetodoPagoController extends Controller
                 'id',
                 'nombre',
                 'descripcion',
-                'estado'
+                'activo'
             )->get();
 
             if ($metodosPago->isEmpty()) {
@@ -104,7 +104,7 @@ class MetodoPagoController extends Controller
                 'message' => 'Método de pago creado correctamente',
                 'metodoPago' => [
                     'nombre' => $metodoPago->nombre,
-                    'estado' => $metodoPago->estado == 1 ? 'Activo' : 'Inactivo',
+                    'activo' => $metodoPago->activo == 1 ? 'Activo' : 'Inactivo',
                     'descripcion' => $metodoPago->descripcion
                 ]
             ], 201);
@@ -153,7 +153,7 @@ class MetodoPagoController extends Controller
                 'message' => 'Método de pago obtenido correctamente.',
                 'metodoPago' => [
                     'nombre' => $metodoPago->nombre,
-                    'estado' => $metodoPago->estado == 1 ? 'Activo' : 'Inactivo',
+                    'activo' => $metodoPago->activo == 1 ? 'Activo' : 'Inactivo',
                     
                 ]
             ], 200);
@@ -194,11 +194,11 @@ class MetodoPagoController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['nombre', 'estado'],
+                required: ['nombre', 'activo'],
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', minLength: 5, maxLength: 50, example: 'Tarjeta de Débito'),
                     new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Pago con tarjeta'),
-                    new OA\Property(property: 'estado', type: 'integer', enum: [0, 1], example: 1, description: '1: Activo, 0: Inactivo')
+                    new OA\Property(property: 'activo', type: 'integer', enum: [0, 1], example: 1, description: '1: Activo, 0: Inactivo')
                 ]
             )
         ),
@@ -226,7 +226,7 @@ class MetodoPagoController extends Controller
                         ->ignore($metodoPago->id),
                     ],
                 'descripcion' => 'nullable|string|max:255',
-                'estado' => [
+                'activo' => [
                     'required',
                     Rule::in([0, 1]),
                 ],
@@ -238,21 +238,21 @@ class MetodoPagoController extends Controller
                 'nombre.unique' => 'Ya existe un método de pago con ese nombre.',
                 'descripcion.string' => 'La descripción del método de pago debe ser una cadena de texto.',
                 'descripcion.max' => 'La descripción del método de pago no debe exceder los 255 caracteres.',
-                'estado.required' => 'El estado del método de pago es obligatorio.',
-                'estado.in' => 'El estado debe ser 1 (Activo) o 0 (Inactivo).',
+                'activo.required' => 'El estado del método de pago es obligatorio.',
+                'activo.in' => 'El estado debe ser 1 (Activo) o 0 (Inactivo).',
             ]);
 
             //Actualizar Método de Pago
             $metodoPago->nombre = $validated['nombre'];
             $metodoPago->descripcion = $validated['descripcion'];
-            $metodoPago->estado = $validated['estado'];
+            $metodoPago->activo = $validated['activo'];
             $metodoPago->save();
 
             return response()->json([
                 'message' => 'Método de pago actualizado correctamente.',
                 'metodoPago' => [
                     'nombre' => $metodoPago->nombre,
-                    'estado' => $metodoPago->estado == 1 ? 'Activo' : 'Inactivo',
+                    'activo' => $metodoPago->activo == 1 ? 'Activo' : 'Inactivo',
                     'descripcion' => $metodoPago->descripcion
                 ]
             ], 200);
@@ -387,7 +387,7 @@ class MetodoPagoController extends Controller
                 'metodoPago' => [
                     'id' => $metodoPago->id,
                     'nombre' => $metodoPago->nombre,
-                    'estado' => $metodoPago->estado == 1 ? 'Activo' : 'Inactivo',
+                    'activo' => $metodoPago->activo == 1 ? 'Activo' : 'Inactivo',
                     'descripcion' => $metodoPago->descripcion
                 ]
             ], 200);
