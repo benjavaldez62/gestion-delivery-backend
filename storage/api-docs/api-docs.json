@@ -119,7 +119,8 @@
                         "description": "ID de la categoría a actualizar",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "example": 1
                         }
                     }
                 ],
@@ -146,9 +147,9 @@
                                         "maxLength": 255
                                     },
                                     "activo": {
-                                        "description": "1 = activo , 0 = inactivo",
-                                        "type": "integer",
-                                        "example": "1"
+                                        "description": "Indica si la categoría está activa",
+                                        "type": "boolean",
+                                        "example": true
                                     }
                                 },
                                 "type": "object"
