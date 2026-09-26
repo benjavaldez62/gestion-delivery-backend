@@ -7,6 +7,7 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\EstadoPagosController;
 use App\Http\Controllers\PagoController;
+use App\Http\Controllers\ComprobanteController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -59,3 +60,10 @@ Route::get('/pagos/{id}', [PagoController::class, 'show']);
 Route::put('/pagos/{id}', [PagoController::class, 'update']);
 Route::delete('/pagos/{id}', [PagoController::class, 'destroy']);
 Route::put('/pagos/{id}/restore', [PagoController::class, 'restore']);
+
+// Rutas para Comprobantes
+Route::get('/comprobantes', [ComprobanteController::class, 'index']);
+Route::post('/comprobantes', [ComprobanteController::class, 'store']);
+Route::get('/comprobantes/{id}', [ComprobanteController::class, 'show']);
+Route::delete('/comprobantes/{id}', [ComprobanteController::class, 'destroy']);
+Route::post('/comprobantes/{id}/restore', [ComprobanteController::class, 'restore']);
