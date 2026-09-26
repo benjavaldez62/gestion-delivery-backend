@@ -67,11 +67,19 @@ class CategoriaController extends Controller
         try {
             // Validación
             $validated = $request->validate([
-                'nombre' => 'required|string|max:50|unique:categorias,nombre',
+                'nombre' => [
+                    'required',
+                    'string',
+                    'min:2',
+                    'max:50',
+                    Rule::unique('categorias', 'nombre')
+                        ->whereNull('deleted_at'),
+                ],
                 'descripcion' => 'nullable|string|max:255',
             ], [
                 'nombre.required' => 'El nombre de la categoría es obligatorio.',
                 'nombre.string' => 'El nombre de la categoría debe ser una cadena de texto.',
+                'nombre.min' => 'El nombre de la categoría debe tener al menos 2 caracteres.',
                 'nombre.max' => 'El nombre de la categoría no debe exceder los 50 caracteres.',
                 'nombre.unique' => 'Ya existe una categoría con ese nombre.',
                 'descripcion.string' => 'La descripción de la categoría debe ser una cadena de texto.',
@@ -80,6 +88,7 @@ class CategoriaController extends Controller
             // Crear categoría
             $categoria = new Categoria();
             $categoria->nombre = $validated['nombre'];
+            $categoria->nombre_activo = $validated['nombre']; //sincronización con column derivada
             $categoria->descripcion = $validated['descripcion'];
             $categoria->activo = true; // por defecto, está activo al crearlo.
             $categoria->save();
@@ -188,7 +197,8 @@ class CategoriaController extends Controller
                     'min:2',
                     'max:50',
                     Rule::unique('categorias', 'nombre')
-                        ->ignore($categoria->getKey(), $categoria->getKeyName()), // Ignora la categoría actual al verificar unicidad
+                        ->whereNull('deleted_at') // Ignora categorias eliminadas 
+                        ->ignore($categoria->getKey(), $categoria->getKeyName()), // Ignora la categoría actual
                 ],
                 'descripcion' => 'nullable|string|max:255',
                 'activo' => [
@@ -209,10 +219,17 @@ class CategoriaController extends Controller
 
             // Actualizar categoría
             $categoria->nombre = $validated['nombre'];
+            // validamos si la categoría está activa o no, para mantener la unicidad de la columna derivada.
+            if ($categoria->deleted_at === null && (bool)$validated['activo'] === true) {
+                $categoria->nombre_activo = $validated['nombre'];
+            } else {
+                $categoria->nombre_activo = null;
+            }
             $categoria->descripcion = $validated['descripcion'] ?? null;
             $categoria->activo = $validated['activo'];
-
+            
             $categoria->save();
+            $categoria->refresh();
 
             return response()->json([
                 'message' => 'Categoría actualizada correctamente.',
@@ -232,7 +249,8 @@ class CategoriaController extends Controller
         } catch (\Exception $e) {
 
             return response()->json([
-                'message' => 'Error interno al actualizar la categoría.'
+                'message' => 'Error interno al actualizar la categoría.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -279,7 +297,10 @@ class CategoriaController extends Controller
                 ], 404);
             }
 
-            // Eliminar categoría
+            // Eliminar categoría y sincronizar la columna derivada en BD
+            $categoria->nombre_activo = null;
+            $categoria->activo = false;
+            $categoria->save();
             $categoria->delete();
 
             // Respuesta exitosa
