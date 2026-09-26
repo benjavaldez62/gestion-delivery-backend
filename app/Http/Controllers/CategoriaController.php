@@ -152,7 +152,7 @@ class CategoriaController extends Controller
                 in: 'path',
                 required: true,
                 description: 'ID de la categoría a actualizar',
-                schema: new OA\Schema(type: 'integer')
+                schema: new OA\Schema(type: 'integer', example: 1)
             )
         ],
         requestBody: new OA\RequestBody(
@@ -162,7 +162,7 @@ class CategoriaController extends Controller
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', minLength: 2, maxLength: 50, example: 'Bebidas con y sin alcohol'),
                     new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Gaseosas y aguas'),
-                    new OA\Property(property: 'activo', type: 'integer', example: '1', description: '1 = activo , 0 = inactivo')
+                    new OA\Property(property: 'activo', type: 'boolean', example: true, description: 'Indica si la categoría está activa')
                 ]
             )
         ),
@@ -188,12 +188,12 @@ class CategoriaController extends Controller
                     'min:2',
                     'max:50',
                     Rule::unique('categorias', 'nombre')
-                        ->ignore($categoria->id),
+                        ->ignore($categoria->getKey(), $categoria->getKeyName()), // Ignora la categoría actual al verificar unicidad
                 ],
                 'descripcion' => 'nullable|string|max:255',
                 'activo' => [
                     'required',
-                    Rule::in([0, 1]), // Asegura que el valor sea 0 o 1
+                    'boolean',
                 ],
             ], [
                 'nombre.required' => 'El nombre de la categoría es obligatorio.',
@@ -216,11 +216,7 @@ class CategoriaController extends Controller
 
             return response()->json([
                 'message' => 'Categoría actualizada correctamente.',
-                'categoria' => [
-                    'nombre' => $categoria->nombre,
-                    'descripcion' => $categoria->descripcion,
-                    'activo' => $categoria->activo == 1 ? 'Activo' : 'Inactivo'
-                ]
+                'categoria' => new CategoriaResource($categoria)
             ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
 
