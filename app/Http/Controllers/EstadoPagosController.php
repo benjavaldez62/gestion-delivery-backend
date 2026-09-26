@@ -45,13 +45,6 @@ class EstadoPagosController extends Controller
         }
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
 
     #[OA\Post(
         path: '/api/estado-pagos',
@@ -90,15 +83,15 @@ class EstadoPagosController extends Controller
                 'descripcion.max' => 'La descripción del Estado de pago no debe exceder los 255 caracteres',
             ]);
         
-        //Creación del Estad
+        //Creación del Estado
         $estadoPago = new EstadoPagos();
         $estadoPago->nombre = $validated['nombre'];
         $estadoPago->descripcion = $validated['descripcion'];
         $estadoPago->save();
 
-        $estadoPago->refesh();
+        $estadoPago->refresh();
 
-        return response ()->jason([
+        return response()->json([
             'message' => 'Estado de pago creado exitosamente',
             'EstadoPago' => [
                 'id' => $estadoPago->id,
@@ -106,21 +99,17 @@ class EstadoPagosController extends Controller
                 'descripcion' => $estadoPago->descripcion,
             ]
         ], 201);
-    }catch (\Illuminate\Validation\ValidationException $e) {
+    } catch (\Illuminate\Validation\ValidationException $e) {
         return response()->json([
             'message' => 'Error de validación',
             'errors' => $e->errors(),
         ], 422);
-    }catch (\Exception $e) {
+    } catch (\Exception $e) {
         return response()->json([
             'message' => 'Error al crear el Estado de pago',
-            'error' => $e->errors()], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error al crear el Estado de pago',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+            'error' => $e->getMessage()
+        ], 500);
+    }
     }
 
     #[OA\Get(
@@ -251,7 +240,6 @@ class EstadoPagosController extends Controller
             
             return response()->json([
                 'message' => 'Estado de pago no encontrado',
-                'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
