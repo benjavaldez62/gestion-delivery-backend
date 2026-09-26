@@ -130,12 +130,12 @@
                             "schema": {
                                 "required": [
                                     "nombre",
-                                    "estado"
+                                    "activo"
                                 ],
                                 "properties": {
                                     "nombre": {
                                         "type": "string",
-                                        "example": "Bebidas",
+                                        "example": "Bebidas con y sin alcohol",
                                         "maxLength": 50,
                                         "minLength": 2
                                     },
@@ -145,14 +145,10 @@
                                         "nullable": true,
                                         "maxLength": 255
                                     },
-                                    "estado": {
-                                        "description": "1: Activo, 0: Inactivo",
+                                    "activo": {
+                                        "description": "1 = activo , 0 = inactivo",
                                         "type": "integer",
-                                        "example": 1,
-                                        "enum": [
-                                            0,
-                                            1
-                                        ]
+                                        "example": "1"
                                     }
                                 },
                                 "type": "object"
@@ -592,7 +588,7 @@
                             "schema": {
                                 "required": [
                                     "nombre",
-                                    "estado"
+                                    "activo"
                                 ],
                                 "properties": {
                                     "nombre": {
@@ -607,7 +603,7 @@
                                         "nullable": true,
                                         "maxLength": 255
                                     },
-                                    "estado": {
+                                    "activo": {
                                         "description": "1: Activo, 0: Inactivo",
                                         "type": "integer",
                                         "example": 1,

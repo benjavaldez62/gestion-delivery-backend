@@ -81,6 +81,7 @@ class CategoriaController extends Controller
             $categoria = new Categoria();
             $categoria->nombre = $validated['nombre'];
             $categoria->descripcion = $validated['descripcion'];
+            $categoria->activo = true; // por defecto, está activo al crearlo.
             $categoria->save();
 
             return response()->json([
@@ -157,11 +158,11 @@ class CategoriaController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['nombre', 'estado'],
+                required: ['nombre', 'activo'],
                 properties: [
-                    new OA\Property(property: 'nombre', type: 'string', minLength: 2, maxLength: 50, example: 'Bebidas'),
+                    new OA\Property(property: 'nombre', type: 'string', minLength: 2, maxLength: 50, example: 'Bebidas con y sin alcohol'),
                     new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Gaseosas y aguas'),
-                    new OA\Property(property: 'estado', type: 'integer', enum: [0, 1], example: 1, description: '1: Activo, 0: Inactivo')
+                    new OA\Property(property: 'activo', type: 'integer', example: '1', description: '1 = activo , 0 = inactivo')
                 ]
             )
         ),
@@ -190,9 +191,9 @@ class CategoriaController extends Controller
                         ->ignore($categoria->id),
                 ],
                 'descripcion' => 'nullable|string|max:255',
-                'estado' => [
+                'activo' => [
                     'required',
-                    Rule::in([0, 1]),
+                    Rule::in([0, 1]), // Asegura que el valor sea 0 o 1
                 ],
             ], [
                 'nombre.required' => 'El nombre de la categoría es obligatorio.',
@@ -202,20 +203,24 @@ class CategoriaController extends Controller
                 'nombre.unique' => 'Ya existe una categoría con ese nombre.',
                 'descripcion.string' => 'La descripción de la categoría debe ser una cadena de texto.',
                 'descripcion.max' => 'La descripción de la categoría no debe exceder los 255 caracteres.',
-                'estado.required' => 'El estado de la categoría es obligatorio.',
-                'estado.in' => 'El estado debe ser 1 (Activo) o 0 (Inactivo).',
+                'activo.required' => 'El campo activo es obligatorio.',
+                'activo.boolean' => 'El campo activo debe ser un valor booleano.',
             ]);
 
             // Actualizar categoría
             $categoria->nombre = $validated['nombre'];
             $categoria->descripcion = $validated['descripcion'] ?? null;
-            $categoria->estado = $validated['estado'];
+            $categoria->activo = $validated['activo'];
 
             $categoria->save();
 
             return response()->json([
                 'message' => 'Categoría actualizada correctamente.',
-                'categoria' => new CategoriaResource($categoria)
+                'categoria' => [
+                    'nombre' => $categoria->nombre,
+                    'descripcion' => $categoria->descripcion,
+                    'activo' => $categoria->activo == 1 ? 'Activo' : 'Inactivo'
+                ]
             ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
 
