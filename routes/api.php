@@ -6,6 +6,7 @@ use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\EstadoPagosController;
+use App\Http\Controllers\PagoController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -50,3 +51,11 @@ Route::get('/estado-pagos/{id}', [EstadoPagosController::class, 'show']);
 Route::put('/estado-pagos/{id}', [EstadoPagosController::class, 'update']);
 Route::delete('/estado-pagos/{id}', [EstadoPagosController::class, 'destroy']);
 Route::put('/estado-pagos/{id}/restore', [EstadoPagosController::class, 'restore']);
+
+// Rutas para Pagos
+Route::get('/pagos', [PagoController::class, 'index']);
+Route::post('/pagos', [PagoController::class, 'store']);
+Route::get('/pagos/{id}', [PagoController::class, 'show']);
+Route::put('/pagos/{id}', [PagoController::class, 'update']);
+Route::delete('/pagos/{id}', [PagoController::class, 'destroy']);
+Route::put('/pagos/{id}/restore', [PagoController::class, 'restore']);

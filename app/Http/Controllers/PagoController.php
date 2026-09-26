@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Resources\PagoResource;
 use App\Models\Pago;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+// use OpenApi\Attributes as OA;
 
 class PagoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+        
+
     public function index()
     {
         //
