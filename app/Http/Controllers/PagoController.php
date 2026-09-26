@@ -51,14 +51,17 @@ class PagoController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['monto', 'metodo_pago_id'],
-                properties: [
-                    new OA\Property(property: 'monto', type: 'number', format: 'float', example: 1500.50),
-                    new OA\Property(property: 'metodo_pago_id', type: 'integer', example: 1),
-                    new OA\Property(property: 'referencia', type: 'string', maxLength: 255, nullable: true, example: 'TRX-987654')
-                ]
-            )
-        ),
+                required: ['pedido_id', 'monto', 'metodo_pago_id', 'estado_pago'],
+            properties: [
+                new OA\Property(property: 'pedido_id', type: 'integer', example: 10),
+                new OA\Property(property: 'monto', type: 'number', format: 'float', example: 1500.50),
+                new OA\Property(property: 'metodo_pago_id', type: 'integer', example: 1),
+                new OA\Property(property: 'estado_pago', type: 'string', example: 'completado'),
+                new OA\Property(property: 'fecha_pago', type: 'string', format: 'date-time', nullable: true, example: '2026-03-30 18:30:00'),
+                new OA\Property(property: 'referencia', type: 'string', maxLength: 255, nullable: true, example: 'TRX-987654')
+            ]
+        )
+    ),
         responses: [
             new OA\Response(response: 201, description: 'Pago creado correctamente.'),
             new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
