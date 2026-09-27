@@ -8,6 +8,7 @@ use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\EstadoPagosController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ComprobanteController;
+use App\Http\Controllers\AdicitionalsController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -67,3 +68,11 @@ Route::post('/comprobantes', [ComprobanteController::class, 'store']);
 Route::get('/comprobantes/{id}', [ComprobanteController::class, 'show']);
 Route::delete('/comprobantes/{id}', [ComprobanteController::class, 'destroy']);
 Route::post('/comprobantes/{id}/restore', [ComprobanteController::class, 'restore']);
+
+// Rutas para Adicionales
+Route::get('/adicionales', [AdicitionalsController::class, 'index']);
+Route::post('/adicionales', [AdicitionalsController::class, 'store']);
+Route::get('/adicionales/{id}', [AdicitionalsController::class, 'show']);
+Route::put('/adicionales/{id}', [AdicitionalsController::class, 'update']);
+Route::delete('/adicionales/{id}', [AdicitionalsController::class, 'destroy']);
+Route::put('/adicionales/{id}/restore', [AdicitionalsController::class, 'restore']);
