@@ -245,6 +245,178 @@
                 }
             }
         },
+        "/api/comprobantes": {
+            "get": {
+                "tags": [
+                    "Comprobantes"
+                ],
+                "summary": "Listar todos los comprobantes",
+                "operationId": "f7409aef67dd9609bbc649481c7a6258",
+                "responses": {
+                    "200": {
+                        "description": "Comprobantes obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay comprobantes disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Comprobantes"
+                ],
+                "summary": "Crear un nuevo comprobante",
+                "operationId": "bb2cbfdb9cc216637300c8d51bcf862f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "pago_id",
+                                    "tipo_comprobante",
+                                    "numero_comprobante",
+                                    "titular"
+                                ],
+                                "properties": {
+                                    "pago_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "tipo_comprobante": {
+                                        "type": "string",
+                                        "example": "Factura A",
+                                        "maxLength": 50
+                                    },
+                                    "numero_comprobante": {
+                                        "type": "string",
+                                        "example": "0001-00000123",
+                                        "maxLength": 100
+                                    },
+                                    "titular": {
+                                        "type": "string",
+                                        "example": "Juan Pérez",
+                                        "maxLength": 150
+                                    },
+                                    "url_pdf": {
+                                        "type": "string",
+                                        "example": "https://ejemplo.com/comprobante.pdf",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Comprobante creado correctamente."
+                    },
+                    "422": {
+                        "description": "Datos inválidos o error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al crear el comprobante."
+                    }
+                }
+            }
+        },
+        "/api/comprobantes/{id}": {
+            "get": {
+                "tags": [
+                    "Comprobantes"
+                ],
+                "summary": "Obtener un comprobante específico",
+                "operationId": "50166a550235027955e71412c004b2f7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del comprobante",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Comprobante obtenido correctamente."
+                    },
+                    "404": {
+                        "description": "Comprobante no encontrado."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Comprobantes"
+                ],
+                "summary": "Eliminar un comprobante por ID",
+                "operationId": "f7de9fc984ccd55e1283825218251190",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del comprobante a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Comprobante eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Comprobante no encontrado."
+                    },
+                    "500": {
+                        "description": "Error interno al eliminar el comprobante."
+                    }
+                }
+            }
+        },
+        "/api/comprobantes/{id}/restore": {
+            "post": {
+                "tags": [
+                    "Comprobantes"
+                ],
+                "summary": "Restaurar un comprobante eliminado",
+                "operationId": "313599387f54e4e9def928df55dd2d74",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del comprobante a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Comprobante restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Comprobante no encontrado entre los eliminados."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar el comprobante."
+                    }
+                }
+            }
+        },
         "/api/estado-pagos": {
             "get": {
                 "tags": [
@@ -589,7 +761,7 @@
                             "schema": {
                                 "required": [
                                     "nombre",
-                                    "activo"
+                                    "estado"
                                 ],
                                 "properties": {
                                     "nombre": {
@@ -604,7 +776,7 @@
                                         "nullable": true,
                                         "maxLength": 255
                                     },
-                                    "activo": {
+                                    "estado": {
                                         "description": "1: Activo, 0: Inactivo",
                                         "type": "integer",
                                         "example": 1,
@@ -703,6 +875,267 @@
                     },
                     "500": {
                         "description": "Error interno al restaurar el método de pago."
+                    }
+                }
+            }
+        },
+        "/api/pagos": {
+            "get": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Listar todos los pagos",
+                "operationId": "aaa8aed42f2cf9d3951bf459a8f6cce1",
+                "responses": {
+                    "200": {
+                        "description": "Pagos obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay pagos disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Crear un nuevo pago",
+                "operationId": "7b932fc2a276d8dd7f313b4dd196dff5",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "pedido_id",
+                                    "monto",
+                                    "metodo_pago_id",
+                                    "estado_pago"
+                                ],
+                                "properties": {
+                                    "pedido_id": {
+                                        "type": "integer",
+                                        "example": 10
+                                    },
+                                    "monto": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 1500.5
+                                    },
+                                    "metodo_pago_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "estado_pago": {
+                                        "type": "string",
+                                        "example": "completado"
+                                    },
+                                    "fecha_pago": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2026-03-30 18:30:00",
+                                        "nullable": true
+                                    },
+                                    "referencia": {
+                                        "type": "string",
+                                        "example": "TRX-987654",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pago creado correctamente."
+                    },
+                    "422": {
+                        "description": "Datos inválidos o error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al crear el pago."
+                    }
+                }
+            }
+        },
+        "/api/pagos/{id}": {
+            "get": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Obtener un pago por ID",
+                "operationId": "e830e3462b4807e42141f2c49d80376b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pago",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pago obtenido correctamente."
+                    },
+                    "404": {
+                        "description": "Pago no encontrado."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el pago."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Actualizar un pago por ID",
+                "operationId": "95a84716f62f67b5f17cb0b7c828a0af",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pago a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "monto",
+                                    "metodo_pago_id",
+                                    "estado"
+                                ],
+                                "properties": {
+                                    "monto": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2000
+                                    },
+                                    "metodo_pago_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "referencia": {
+                                        "type": "string",
+                                        "example": "TRX-987654",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    },
+                                    "estado": {
+                                        "type": "string",
+                                        "example": "completado",
+                                        "enum": [
+                                            "pendiente",
+                                            "completado",
+                                            "rechazado"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pago actualizado correctamente."
+                    },
+                    "404": {
+                        "description": "Pago no encontrado."
+                    },
+                    "422": {
+                        "description": "Datos inválidos."
+                    },
+                    "500": {
+                        "description": "Error interno al actualizar el pago."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Eliminar un pago por ID",
+                "operationId": "db395fae4f997099b0ea768a9092a615",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pago a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pago eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Pago no encontrado."
+                    },
+                    "409": {
+                        "description": "Error de integridad referencial."
+                    },
+                    "422": {
+                        "description": "ID no válido."
+                    },
+                    "500": {
+                        "description": "Error interno al eliminar el pago."
+                    }
+                }
+            }
+        },
+        "/api/pagos/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Restaurar un pago eliminado",
+                "operationId": "4085c65d3319c4d3b58fdce2dc5b47ad",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pago a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pago restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Pago no encontrado."
+                    },
+                    "409": {
+                        "description": "El pago no está eliminado."
+                    },
+                    "422": {
+                        "description": "El ID no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar el pago."
                     }
                 }
             }
@@ -1175,12 +1608,20 @@
             "description": "Categorías"
         },
         {
+            "name": "Comprobantes",
+            "description": "Comprobantes"
+        },
+        {
             "name": "Estados de Pago",
             "description": "Estados de Pago"
         },
         {
             "name": "Métodos de Pago",
             "description": "Métodos de Pago"
+        },
+        {
+            "name": "Pagos",
+            "description": "Pagos"
         },
         {
             "name": "Productos",
