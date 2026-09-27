@@ -265,7 +265,6 @@ class AdicitionalsController extends Controller
     public function destroy($id)
     {
         try {
-
             // Verificar que el ID sea válido
             if (!is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
