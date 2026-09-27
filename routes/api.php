@@ -9,6 +9,7 @@ use App\Http\Controllers\EstadoPagosController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ComprobanteController;
 use App\Http\Controllers\AdicitionalsController;
+use App\Http\Controllers\PedidoItemController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -76,3 +77,10 @@ Route::get('/adicionales/{id}', [AdicitionalsController::class, 'show']);
 Route::put('/adicionales/{id}', [AdicitionalsController::class, 'update']);
 Route::delete('/adicionales/{id}', [AdicitionalsController::class, 'destroy']);
 Route::put('/adicionales/{id}/restore', [AdicitionalsController::class, 'restore']);
+
+// Rutas para PedidoItem
+Route::get('/pedido-items', [PedidoItemController::class, 'index']);
+Route::post('/pedidos/{pedido}/items', [PedidoItemController::class, 'store']);
+Route::get('/pedido-items/{pedidoItem}', [PedidoItemController::class, 'show']);
+Route::put('/pedido-items/{pedidoItem}', [PedidoItemController::class, 'update']);
+Route::delete('/pedido-items/{pedidoItem}', [PedidoItemController::class, 'destroy']);
