@@ -8,7 +8,7 @@ use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\EstadoPagosController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ComprobanteController;
-use App\Http\Controllers\AdicitionalsController;
+use App\Http\Controllers\AdicionalController;
 use App\Http\Controllers\PedidoItemController;
 
 Route::get('/user', function (Request $request) {
@@ -71,12 +71,12 @@ Route::delete('/comprobantes/{id}', [ComprobanteController::class, 'destroy']);
 Route::post('/comprobantes/{id}/restore', [ComprobanteController::class, 'restore']);
 
 // Rutas para Adicionales
-Route::get('/adicionales', [AdicitionalsController::class, 'index']);
-Route::post('/adicionales', [AdicitionalsController::class, 'store']);
-Route::get('/adicionales/{id}', [AdicitionalsController::class, 'show']);
-Route::put('/adicionales/{id}', [AdicitionalsController::class, 'update']);
-Route::delete('/adicionales/{id}', [AdicitionalsController::class, 'destroy']);
-Route::put('/adicionales/{id}/restore', [AdicitionalsController::class, 'restore']);
+Route::get('/adicionales', [AdicionalController::class, 'index']);
+Route::post('/adicionales', [AdicionalController::class, 'store']);
+Route::get('/adicionales/{id}', [AdicionalController::class, 'show']);
+Route::put('/adicionales/{id}', [AdicionalController::class, 'update']);
+Route::delete('/adicionales/{id}', [AdicionalController::class, 'destroy']);
+Route::put('/adicionales/{id}/restore', [AdicionalController::class, 'restore']);
 
 // Rutas para PedidoItem
 Route::get('/pedido-items', [PedidoItemController::class, 'index']);

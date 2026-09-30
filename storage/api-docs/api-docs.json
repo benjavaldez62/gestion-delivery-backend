@@ -12,6 +12,249 @@
         }
     ],
     "paths": {
+        "/api/adicionales": {
+            "get": {
+                "tags": [
+                    "Adicionales"
+                ],
+                "summary": "Listar todos los adicionales",
+                "operationId": "df94808b217af5734c29f0d75ae80c18",
+                "responses": {
+                    "200": {
+                        "description": "Adicionales obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay adicionales disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Adicionales"
+                ],
+                "summary": "Crear un nuevo adicional",
+                "operationId": "f186ba4a70c1eaab2caf5e71bd034075",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre",
+                                    "precio"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Salsa Extra",
+                                        "maxLength": 255
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Porción extra de salsa cheddar",
+                                        "nullable": true
+                                    },
+                                    "precio": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 500
+                                    },
+                                    "activo": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Adicional creado correctamente."
+                    },
+                    "422": {
+                        "description": "Datos inválidos o error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al crear el adicional."
+                    }
+                }
+            }
+        },
+        "/api/adicionales/{id}": {
+            "get": {
+                "tags": [
+                    "Adicionales"
+                ],
+                "summary": "Obtener un adicional por ID",
+                "operationId": "f46306a2bd6b5dd9ee06b789314f94f4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del adicional",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Adicional obtenido correctamente."
+                    },
+                    "404": {
+                        "description": "Adicional no encontrado."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el adicional."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Adicionales"
+                ],
+                "summary": "Actualizar un adicional por ID",
+                "operationId": "e407ed13a2ee7fec1657c135b9431967",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del adicional a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre",
+                                    "precio"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Salsa Extra",
+                                        "maxLength": 255
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Porción extra de salsa cheddar",
+                                        "nullable": true
+                                    },
+                                    "precio": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 600
+                                    },
+                                    "activo": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Adicional actualizado correctamente."
+                    },
+                    "404": {
+                        "description": "Adicional no encontrado."
+                    },
+                    "422": {
+                        "description": "Datos inválidos."
+                    },
+                    "500": {
+                        "description": "Error interno al actualizar el adicional."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Adicionales"
+                ],
+                "summary": "Eliminar un adicional por ID",
+                "operationId": "389aa9e36780a3215fde6b1f49e5d53a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del adicional a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Adicional eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Adicional no encontrado."
+                    },
+                    "409": {
+                        "description": "Error de integridad referencial."
+                    },
+                    "422": {
+                        "description": "ID no válido."
+                    },
+                    "500": {
+                        "description": "Error interno al eliminar el adicional."
+                    }
+                }
+            }
+        },
+        "/api/adicionales/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Adicionales"
+                ],
+                "summary": "Restaurar un adicional eliminado",
+                "operationId": "60987f922dd78d6e8368ce58cf9bbae9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del adicional a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Adicional restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Adicional no encontrado."
+                    },
+                    "409": {
+                        "description": "El adicional no está eliminado."
+                    },
+                    "422": {
+                        "description": "El ID no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar el adicional."
+                    }
+                }
+            }
+        },
         "/api/categorias": {
             "get": {
                 "tags": [
@@ -1140,6 +1383,221 @@
                 }
             }
         },
+        "/api/pedido-items": {
+            "get": {
+                "tags": [
+                    "PedidoItems"
+                ],
+                "summary": "Listar los ítems de un pedido puntual",
+                "operationId": "e0be75d4297f08c63a8d9c4db7902db4",
+                "parameters": [
+                    {
+                        "name": "pedido_id",
+                        "in": "query",
+                        "description": "ID del pedido del cual listar los ítems",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ítems del pedido obtenidos correctamente."
+                    },
+                    "422": {
+                        "description": "Parámetro pedido_id requerido o no válido."
+                    },
+                    "404": {
+                        "description": "No se encontraron ítems para el pedido ingresado."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            }
+        },
+        "/api/pedidos/{pedido}/items": {
+            "post": {
+                "tags": [
+                    "PedidoItems"
+                ],
+                "summary": "Agregar un nuevo producto a un pedido existente",
+                "operationId": "6121061dc267bf21301bbc3ead9ef6e8",
+                "parameters": [
+                    {
+                        "name": "pedido",
+                        "in": "path",
+                        "description": "ID del pedido al que se agregará el ítem",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "producto_id",
+                                    "cantidad"
+                                ],
+                                "properties": {
+                                    "producto_id": {
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "cantidad": {
+                                        "type": "integer",
+                                        "example": 2
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Ítem agregado correctamente al pedido."
+                    },
+                    "400": {
+                        "description": "El pedido no está en un estado editable."
+                    },
+                    "404": {
+                        "description": "Pedido o producto no encontrado."
+                    },
+                    "422": {
+                        "description": "Datos de entrada no válidos."
+                    },
+                    "500": {
+                        "description": "Error interno al agregar el ítem."
+                    }
+                }
+            }
+        },
+        "/api/pedido-items/{pedidoItem}": {
+            "get": {
+                "tags": [
+                    "PedidoItems"
+                ],
+                "summary": "Ver el detalle de un ítem por ID",
+                "operationId": "deaa4b033e36c51ad11f2d7c282f220e",
+                "parameters": [
+                    {
+                        "name": "pedidoItem",
+                        "in": "path",
+                        "description": "ID del ítem del pedido",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ítem obtenido correctamente."
+                    },
+                    "404": {
+                        "description": "Ítem no encontrado."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el ítem."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "PedidoItems"
+                ],
+                "summary": "Modificar la cantidad de un ítem existente",
+                "operationId": "29678d0d3a62b636a2d6f0bc4db3d45f",
+                "parameters": [
+                    {
+                        "name": "pedidoItem",
+                        "in": "path",
+                        "description": "ID del ítem a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "cantidad"
+                                ],
+                                "properties": {
+                                    "cantidad": {
+                                        "type": "integer",
+                                        "example": 3
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Ítem actualizado correctamente."
+                    },
+                    "400": {
+                        "description": "El pedido no está en un estado editable."
+                    },
+                    "404": {
+                        "description": "Ítem no encontrado."
+                    },
+                    "422": {
+                        "description": "Datos de entrada no válidos."
+                    },
+                    "500": {
+                        "description": "Error interno al actualizar el ítem."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "PedidoItems"
+                ],
+                "summary": "Quitar un ítem del pedido",
+                "operationId": "29e94e20cf3c851a7955c60d4e5caf45",
+                "parameters": [
+                    {
+                        "name": "pedidoItem",
+                        "in": "path",
+                        "description": "ID del ítem a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ítem eliminado correctamente."
+                    },
+                    "400": {
+                        "description": "Estado del pedido no editable o el pedido no puede quedar sin ítems."
+                    },
+                    "404": {
+                        "description": "Ítem no encontrado."
+                    },
+                    "422": {
+                        "description": "ID no válido."
+                    },
+                    "500": {
+                        "description": "Error interno al eliminar el ítem."
+                    }
+                }
+            }
+        },
         "/api/productos": {
             "get": {
                 "tags": [
@@ -1275,6 +1733,10 @@
                     "content": {
                         "application/json": {
                             "schema": {
+                                "required": [
+                                    "nombre",
+                                    "activo"
+                                ],
                                 "properties": {
                                     "categoria_id": {
                                         "type": "integer",
@@ -1604,6 +2066,10 @@
     },
     "tags": [
         {
+            "name": "Adicionales",
+            "description": "Adicionales"
+        },
+        {
             "name": "Categorías",
             "description": "Categorías"
         },
@@ -1622,6 +2088,10 @@
         {
             "name": "Pagos",
             "description": "Pagos"
+        },
+        {
+            "name": "PedidoItems",
+            "description": "PedidoItems"
         },
         {
             "name": "Productos",
