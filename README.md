@@ -39,17 +39,27 @@ El Sistema de Gestion de Delivery tiene como objetivo permitir a los clientes ex
 ```
 app/
 ├── Http/
-│   └── Controllers/       # Controladores de la API
-│       ├── RoleController.php
-│       ├── CategoriaController.php
-│       ├── ProductoController.php
-│       ├── MetodoPagoController.php
-│       ├── EstadoPagosController.php
-│       ├── PedidoController.php
-│       ├── PedidoItemController.php
-│       ├── PagoController.php
-│       ├── ComprobanteController.php
-│       └── AuthController.php
+│   ├── Controllers/       # Controladores de la API
+│   │   ├── RoleController.php
+│   │   ├── CategoriaController.php
+│   │   ├── ProductoController.php
+│   │   ├── MetodoPagoController.php
+│   │   ├── EstadoPagosController.php
+│   │   ├── PedidoController.php
+│   │   ├── PedidoItemController.php
+│   │   ├── AdicionalController.php
+│   │   ├── PagoController.php
+│   │   ├── ComprobanteController.php
+│   │   └── AuthController.php
+│   └── Resources/         # API Resources para estandarizacion de respuestas
+│       ├── RoleResource.php
+│       ├── CategoriaResource.php
+│       ├── ProductoResource.php
+│       ├── PedidoResource.php
+│       ├── PedidoItemResource.php
+│       ├── AdicionalResource.php
+│       ├── PagoResource.php
+│       └── ComprobanteResource.php
 ├── Models/                # Modelos Eloquent
 │   ├── User.php
 │   ├── Role.php
@@ -131,6 +141,48 @@ routes/
 | PUT | `/api/estado-pagos/{id}` | Actualizar un estado de pago |
 | DELETE | `/api/estado-pagos/{id}` | Eliminar un estado de pago |
 | PUT | `/api/estado-pagos/{id}/restore` | Restaurar un estado de pago eliminado |
+
+### Pagos (`/api/pagos`)
+
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| GET | `/api/pagos` | Listar todos los pagos |
+| POST | `/api/pagos` | Registrar un nuevo pago |
+| GET | `/api/pagos/{id}` | Obtener un pago por ID |
+| PUT | `/api/pagos/{id}` | Actualizar un pago |
+| DELETE | `/api/pagos/{id}` | Eliminar (soft delete) un pago |
+| PUT | `/api/pagos/{id}/restore` | Restaurar un pago eliminado |
+
+### Comprobantes (`/api/comprobantes`)
+
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| GET | `/api/comprobantes` | Listar todos los comprobantes |
+| POST | `/api/comprobantes` | Generar un nuevo comprobante |
+| GET | `/api/comprobantes/{id}` | Obtener un comprobante por ID |
+| DELETE | `/api/comprobantes/{id}` | Eliminar un comprobante |
+| POST | `/api/comprobantes/{id}/restore` | Restaurar un comprobante eliminado |
+
+### Adicionales (`/api/adicionales`)
+
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| GET | `/api/adicionales` | Listar todos los adicionales |
+| POST | `/api/adicionales` | Crear un nuevo adicional |
+| GET | `/api/adicionales/{id}` | Obtener un adicional por ID |
+| PUT | `/api/adicionales/{id}` | Actualizar un adicional |
+| DELETE | `/api/adicionales/{id}` | Eliminar un adicional |
+| PUT | `/api/adicionales/{id}/restore` | Restaurar un adicional eliminado |
+
+### Items de Pedido (`/api/pedido-items`)
+
+| Metodo | Ruta | Descripcion |
+|---|---|---|
+| GET | `/api/pedido-items` | Listar items de pedidos |
+| POST | `/api/pedidos/{pedido}/items` | Agregar un item a un pedido |
+| GET | `/api/pedido-items/{pedidoItem}` | Obtener un item por ID |
+| PUT | `/api/pedido-items/{pedidoItem}` | Actualizar un item de pedido |
+| DELETE | `/api/pedido-items/{pedidoItem}` | Eliminar un item de pedido |
 
 ### Autenticacion
 
