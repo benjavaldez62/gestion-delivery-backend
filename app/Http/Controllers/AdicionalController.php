@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;     
 use OpenApi\Attributes as OA;
 
-class AdicitionalsController extends Controller
+class AdicionalController extends Controller
 {
     #[OA\Get(
         path: '/api/adicionales',
