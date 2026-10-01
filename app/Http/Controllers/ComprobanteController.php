@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ComprobanteResource;
 use App\Models\Comprobante;
-use Illuminate\Http\Request; 
-use Illumunate\Validation\Rule;     
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
 class ComprobanteController extends Controller
@@ -143,7 +143,7 @@ class ComprobanteController extends Controller
     public function show($id)
     {
         try {
-            $comprobante = Comprobante::find($id);
+            $comprobante = Comprobante::findOrFail($id);
 
             return response()->json([
                 'message' => 'Comprobante obtenido correctamente.',

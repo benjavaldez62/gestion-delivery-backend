@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\PagoResource;
 use App\Models\Pago;
 use Illuminate\Http\Request;
-use Illumunate\Validation\Rule;     
+use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
 class PagoController extends Controller
@@ -51,13 +51,13 @@ class PagoController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['pedido_id', 'monto', 'metodo_pago_id', 'estado_pago'],
+                required: ['pedido_id', 'monto', 'metodo_pago_id', 'estado_pago_id', 'fecha_pago'],
             properties: [
                 new OA\Property(property: 'pedido_id', type: 'integer', example: 10),
                 new OA\Property(property: 'monto', type: 'number', format: 'float', example: 1500.50),
                 new OA\Property(property: 'metodo_pago_id', type: 'integer', example: 1),
-                new OA\Property(property: 'estado_pago', type: 'string', example: 'completado'),
-                new OA\Property(property: 'fecha_pago', type: 'string', format: 'date-time', nullable: true, example: '2026-03-30 18:30:00'),
+                new OA\Property(property: 'estado_pago_id', type: 'integer', example: 1),
+                new OA\Property(property: 'fecha_pago', type: 'string', format: 'date', example: '2026-03-30'),
                 new OA\Property(property: 'referencia', type: 'string', maxLength: 255, nullable: true, example: 'TRX-987654')
             ]
         )
@@ -77,7 +77,8 @@ class PagoController extends Controller
                 'metodo_pago_id' => 'required|integer|exists:metodos_pago,id',
                 'monto' => 'required|numeric|gt:0',
                 'fecha_pago' => 'required|date',
-                'estado_pago' => 'required|string|max:50',
+                'estado_pago_id' => 'required|integer|exists:estado_pagos,id',
+                'referencia' => 'nullable|string|max:255',
             ], [
                 'pedido_id.required' => 'El pedido es obligatorio.',
                 'pedido_id.exists' => 'El pedido seleccionado no existe.',
@@ -91,8 +92,11 @@ class PagoController extends Controller
                 
                 'fecha_pago.required' => 'La fecha de pago es obligatoria.',
                 
-                'estado_pago.required' => 'El estado del pago es obligatorio.',
-                'estado_pago.max' => 'El estado del pago no debe exceder los 50 caracteres.',
+                'estado_pago_id.required' => 'El estado del pago es obligatorio.',
+                'estado_pago_id.exists' => 'El estado del pago seleccionado no existe.',
+                
+                'referencia.string' => 'La referencia debe ser una cadena de texto.',
+                'referencia.max' => 'La referencia no debe exceder los 255 caracteres.',
             ]);
 
             // Crear pago
@@ -101,7 +105,8 @@ class PagoController extends Controller
             $pago->metodo_pago_id = $validated['metodo_pago_id'];
             $pago->monto = $validated['monto'];
             $pago->fecha_pago = $validated['fecha_pago'];
-            $pago->estado_pago = $validated['estado_pago'];
+            $pago->estado_pago_id = $validated['estado_pago_id'];
+            $pago->referencia = $validated['referencia'] ?? null;
             $pago->save();
 
             return response()->json([
@@ -178,12 +183,13 @@ class PagoController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['monto', 'metodo_pago_id', 'estado'],
+                required: ['pedido_id', 'monto', 'metodo_pago_id', 'estado_pago_id', 'fecha_pago'],
                 properties: [
+                    new OA\Property(property: 'pedido_id', type: 'integer', example: 10),
                     new OA\Property(property: 'monto', type: 'number', format: 'float', example: 2000.00),
                     new OA\Property(property: 'metodo_pago_id', type: 'integer', example: 1),
-                    new OA\Property(property: 'referencia', type: 'string', maxLength: 255, nullable: true, example: 'TRX-987654'),
-                    new OA\Property(property: 'estado', type: 'string', enum: ['pendiente', 'completado', 'rechazado'], example: 'completado')
+                    new OA\Property(property: 'estado_pago_id', type: 'integer', example: 1),
+                    new OA\Property(property: 'fecha_pago', type: 'string', format: 'date', example: '2026-03-30')
                 ]
             )
         ),
@@ -207,7 +213,8 @@ class PagoController extends Controller
                 'metodo_pago_id' => 'required|integer|exists:metodos_pago,id',
                 'monto' => 'required|numeric|gt:0',
                 'fecha_pago' => 'required|date',
-                'estado_pago' => 'required|string|max:50',
+                'estado_pago_id' => 'required|integer|exists:estado_pagos,id',
+                'referencia' => 'nullable|string|max:255',
             ], [
                 'pedido_id.required' => 'El pedido es obligatorio.',
                 'pedido_id.exists' => 'El pedido seleccionado no existe.',
@@ -221,8 +228,11 @@ class PagoController extends Controller
                 
                 'fecha_pago.required' => 'La fecha de pago es obligatoria.',
                 
-                'estado_pago.required' => 'El estado del pago es obligatorio.',
-                'estado_pago.max' => 'El estado del pago no debe exceder los 50 caracteres.',
+                'estado_pago_id.required' => 'El estado del pago es obligatorio.',
+                'estado_pago_id.exists' => 'El estado del pago seleccionado no existe.',
+                
+                'referencia.string' => 'La referencia debe ser una cadena de texto.',
+                'referencia.max' => 'La referencia no debe exceder los 255 caracteres.',
             ]);
 
             // Actualizar pago
@@ -230,7 +240,8 @@ class PagoController extends Controller
             $pago->metodo_pago_id = $validated['metodo_pago_id'];
             $pago->monto = $validated['monto'];
             $pago->fecha_pago = $validated['fecha_pago'];
-            $pago->estado_pago = $validated['estado_pago'];
+            $pago->estado_pago_id = $validated['estado_pago_id'];
+            $pago->referencia = $validated['referencia'] ?? null;
 
             $pago->save();
 

@@ -19,6 +19,7 @@ class Pago extends Model
         'monto',
         'fecha_pago',
         'estado_pago_id',
+        'referencia',
     ];
 
     protected $casts = [
