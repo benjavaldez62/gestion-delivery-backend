@@ -50,7 +50,7 @@
                                     "nombre": {
                                         "type": "string",
                                         "example": "Salsa Extra",
-                                        "maxLength": 255
+                                        "maxLength": 50
                                     },
                                     "descripcion": {
                                         "type": "string",
@@ -145,7 +145,7 @@
                                     "nombre": {
                                         "type": "string",
                                         "example": "Salsa Extra",
-                                        "maxLength": 255
+                                        "maxLength": 50
                                     },
                                     "descripcion": {
                                         "type": "string",
@@ -630,12 +630,12 @@
             }
         },
         "/api/comprobantes/{id}/restore": {
-            "post": {
+            "put": {
                 "tags": [
                     "Comprobantes"
                 ],
                 "summary": "Restaurar un comprobante eliminado",
-                "operationId": "313599387f54e4e9def928df55dd2d74",
+                "operationId": "36661adb089a0f81ed871a79c94a614e",
                 "parameters": [
                     {
                         "name": "id",
@@ -1004,7 +1004,7 @@
                             "schema": {
                                 "required": [
                                     "nombre",
-                                    "estado"
+                                    "activo"
                                 ],
                                 "properties": {
                                     "nombre": {
@@ -1019,14 +1019,10 @@
                                         "nullable": true,
                                         "maxLength": 255
                                     },
-                                    "estado": {
-                                        "description": "1: Activo, 0: Inactivo",
-                                        "type": "integer",
-                                        "example": 1,
-                                        "enum": [
-                                            0,
-                                            1
-                                        ]
+                                    "activo": {
+                                        "description": "Estado activo o inactivo",
+                                        "type": "boolean",
+                                        "example": true
                                     }
                                 },
                                 "type": "object"
@@ -1156,7 +1152,8 @@
                                     "pedido_id",
                                     "monto",
                                     "metodo_pago_id",
-                                    "estado_pago"
+                                    "estado_pago_id",
+                                    "fecha_pago"
                                 ],
                                 "properties": {
                                     "pedido_id": {
@@ -1172,15 +1169,14 @@
                                         "type": "integer",
                                         "example": 1
                                     },
-                                    "estado_pago": {
-                                        "type": "string",
-                                        "example": "completado"
+                                    "estado_pago_id": {
+                                        "type": "integer",
+                                        "example": 1
                                     },
                                     "fecha_pago": {
                                         "type": "string",
-                                        "format": "date-time",
-                                        "example": "2026-03-30 18:30:00",
-                                        "nullable": true
+                                        "format": "date",
+                                        "example": "2026-03-30"
                                     },
                                     "referencia": {
                                         "type": "string",
@@ -1260,11 +1256,17 @@
                         "application/json": {
                             "schema": {
                                 "required": [
+                                    "pedido_id",
                                     "monto",
                                     "metodo_pago_id",
-                                    "estado"
+                                    "estado_pago_id",
+                                    "fecha_pago"
                                 ],
                                 "properties": {
+                                    "pedido_id": {
+                                        "type": "integer",
+                                        "example": 10
+                                    },
                                     "monto": {
                                         "type": "number",
                                         "format": "float",
@@ -1274,20 +1276,14 @@
                                         "type": "integer",
                                         "example": 1
                                     },
-                                    "referencia": {
-                                        "type": "string",
-                                        "example": "TRX-987654",
-                                        "nullable": true,
-                                        "maxLength": 255
+                                    "estado_pago_id": {
+                                        "type": "integer",
+                                        "example": 1
                                     },
-                                    "estado": {
+                                    "fecha_pago": {
                                         "type": "string",
-                                        "example": "completado",
-                                        "enum": [
-                                            "pendiente",
-                                            "completado",
-                                            "rechazado"
-                                        ]
+                                        "format": "date",
+                                        "example": "2026-03-30"
                                     }
                                 },
                                 "type": "object"
@@ -1655,7 +1651,8 @@
                                     },
                                     "imagen": {
                                         "type": "string",
-                                        "example": "hamburguesa-doble.jpg",
+                                        "format": "uri",
+                                        "example": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500",
                                         "nullable": true
                                     },
                                     "activo": {
@@ -1756,6 +1753,12 @@
                                         "type": "number",
                                         "format": "float",
                                         "example": 5500
+                                    },
+                                    "imagen": {
+                                        "type": "string",
+                                        "format": "uri",
+                                        "example": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500",
+                                        "nullable": true
                                     },
                                     "activo": {
                                         "type": "boolean",
@@ -2027,6 +2030,43 @@
                     },
                     "500": {
                         "description": "Error interno al eliminar el rol."
+                    }
+                }
+            }
+        },
+        "/api/roles/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Restaurar un rol eliminado",
+                "operationId": "7bf093d6fcf0908407f101f6a88574c6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del rol a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rol restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Rol no encontrado."
+                    },
+                    "409": {
+                        "description": "El rol no está eliminado."
+                    },
+                    "422": {
+                        "description": "El ID no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar el rol."
                     }
                 }
             }

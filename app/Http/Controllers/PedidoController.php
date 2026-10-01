@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\PedidoResource;
 use App\Models\Pedido;
 use Illuminate\Http\Request;
 

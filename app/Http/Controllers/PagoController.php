@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\PagoResource;
 use App\Models\Pago;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
 class PagoController extends Controller
@@ -17,32 +19,32 @@ class PagoController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Pagos obtenidos correctamente.'),
             new OA\Response(response: 404, description: 'No hay pagos disponibles.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor.')
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
     )]
     public function index()
     {
-        try{
+        try {
             $pagos = Pago::all();
 
             if ($pagos->isEmpty()) {
                 return response()->json([
-                    'message' =>'No hay pagos disponibles.'
-                ],404);
+                    'message' => 'No hay pagos disponibles.',
+                ], 404);
             }
 
             return response()->json([
                 'message' => 'Pagos obtenidos correctamente.',
-                'pagos' => PagoResource::collection($pagos)
-            ],200);
-        } catch(\Exception $e){
-            return response ()->json([
+                'pagos' => PagoResource::collection($pagos),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
                 'message' => 'Error interno al obtener los pagos.',
-            ],500);
+            ], 500);
         }
     }
 
-   // crea un pago nuevo
+    // crea un pago nuevo
 
     #[OA\Post(
         path: '/api/pagos',
@@ -52,20 +54,20 @@ class PagoController extends Controller
             required: true,
             content: new OA\JsonContent(
                 required: ['pedido_id', 'monto', 'metodo_pago_id', 'estado_pago_id', 'fecha_pago'],
-            properties: [
-                new OA\Property(property: 'pedido_id', type: 'integer', example: 10),
-                new OA\Property(property: 'monto', type: 'number', format: 'float', example: 1500.50),
-                new OA\Property(property: 'metodo_pago_id', type: 'integer', example: 1),
-                new OA\Property(property: 'estado_pago_id', type: 'integer', example: 1),
-                new OA\Property(property: 'fecha_pago', type: 'string', format: 'date', example: '2026-03-30'),
-                new OA\Property(property: 'referencia', type: 'string', maxLength: 255, nullable: true, example: 'TRX-987654')
-            ]
-        )
-    ),
+                properties: [
+                    new OA\Property(property: 'pedido_id', type: 'integer', example: 10),
+                    new OA\Property(property: 'monto', type: 'number', format: 'float', example: 1500.50),
+                    new OA\Property(property: 'metodo_pago_id', type: 'integer', example: 1),
+                    new OA\Property(property: 'estado_pago_id', type: 'integer', example: 1),
+                    new OA\Property(property: 'fecha_pago', type: 'string', format: 'date', example: '2026-03-30'),
+                    new OA\Property(property: 'referencia', type: 'string', maxLength: 255, nullable: true, example: 'TRX-987654'),
+                ]
+            )
+        ),
         responses: [
             new OA\Response(response: 201, description: 'Pago creado correctamente.'),
             new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
-            new OA\Response(response: 500, description: 'Error interno al crear el pago.')
+            new OA\Response(response: 500, description: 'Error interno al crear el pago.'),
         ]
     )]
     public function store(Request $request)
@@ -82,25 +84,25 @@ class PagoController extends Controller
             ], [
                 'pedido_id.required' => 'El pedido es obligatorio.',
                 'pedido_id.exists' => 'El pedido seleccionado no existe.',
-                
+
                 'metodo_pago_id.required' => 'El método de pago es obligatorio.',
                 'metodo_pago_id.exists' => 'El método de pago seleccionado no existe.',
-                
+
                 'monto.required' => 'El monto es obligatorio.',
                 'monto.numeric' => 'El monto debe ser un valor numérico.',
                 'monto.gt' => 'El monto debe ser mayor a 0.',
-                
+
                 'fecha_pago.required' => 'La fecha de pago es obligatoria.',
-                
+
                 'estado_pago_id.required' => 'El estado del pago es obligatorio.',
                 'estado_pago_id.exists' => 'El estado del pago seleccionado no existe.',
-                
+
                 'referencia.string' => 'La referencia debe ser una cadena de texto.',
                 'referencia.max' => 'La referencia no debe exceder los 255 caracteres.',
             ]);
 
             // Crear pago
-            $pago = new Pago();
+            $pago = new Pago;
             $pago->pedido_id = $validated['pedido_id'];
             $pago->metodo_pago_id = $validated['metodo_pago_id'];
             $pago->monto = $validated['monto'];
@@ -111,19 +113,19 @@ class PagoController extends Controller
 
             return response()->json([
                 'message' => 'Pago creado correctamente',
-                'pago' => new PagoResource($pago)
+                'pago' => new PagoResource($pago),
             ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Captura errores de validación
             return response()->json([
                 'message' => 'Datos inválidos',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             // Captura cualquier otro error
             return response()->json([
                 'message' => 'Error interno al crear el pago',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -139,12 +141,12 @@ class PagoController extends Controller
                 required: true,
                 description: 'ID del pago',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Pago obtenido correctamente.'),
             new OA\Response(response: 404, description: 'Pago no encontrado.'),
-            new OA\Response(response: 500, description: 'Error interno al obtener el pago.')
+            new OA\Response(response: 500, description: 'Error interno al obtener el pago.'),
         ]
     )]
     public function show($id)
@@ -153,16 +155,16 @@ class PagoController extends Controller
             $pago = Pago::findOrFail($id);
 
             return response()->json([
-                'pago' => new PagoResource($pago)
+                'pago' => new PagoResource($pago),
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Pago no encontrado'
+                'message' => 'Pago no encontrado',
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al obtener el pago',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -178,7 +180,7 @@ class PagoController extends Controller
                 required: true,
                 description: 'ID del pago a actualizar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         requestBody: new OA\RequestBody(
             required: true,
@@ -189,7 +191,7 @@ class PagoController extends Controller
                     new OA\Property(property: 'monto', type: 'number', format: 'float', example: 2000.00),
                     new OA\Property(property: 'metodo_pago_id', type: 'integer', example: 1),
                     new OA\Property(property: 'estado_pago_id', type: 'integer', example: 1),
-                    new OA\Property(property: 'fecha_pago', type: 'string', format: 'date', example: '2026-03-30')
+                    new OA\Property(property: 'fecha_pago', type: 'string', format: 'date', example: '2026-03-30'),
                 ]
             )
         ),
@@ -197,7 +199,7 @@ class PagoController extends Controller
             new OA\Response(response: 200, description: 'Pago actualizado correctamente.'),
             new OA\Response(response: 404, description: 'Pago no encontrado.'),
             new OA\Response(response: 422, description: 'Datos inválidos.'),
-            new OA\Response(response: 500, description: 'Error interno al actualizar el pago.')
+            new OA\Response(response: 500, description: 'Error interno al actualizar el pago.'),
         ]
     )]
     public function update(Request $request, $id)
@@ -218,19 +220,19 @@ class PagoController extends Controller
             ], [
                 'pedido_id.required' => 'El pedido es obligatorio.',
                 'pedido_id.exists' => 'El pedido seleccionado no existe.',
-                
+
                 'metodo_pago_id.required' => 'El método de pago es obligatorio.',
                 'metodo_pago_id.exists' => 'El método de pago seleccionado no existe.',
-                
+
                 'monto.required' => 'El monto es obligatorio.',
                 'monto.numeric' => 'El monto debe ser un valor numérico.',
                 'monto.gt' => 'El monto debe ser mayor a 0.',
-                
+
                 'fecha_pago.required' => 'La fecha de pago es obligatoria.',
-                
+
                 'estado_pago_id.required' => 'El estado del pago es obligatorio.',
                 'estado_pago_id.exists' => 'El estado del pago seleccionado no existe.',
-                
+
                 'referencia.string' => 'La referencia debe ser una cadena de texto.',
                 'referencia.max' => 'La referencia no debe exceder los 255 caracteres.',
             ]);
@@ -247,23 +249,23 @@ class PagoController extends Controller
 
             return response()->json([
                 'message' => 'Pago actualizado correctamente.',
-                'pago' => new PagoResource($pago)
+                'pago' => new PagoResource($pago),
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
 
             return response()->json([
-                'message' => 'Pago no encontrado.'
+                'message' => 'Pago no encontrado.',
             ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
 
             return response()->json([
                 'message' => 'Los datos enviados no son válidos.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
 
             return response()->json([
-                'message' => 'Error interno al actualizar el pago.'
+                'message' => 'Error interno al actualizar el pago.',
             ], 500);
         }
     }
@@ -279,14 +281,14 @@ class PagoController extends Controller
                 required: true,
                 description: 'ID del pago a eliminar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Pago eliminado correctamente.'),
             new OA\Response(response: 404, description: 'Pago no encontrado.'),
             new OA\Response(response: 409, description: 'Error de integridad referencial.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
-            new OA\Response(response: 500, description: 'Error interno al eliminar el pago.')
+            new OA\Response(response: 500, description: 'Error interno al eliminar el pago.'),
         ]
     )]
     public function destroy($id)
@@ -294,9 +296,9 @@ class PagoController extends Controller
         try {
 
             // Verificar que el ID sea válido
-            if (!is_numeric($id) || (int) $id <= 0) {
+            if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID del pago no es válido.'
+                    'message' => 'El ID del pago no es válido.',
                 ], 422);
             }
 
@@ -304,9 +306,9 @@ class PagoController extends Controller
             $pago = Pago::find($id);
 
             // Verificar si existe
-            if (!$pago) {
+            if (! $pago) {
                 return response()->json([
-                    'message' => 'Pago no encontrado.'
+                    'message' => 'Pago no encontrado.',
                 ], 404);
             }
 
@@ -315,19 +317,19 @@ class PagoController extends Controller
 
             // Respuesta exitosa
             return response()->json([
-                'message' => 'Pago eliminado correctamente.'
+                'message' => 'Pago eliminado correctamente.',
             ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
 
             // Error relacionado con la base de datos
             return response()->json([
-                'message' => 'No se puede eliminar el pago porque está siendo utilizado por otros registros.'
+                'message' => 'No se puede eliminar el pago porque está siendo utilizado por otros registros.',
             ], 409);
         } catch (\Exception $e) {
 
             // Error general
             return response()->json([
-                'message' => 'Error interno al eliminar el pago.'
+                'message' => 'Error interno al eliminar el pago.',
             ], 500);
         }
     }
@@ -343,38 +345,38 @@ class PagoController extends Controller
                 required: true,
                 description: 'ID del pago a restaurar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Pago restaurado correctamente.'),
             new OA\Response(response: 404, description: 'Pago no encontrado.'),
             new OA\Response(response: 409, description: 'El pago no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),
-            new OA\Response(response: 500, description: 'Error interno al restaurar el pago.')
+            new OA\Response(response: 500, description: 'Error interno al restaurar el pago.'),
         ]
     )]
     public function restore($id)
     {
         try {
 
-            if (!is_numeric($id) || (int) $id <= 0) {
+            if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID del pago no es válido.'
+                    'message' => 'El ID del pago no es válido.',
                 ], 422);
             }
 
             $pago = Pago::withTrashed()->find($id);
 
-            if (!$pago) {
+            if (! $pago) {
                 return response()->json([
-                    'message' => 'Pago no encontrado.'
+                    'message' => 'Pago no encontrado.',
                 ], 404);
             }
 
             // Verificar que realmente esté eliminado
-            if (!$pago->trashed()) {
+            if (! $pago->trashed()) {
                 return response()->json([
-                    'message' => 'El pago no está eliminado.'
+                    'message' => 'El pago no está eliminado.',
                 ], 409);
             }
 
@@ -382,12 +384,12 @@ class PagoController extends Controller
 
             return response()->json([
                 'message' => 'Pago restaurado correctamente.',
-                'pago' => new PagoResource($pago)
+                'pago' => new PagoResource($pago),
             ], 200);
         } catch (\Exception $e) {
 
             return response()->json([
-                'message' => 'Error interno al restaurar el pago.'
+                'message' => 'Error interno al restaurar el pago.',
             ], 500);
         }
     }

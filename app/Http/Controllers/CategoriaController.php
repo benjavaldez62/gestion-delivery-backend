@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\CategoriaResource;
 use App\Models\Categoria;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
 class CategoriaController extends Controller
@@ -17,7 +20,7 @@ class CategoriaController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Categorías obtenidas correctamente.'),
             new OA\Response(response: 404, description: 'No hay categorías disponibles.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor.')
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
     )]
     public function index()
@@ -27,17 +30,17 @@ class CategoriaController extends Controller
 
             if ($categorias->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay categorías disponibles.'
+                    'message' => 'No hay categorías disponibles.',
                 ], 404);
             }
 
             return response()->json([
                 'message' => 'Categorías obtenidas correctamente.',
-                'categorias' => CategoriaResource::collection($categorias)
+                'categorias' => CategoriaResource::collection($categorias),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error interno al obtener las categorías.'
+                'message' => 'Error interno al obtener las categorías.',
             ], 500);
         }
     }
@@ -52,14 +55,14 @@ class CategoriaController extends Controller
                 required: ['nombre'],
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', maxLength: 50, example: 'Hamburguesas'),
-                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Categoría de hamburguesas caseras')
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Categoría de hamburguesas caseras'),
                 ]
             )
         ),
         responses: [
             new OA\Response(response: 201, description: 'Categoría creada correctamente.'),
             new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
-            new OA\Response(response: 500, description: 'Error interno al crear la categoría.')
+            new OA\Response(response: 500, description: 'Error interno al crear la categoría.'),
         ]
     )]
     public function store(Request $request)
@@ -86,28 +89,28 @@ class CategoriaController extends Controller
                 'descripcion.max' => 'La descripción de la categoría no debe exceder los 255 caracteres.',
             ]);
             // Crear categoría
-            $categoria = new Categoria();
+            $categoria = new Categoria;
             $categoria->nombre = $validated['nombre'];
-            $categoria->nombre_activo = $validated['nombre']; //sincronización con column derivada
+            $categoria->nombre_activo = $validated['nombre']; // sincronización con column derivada
             $categoria->descripcion = $validated['descripcion'] ?? null;
             $categoria->activo = true; // por defecto, está activo al crearlo.
             $categoria->save();
 
             return response()->json([
                 'message' => 'Categoría creada correctamente',
-                'categoria' => new CategoriaResource($categoria)
+                'categoria' => new CategoriaResource($categoria),
             ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Captura errores de validación
             return response()->json([
                 'message' => 'Datos inválidos',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             // Captura cualquier otro error
             return response()->json([
                 'message' => 'Error interno al crear la categoría',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -123,12 +126,12 @@ class CategoriaController extends Controller
                 required: true,
                 description: 'ID de la categoría',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Categoría obtenida correctamente.'),
             new OA\Response(response: 404, description: 'Categoría no encontrada.'),
-            new OA\Response(response: 500, description: 'Error interno al obtener la categoría.')
+            new OA\Response(response: 500, description: 'Error interno al obtener la categoría.'),
         ]
     )]
     public function show($id)
@@ -137,16 +140,16 @@ class CategoriaController extends Controller
             $categoria = Categoria::findOrFail($id);
 
             return response()->json([
-                'categoria' => new CategoriaResource($categoria)
+                'categoria' => new CategoriaResource($categoria),
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Categoría no encontrada'
+                'message' => 'Categoría no encontrada',
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al obtener la categoría',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -162,7 +165,7 @@ class CategoriaController extends Controller
                 required: true,
                 description: 'ID de la categoría a actualizar',
                 schema: new OA\Schema(type: 'integer', example: 1)
-            )
+            ),
         ],
         requestBody: new OA\RequestBody(
             required: true,
@@ -171,7 +174,7 @@ class CategoriaController extends Controller
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', minLength: 2, maxLength: 50, example: 'Bebidas con y sin alcohol'),
                     new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Gaseosas y aguas'),
-                    new OA\Property(property: 'activo', type: 'boolean', example: true, description: 'Indica si la categoría está activa')
+                    new OA\Property(property: 'activo', type: 'boolean', example: true, description: 'Indica si la categoría está activa'),
                 ]
             )
         ),
@@ -179,7 +182,7 @@ class CategoriaController extends Controller
             new OA\Response(response: 200, description: 'Categoría actualizada correctamente.'),
             new OA\Response(response: 404, description: 'Categoría no encontrada.'),
             new OA\Response(response: 422, description: 'Datos inválidos.'),
-            new OA\Response(response: 500, description: 'Error interno al actualizar la categoría.')
+            new OA\Response(response: 500, description: 'Error interno al actualizar la categoría.'),
         ]
     )]
     public function update(Request $request, $id)
@@ -197,7 +200,7 @@ class CategoriaController extends Controller
                     'min:2',
                     'max:50',
                     Rule::unique('categorias', 'nombre')
-                        ->whereNull('deleted_at') // Ignora categorias eliminadas 
+                        ->whereNull('deleted_at') // Ignora categorias eliminadas
                         ->ignore($categoria->getKey(), $categoria->getKeyName()), // Ignora la categoría actual
                 ],
                 'descripcion' => 'nullable|string|max:255',
@@ -220,37 +223,37 @@ class CategoriaController extends Controller
             // Actualizar categoría
             $categoria->nombre = $validated['nombre'];
             // validamos si la categoría está activa o no, para mantener la unicidad de la columna derivada.
-            if ($categoria->deleted_at === null && (bool)$validated['activo'] === true) {
+            if ($categoria->deleted_at === null && (bool) $validated['activo'] === true) {
                 $categoria->nombre_activo = $validated['nombre'];
             } else {
                 $categoria->nombre_activo = null;
             }
             $categoria->descripcion = $validated['descripcion'] ?? null;
             $categoria->activo = $validated['activo'];
-            
+
             $categoria->save();
             $categoria->refresh();
 
             return response()->json([
                 'message' => 'Categoría actualizada correctamente.',
-                'categoria' => new CategoriaResource($categoria)
+                'categoria' => new CategoriaResource($categoria),
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
 
             return response()->json([
-                'message' => 'Categoría no encontrada.'
+                'message' => 'Categoría no encontrada.',
             ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
 
             return response()->json([
                 'message' => 'Los datos enviados no son válidos.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
 
             return response()->json([
                 'message' => 'Error interno al actualizar la categoría.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -266,14 +269,14 @@ class CategoriaController extends Controller
                 required: true,
                 description: 'ID de la categoría a eliminar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Categoría eliminada correctamente.'),
             new OA\Response(response: 404, description: 'Categoría no encontrada.'),
             new OA\Response(response: 409, description: 'No se puede eliminar la categoría porque está siendo utilizada por otros registros.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
-            new OA\Response(response: 500, description: 'Error interno al eliminar la categoría.')
+            new OA\Response(response: 500, description: 'Error interno al eliminar la categoría.'),
         ]
     )]
     public function destroy($id)
@@ -281,9 +284,9 @@ class CategoriaController extends Controller
         try {
 
             // Verificar que el ID sea válido
-            if (!is_numeric($id) || (int) $id <= 0) {
+            if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID de la categoría no es válido.'
+                    'message' => 'El ID de la categoría no es válido.',
                 ], 422);
             }
 
@@ -291,9 +294,9 @@ class CategoriaController extends Controller
             $categoria = Categoria::find($id);
 
             // Verificar si existe
-            if (!$categoria) {
+            if (! $categoria) {
                 return response()->json([
-                    'message' => 'Categoría no encontrada.'
+                    'message' => 'Categoría no encontrada.',
                 ], 404);
             }
 
@@ -305,19 +308,19 @@ class CategoriaController extends Controller
 
             // Respuesta exitosa
             return response()->json([
-                'message' => 'Categoría eliminada correctamente.'
+                'message' => 'Categoría eliminada correctamente.',
             ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
 
             // Error relacionado con la base de datos
             return response()->json([
-                'message' => 'No se puede eliminar la categoría porque está siendo utilizada por otros registros.'
+                'message' => 'No se puede eliminar la categoría porque está siendo utilizada por otros registros.',
             ], 409);
         } catch (\Exception $e) {
 
             // Error general
             return response()->json([
-                'message' => 'Error interno al eliminar la categoría.'
+                'message' => 'Error interno al eliminar la categoría.',
             ], 500);
         }
     }
@@ -333,38 +336,38 @@ class CategoriaController extends Controller
                 required: true,
                 description: 'ID de la categoría a restaurar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Categoría restaurada correctamente.'),
             new OA\Response(response: 404, description: 'Categoría no encontrada.'),
             new OA\Response(response: 409, description: 'La categoría no está eliminada.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),
-            new OA\Response(response: 500, description: 'Error interno al restaurar la categoría.')
+            new OA\Response(response: 500, description: 'Error interno al restaurar la categoría.'),
         ]
     )]
     public function restore($id)
     {
         try {
 
-            if (!is_numeric($id) || (int) $id <= 0) {
+            if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID de la categoría no es válido.'
+                    'message' => 'El ID de la categoría no es válido.',
                 ], 422);
             }
 
             $categoria = Categoria::withTrashed()->find($id);
 
-            if (!$categoria) {
+            if (! $categoria) {
                 return response()->json([
-                    'message' => 'Categoría no encontrada.'
+                    'message' => 'Categoría no encontrada.',
                 ], 404);
             }
 
             // Verificar que realmente esté eliminada
-            if (!$categoria->trashed()) {
+            if (! $categoria->trashed()) {
                 return response()->json([
-                    'message' => 'La categoría no está eliminada.'
+                    'message' => 'La categoría no está eliminada.',
                 ], 409);
             }
 
@@ -375,12 +378,12 @@ class CategoriaController extends Controller
 
             return response()->json([
                 'message' => 'Categoría restaurada correctamente.',
-                'categoria' => new CategoriaResource($categoria)
+                'categoria' => new CategoriaResource($categoria),
             ], 200);
         } catch (\Exception $e) {
 
             return response()->json([
-                'message' => 'Error interno al restaurar la categoría.'
+                'message' => 'Error interno al restaurar la categoría.',
             ], 500);
         }
     }
