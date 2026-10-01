@@ -488,6 +488,245 @@
                 }
             }
         },
+        "/api/clientes": {
+            "get": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Listar todos los clientes",
+                "operationId": "de55d50d1b708d9e5c63ee3f8fe8f54a",
+                "responses": {
+                    "200": {
+                        "description": "Clientes obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay clientes disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Crear un nuevo cliente",
+                "operationId": "4ac6cdfa8d6c188fa2cb4f3263d4318a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "username"
+                                ],
+                                "properties": {
+                                    "username": {
+                                        "type": "string",
+                                        "example": "juanperez",
+                                        "maxLength": 30,
+                                        "minLength": 3
+                                    },
+                                    "telefono": {
+                                        "type": "string",
+                                        "example": "+5491123456789",
+                                        "nullable": true,
+                                        "maxLength": 30
+                                    },
+                                    "direccion": {
+                                        "type": "string",
+                                        "example": "Av. Siempreviva 742",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Cliente creado correctamente."
+                    },
+                    "422": {
+                        "description": "Error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al crear el cliente."
+                    }
+                }
+            }
+        },
+        "/api/clientes/{id}": {
+            "get": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Obtener un cliente por ID",
+                "operationId": "0d3826d79390929601421b5810b61231",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del cliente",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cliente obtenido exitosamente."
+                    },
+                    "404": {
+                        "description": "Cliente no encontrado."
+                    },
+                    "422": {
+                        "description": "El ID del cliente no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el cliente."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Actualizar un cliente por ID",
+                "operationId": "74956b09f3ea120b5dd531c73776ca11",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del cliente a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "username": {
+                                        "type": "string",
+                                        "example": "juanperez_editado",
+                                        "maxLength": 30,
+                                        "minLength": 3
+                                    },
+                                    "telefono": {
+                                        "type": "string",
+                                        "example": "+5491198765432",
+                                        "nullable": true,
+                                        "maxLength": 30
+                                    },
+                                    "direccion": {
+                                        "type": "string",
+                                        "example": "Calle Falsa 123",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cliente actualizado correctamente."
+                    },
+                    "404": {
+                        "description": "Cliente no encontrado."
+                    },
+                    "422": {
+                        "description": "Error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al actualizar el cliente."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Eliminar un cliente por ID",
+                "operationId": "d15e304c609752c9f409ab81072fb52e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del cliente a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cliente eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Cliente no encontrado."
+                    },
+                    "409": {
+                        "description": "No se puede eliminar el cliente porque está siendo utilizado por otros registros."
+                    },
+                    "422": {
+                        "description": "El ID del cliente no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al eliminar el cliente."
+                    }
+                }
+            }
+        },
+        "/api/clientes/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Restaurar un cliente eliminado",
+                "operationId": "0177dddbd4ee7a3edbdb0c714e55686a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del cliente a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cliente restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Cliente no encontrado."
+                    },
+                    "409": {
+                        "description": "El cliente no está eliminado."
+                    },
+                    "422": {
+                        "description": "El ID no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar el cliente."
+                    }
+                }
+            }
+        },
         "/api/comprobantes": {
             "get": {
                 "tags": [
@@ -1379,6 +1618,270 @@
                 }
             }
         },
+        "/api/pedidos": {
+            "get": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Listar todos los pedidos",
+                "operationId": "9368500233e75a120cb606e08d7a06e4",
+                "responses": {
+                    "200": {
+                        "description": "Pedidos obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay pedidos disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Crear un nuevo pedido",
+                "operationId": "acf9c44ffbceb280fd290ecbb5f5f3f3",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "cliente_id",
+                                    "estado_pedidos_id"
+                                ],
+                                "properties": {
+                                    "cliente_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "estado_pedidos_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "subtotal": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2500,
+                                        "nullable": true
+                                    },
+                                    "monto_total": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2500,
+                                        "nullable": true
+                                    },
+                                    "cocinero_id": {
+                                        "type": "integer",
+                                        "example": 2,
+                                        "nullable": true
+                                    },
+                                    "repartidor_id": {
+                                        "type": "integer",
+                                        "example": 3,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pedido creado correctamente."
+                    },
+                    "422": {
+                        "description": "Error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al crear el pedido."
+                    }
+                }
+            }
+        },
+        "/api/pedidos/{id}": {
+            "get": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Obtener un pedido por ID",
+                "operationId": "69873c1dd29645d07e53a4c4db9057e9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pedido",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pedido obtenido exitosamente."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "422": {
+                        "description": "El ID del pedido no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el pedido."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Actualizar un pedido por ID",
+                "operationId": "3da8de6967b1e89d1d5a0cf5988c04e5",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pedido a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "cliente_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "estado_pedidos_id": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "subtotal": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 3000,
+                                        "nullable": true
+                                    },
+                                    "monto_total": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 3000,
+                                        "nullable": true
+                                    },
+                                    "cocinero_id": {
+                                        "type": "integer",
+                                        "example": 2,
+                                        "nullable": true
+                                    },
+                                    "repartidor_id": {
+                                        "type": "integer",
+                                        "example": 3,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pedido actualizado correctamente."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "422": {
+                        "description": "Error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al actualizar el pedido."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Eliminar un pedido por ID",
+                "operationId": "c0cc39e3f79740c3fe58d2268a321d0b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pedido a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pedido eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "409": {
+                        "description": "No se puede eliminar el pedido porque está siendo utilizado por otros registros."
+                    },
+                    "422": {
+                        "description": "El ID del pedido no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al eliminar el pedido."
+                    }
+                }
+            }
+        },
+        "/api/pedidos/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Restaurar un pedido eliminado",
+                "operationId": "76ee8ce8b53f799da912d4cf2cd7d19f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pedido a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pedido restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "409": {
+                        "description": "El pedido no está eliminado."
+                    },
+                    "422": {
+                        "description": "El ID no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar el pedido."
+                    }
+                }
+            }
+        },
         "/api/pedido-items": {
             "get": {
                 "tags": [
@@ -2114,6 +2617,10 @@
             "description": "Categorías"
         },
         {
+            "name": "Clientes",
+            "description": "Clientes"
+        },
+        {
             "name": "Comprobantes",
             "description": "Comprobantes"
         },
@@ -2128,6 +2635,10 @@
         {
             "name": "Pagos",
             "description": "Pagos"
+        },
+        {
+            "name": "Pedidos",
+            "description": "Pedidos"
         },
         {
             "name": "PedidoItems",
