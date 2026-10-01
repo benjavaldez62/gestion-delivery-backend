@@ -6,8 +6,10 @@ use App\Http\Resources\PedidoItemResource;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
 use App\Models\Producto;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
 class PedidoItemController extends Controller
@@ -18,7 +20,9 @@ class PedidoItemController extends Controller
     private function esPedidoEditable(Pedido $pedido): bool
     {
         $estadosNoEditables = ['entregado', 'cancelado', 'en_camino'];
-        return !in_array(strtolower($pedido->estado), $estadosNoEditables);
+        $estadoNombre = $pedido->estadoPedido?->nombre ?? '';
+
+        return ! in_array(strtolower($estadoNombre), $estadosNoEditables);
     }
 
     /**
@@ -42,13 +46,13 @@ class PedidoItemController extends Controller
                 required: true,
                 description: 'ID del pedido del cual listar los ítems',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Ítems del pedido obtenidos correctamente.'),
             new OA\Response(response: 422, description: 'Parámetro pedido_id requerido o no válido.'),
             new OA\Response(response: 404, description: 'No se encontraron ítems para el pedido ingresado.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor.')
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
     )]
     public function index(Request $request)
@@ -56,9 +60,9 @@ class PedidoItemController extends Controller
         try {
             $pedidoId = $request->query('pedido_id');
 
-            if (!$pedidoId || !is_numeric($pedidoId) || (int)$pedidoId <= 0) {
+            if (! $pedidoId || ! is_numeric($pedidoId) || (int) $pedidoId <= 0) {
                 return response()->json([
-                    'message' => 'El parámetro pedido_id es obligatorio y debe ser un entero positivo.'
+                    'message' => 'El parámetro pedido_id es obligatorio y debe ser un entero positivo.',
                 ], 422);
             }
 
@@ -68,18 +72,18 @@ class PedidoItemController extends Controller
 
             if ($pedidoItems->isEmpty()) {
                 return response()->json([
-                    'message' => 'No se encontraron ítems para el pedido especificado.'
+                    'message' => 'No se encontraron ítems para el pedido especificado.',
                 ], 404);
             }
 
             return response()->json([
                 'message' => 'Ítems obtenidos correctamente.',
-                'items' => PedidoItemResource::collection($pedidoItems)
+                'items' => PedidoItemResource::collection($pedidoItems),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al obtener los ítems del pedido.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -95,7 +99,7 @@ class PedidoItemController extends Controller
                 required: true,
                 description: 'ID del pedido al que se agregará el ítem',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         requestBody: new OA\RequestBody(
             required: true,
@@ -103,7 +107,7 @@ class PedidoItemController extends Controller
                 required: ['producto_id', 'cantidad'],
                 properties: [
                     new OA\Property(property: 'producto_id', type: 'integer', example: 5),
-                    new OA\Property(property: 'cantidad', type: 'integer', example: 2)
+                    new OA\Property(property: 'cantidad', type: 'integer', example: 2),
                 ]
             )
         ),
@@ -112,7 +116,7 @@ class PedidoItemController extends Controller
             new OA\Response(response: 400, description: 'El pedido no está en un estado editable.'),
             new OA\Response(response: 404, description: 'Pedido o producto no encontrado.'),
             new OA\Response(response: 422, description: 'Datos de entrada no válidos.'),
-            new OA\Response(response: 500, description: 'Error interno al agregar el ítem.')
+            new OA\Response(response: 500, description: 'Error interno al agregar el ítem.'),
         ]
     )]
     public function store(Request $request, $pedido)
@@ -120,9 +124,9 @@ class PedidoItemController extends Controller
         try {
             $pedidoModel = Pedido::findOrFail($pedido);
 
-            if (!$this->esPedidoEditable($pedidoModel)) {
+            if (! $this->esPedidoEditable($pedidoModel)) {
                 return response()->json([
-                    'message' => 'No se pueden agregar ítems a un pedido que ya no está en estado editable.'
+                    'message' => 'No se pueden agregar ítems a un pedido que ya no está en estado editable.',
                 ], 400);
             }
 
@@ -142,7 +146,7 @@ class PedidoItemController extends Controller
             $subtotal = $precioUnitario * $validated['cantidad'];
 
             $pedidoItem = DB::transaction(function () use ($pedidoModel, $validated, $precioUnitario, $subtotal) {
-                $item = new PedidoItem();
+                $item = new PedidoItem;
                 $item->pedido_id = $pedidoModel->id;
                 $item->producto_id = $validated['producto_id'];
                 $item->cantidad = $validated['cantidad'];
@@ -157,21 +161,21 @@ class PedidoItemController extends Controller
 
             return response()->json([
                 'message' => 'Ítem agregado al pedido correctamente.',
-                'item' => new PedidoItemResource($pedidoItem->load('producto'))
+                'item' => new PedidoItemResource($pedidoItem->load('producto')),
             ], 201);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'El pedido o producto especificado no existe.'
+                'message' => 'El pedido o producto especificado no existe.',
             ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Datos de entrada no válidos.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al agregar el ítem al pedido.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -187,12 +191,12 @@ class PedidoItemController extends Controller
                 required: true,
                 description: 'ID del ítem del pedido',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Ítem obtenido correctamente.'),
             new OA\Response(response: 404, description: 'Ítem no encontrado.'),
-            new OA\Response(response: 500, description: 'Error interno al obtener el ítem.')
+            new OA\Response(response: 500, description: 'Error interno al obtener el ítem.'),
         ]
     )]
     public function show($pedidoItem)
@@ -201,16 +205,16 @@ class PedidoItemController extends Controller
             $item = PedidoItem::with(['producto', 'pedido', 'adicionales'])->findOrFail($pedidoItem);
 
             return response()->json([
-                'item' => new PedidoItemResource($item)
+                'item' => new PedidoItemResource($item),
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Ítem de pedido no encontrado.'
+                'message' => 'Ítem de pedido no encontrado.',
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al obtener el ítem.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -226,14 +230,14 @@ class PedidoItemController extends Controller
                 required: true,
                 description: 'ID del ítem a actualizar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 required: ['cantidad'],
                 properties: [
-                    new OA\Property(property: 'cantidad', type: 'integer', example: 3)
+                    new OA\Property(property: 'cantidad', type: 'integer', example: 3),
                 ]
             )
         ),
@@ -242,7 +246,7 @@ class PedidoItemController extends Controller
             new OA\Response(response: 400, description: 'El pedido no está en un estado editable.'),
             new OA\Response(response: 404, description: 'Ítem no encontrado.'),
             new OA\Response(response: 422, description: 'Datos de entrada no válidos.'),
-            new OA\Response(response: 500, description: 'Error interno al actualizar el ítem.')
+            new OA\Response(response: 500, description: 'Error interno al actualizar el ítem.'),
         ]
     )]
     public function update(Request $request, $pedidoItem)
@@ -251,9 +255,9 @@ class PedidoItemController extends Controller
             $item = PedidoItem::with('pedido')->findOrFail($pedidoItem);
             $pedido = $item->pedido;
 
-            if (!$this->esPedidoEditable($pedido)) {
+            if (! $this->esPedidoEditable($pedido)) {
                 return response()->json([
-                    'message' => 'No se puede modificar un ítem de un pedido que no está en estado editable.'
+                    'message' => 'No se puede modificar un ítem de un pedido que no está en estado editable.',
                 ], 400);
             }
 
@@ -275,21 +279,21 @@ class PedidoItemController extends Controller
 
             return response()->json([
                 'message' => 'Ítem actualizado correctamente.',
-                'item' => new PedidoItemResource($item->fresh('producto'))
+                'item' => new PedidoItemResource($item->fresh('producto')),
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Ítem de pedido no encontrado.'
+                'message' => 'Ítem de pedido no encontrado.',
             ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Datos de entrada no válidos.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al actualizar el ítem.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -305,45 +309,45 @@ class PedidoItemController extends Controller
                 required: true,
                 description: 'ID del ítem a eliminar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Ítem eliminado correctamente.'),
             new OA\Response(response: 400, description: 'Estado del pedido no editable o el pedido no puede quedar sin ítems.'),
             new OA\Response(response: 404, description: 'Ítem no encontrado.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
-            new OA\Response(response: 500, description: 'Error interno al eliminar el ítem.')
+            new OA\Response(response: 500, description: 'Error interno al eliminar el ítem.'),
         ]
     )]
     public function destroy($pedidoItem)
     {
         try {
-            if (!is_numeric($pedidoItem) || (int) $pedidoItem <= 0) {
+            if (! is_numeric($pedidoItem) || (int) $pedidoItem <= 0) {
                 return response()->json([
-                    'message' => 'El ID del ítem no es válido.'
+                    'message' => 'El ID del ítem no es válido.',
                 ], 422);
             }
 
             $item = PedidoItem::with('pedido')->find($pedidoItem);
 
-            if (!$item) {
+            if (! $item) {
                 return response()->json([
-                    'message' => 'Ítem de pedido no encontrado.'
+                    'message' => 'Ítem de pedido no encontrado.',
                 ], 404);
             }
 
             $pedido = $item->pedido;
 
-            if (!$this->esPedidoEditable($pedido)) {
+            if (! $this->esPedidoEditable($pedido)) {
                 return response()->json([
-                    'message' => 'No se puede eliminar un ítem de un pedido que no está en estado editable.'
+                    'message' => 'No se puede eliminar un ítem de un pedido que no está en estado editable.',
                 ], 400);
             }
 
             $totalItems = $pedido->items()->count();
             if ($totalItems <= 1) {
                 return response()->json([
-                    'message' => 'No se puede eliminar el ítem. Un pedido no puede quedar sin ítems.'
+                    'message' => 'No se puede eliminar el ítem. Un pedido no puede quedar sin ítems.',
                 ], 400);
             }
 
@@ -353,12 +357,12 @@ class PedidoItemController extends Controller
             });
 
             return response()->json([
-                'message' => 'Ítem eliminado del pedido correctamente.'
+                'message' => 'Ítem eliminado del pedido correctamente.',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al eliminar el ítem.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\EstadoPagos;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
 class EstadoPagosController extends Controller
@@ -16,35 +18,34 @@ class EstadoPagosController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Estados de pagos obtenidos exitosamente.'),
             new OA\Response(response: 404, description: 'No se encontraron estados de pagos.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor.')
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
     )]
     public function index()
     {
-        try{
+        try {
             $estadoPagos = EstadoPagos::select(
                 'id',
                 'nombre',
                 'descripcion',
             )->get();
-            
+
             if ($estadoPagos->isEmpty()) {
                 return response()->json([
-                    'message' => 'No se encontraron estados de pagos'
-                    ], 404);
+                    'message' => 'No se encontraron estados de pagos',
+                ], 404);
             }
 
             return response()->json([
                 'message' => 'Estados de pagos obtenidos exitosamente',
-                'estadoPagos' => $estadoPagos
+                'estadoPagos' => $estadoPagos,
             ], 200);
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener los estados de pagos',
             ], 500);
         }
     }
-
 
     #[OA\Post(
         path: '/api/estado-pagos',
@@ -56,14 +57,14 @@ class EstadoPagosController extends Controller
                 required: ['nombre'],
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', maxLength: 50, example: 'Aprobado'),
-                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'El pago fue procesado correctamente')
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'El pago fue procesado correctamente'),
                 ]
             )
         ),
         responses: [
             new OA\Response(response: 201, description: 'Estado de pago creado exitosamente.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
-            new OA\Response(response: 500, description: 'Error interno al crear el estado de pago.')
+            new OA\Response(response: 500, description: 'Error interno al crear el estado de pago.'),
         ]
     )]
     public function store(Request $request)
@@ -74,42 +75,42 @@ class EstadoPagosController extends Controller
                 'nombre' => 'required|string|max:255|unique:estado_pagos,nombre',
                 'descripcion' => 'nullable|string|max:255',
             ],
-            [
-                'nombre.required' => 'El nombre del Estado de pago es obligatorio',
-                'nombre.string' => 'El nombre del Estado de pago debe ser una cadena de texto',
-                'nombre.max' => 'El nombre del Estado de pago no debe exceder los 255 caracteres',
-                'nombre.unique' => 'El nombre del Estado de pago ya existe',
-                'descripcion.string' => 'La descripción del Estado de pago debe ser una cadena de texto',
-                'descripcion.max' => 'La descripción del Estado de pago no debe exceder los 255 caracteres',
-            ]);
-        
-        //Creación del Estado
-        $estadoPago = new EstadoPagos();
-        $estadoPago->nombre = $validated['nombre'];
-        $estadoPago->descripcion = $validated['descripcion'];
-        $estadoPago->save();
+                [
+                    'nombre.required' => 'El nombre del Estado de pago es obligatorio',
+                    'nombre.string' => 'El nombre del Estado de pago debe ser una cadena de texto',
+                    'nombre.max' => 'El nombre del Estado de pago no debe exceder los 255 caracteres',
+                    'nombre.unique' => 'El nombre del Estado de pago ya existe',
+                    'descripcion.string' => 'La descripción del Estado de pago debe ser una cadena de texto',
+                    'descripcion.max' => 'La descripción del Estado de pago no debe exceder los 255 caracteres',
+                ]);
 
-        $estadoPago->refresh();
+            // Creación del Estado
+            $estadoPago = new EstadoPagos;
+            $estadoPago->nombre = $validated['nombre'];
+            $estadoPago->descripcion = $validated['descripcion'];
+            $estadoPago->save();
 
-        return response()->json([
-            'message' => 'Estado de pago creado exitosamente',
-            'EstadoPago' => [
-                'id' => $estadoPago->id,
-                'nombre' => $estadoPago->nombre,
-                'descripcion' => $estadoPago->descripcion,
-            ]
-        ], 201);
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return response()->json([
-            'message' => 'Error de validación',
-            'errors' => $e->errors(),
-        ], 422);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Error al crear el Estado de pago',
-            'error' => $e->getMessage()
-        ], 500);
-    }
+            $estadoPago->refresh();
+
+            return response()->json([
+                'message' => 'Estado de pago creado exitosamente',
+                'EstadoPago' => [
+                    'id' => $estadoPago->id,
+                    'nombre' => $estadoPago->nombre,
+                    'descripcion' => $estadoPago->descripcion,
+                ],
+            ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Error de validación',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al crear el Estado de pago',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     #[OA\Get(
@@ -123,35 +124,35 @@ class EstadoPagosController extends Controller
                 required: true,
                 description: 'ID del estado de pago',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Estado de pago obtenido exitosamente.'),
             new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
-            new OA\Response(response: 500, description: 'Error interno al obtener el estado de pago.')
+            new OA\Response(response: 500, description: 'Error interno al obtener el estado de pago.'),
         ]
     )]
     public function show($id)
     {
-        try{
+        try {
             $estadoPago = EstadoPagos::findOrFail($id);
 
             return response()->json([
-                    'id' => $estadoPago->id,
-                    'nombre' => $estadoPago->nombre,
-                    'descripcion' => $estadoPago->descripcion
+                'id' => $estadoPago->id,
+                'nombre' => $estadoPago->nombre,
+                'descripcion' => $estadoPago->descripcion,
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Estado de pago no encontrado',
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener el Estado de pago',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
-    
+
     }
 
     /**
@@ -173,7 +174,7 @@ class EstadoPagosController extends Controller
                 required: true,
                 description: 'ID del estado de pago a actualizar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         requestBody: new OA\RequestBody(
             required: true,
@@ -181,7 +182,7 @@ class EstadoPagosController extends Controller
                 required: ['nombre'],
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', minLength: 4, maxLength: 50, example: 'Rechazado'),
-                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'El pago fue rechazado')
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'El pago fue rechazado'),
                 ]
             )
         ),
@@ -189,12 +190,12 @@ class EstadoPagosController extends Controller
             new OA\Response(response: 200, description: 'Estado de pago actualizado exitosamente.'),
             new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
-            new OA\Response(response: 500, description: 'Error interno al actualizar el estado de pago.')
+            new OA\Response(response: 500, description: 'Error interno al actualizar el estado de pago.'),
         ]
     )]
     public function update(Request $request, $id)
     {
-        try{
+        try {
             $estadoPago = EstadoPagos::findOrFail($id);
 
             $validated = $request->validate([
@@ -203,21 +204,21 @@ class EstadoPagosController extends Controller
                     'string',
                     'min:4',
                     'max:50',
-                    'unique:estado_pagos,nombre,' . $estadoPago->id,
+                    'unique:estado_pagos,nombre,'.$estadoPago->id,
                 ],
                 'descripcion' => 'nullable|string|max:255',
                 'estado' => [
 
-                ]
+                ],
             ],
-            [
-                'nombre.required' => 'El nombre del Estado de pago es obligatorio',
-                'nombre.string' => 'El nombre del Estado de pago debe ser una cadena de texto',
-                'nombre.max' => 'El nombre del Estado de pago no debe exceder los 255 caracteres',
-                'nombre.unique' => 'El nombre del Estado de pago ya existe',
-                'descripcion.string' => 'La descripción del Estado de pago debe ser una cadena de texto',
-                'descripcion.max' => 'La descripción del Estado de pago no debe exceder los 255 caracteres',
-            ]);
+                [
+                    'nombre.required' => 'El nombre del Estado de pago es obligatorio',
+                    'nombre.string' => 'El nombre del Estado de pago debe ser una cadena de texto',
+                    'nombre.max' => 'El nombre del Estado de pago no debe exceder los 255 caracteres',
+                    'nombre.unique' => 'El nombre del Estado de pago ya existe',
+                    'descripcion.string' => 'La descripción del Estado de pago debe ser una cadena de texto',
+                    'descripcion.max' => 'La descripción del Estado de pago no debe exceder los 255 caracteres',
+                ]);
 
             $estadoPago->nombre = $validated['nombre'];
             $estadoPago->descripcion = $validated['descripcion'];
@@ -229,18 +230,17 @@ class EstadoPagosController extends Controller
                     'id' => $estadoPago->id,
                     'nombre' => $estadoPago->nombre,
                     'descripcion' => $estadoPago->descripcion,
-                ]
+                ],
             ], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-           
+        } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'Error de validación: estado no encontrado.',
-            ], 404);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            
-            return response()->json([
-                'message' => 'Estado de pago no encontrado',
+                'message' => 'Error de validación.',
+                'errors' => $e->errors(),
             ], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Estado de pago no encontrado.',
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al actualizar el Estado de pago',
@@ -259,44 +259,44 @@ class EstadoPagosController extends Controller
                 required: true,
                 description: 'ID del estado de pago a eliminar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Estado de pago eliminado exitosamente.'),
             new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
             new OA\Response(response: 409, description: 'No se puede eliminar el estado de pago porque está en uso.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
-            new OA\Response(response: 500, description: 'Error interno al eliminar el estado de pago.')
+            new OA\Response(response: 500, description: 'Error interno al eliminar el estado de pago.'),
         ]
     )]
     public function destroy($id)
     {
         try {
-            //verificamos que el id sea válido 
-            if (!is_numeric($id) || $id <= 0) {
+            // verificamos que el id sea válido
+            if (! is_numeric($id) || $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID proporcionado no es válido.'
+                    'message' => 'El ID proporcionado no es válido.',
                 ], 422);
             }
 
-            //Buscamos el estado de pago
+            // Buscamos el estado de pago
             $estadoPago = EstadoPagos::find($id);
 
-            //verificamos si exige
-            if (!$estadoPago) {
+            // verificamos si exige
+            if (! $estadoPago) {
                 return response()->json([
-                    'message' => 'Estado de pago no encontrado.'
+                    'message' => 'Estado de pago no encontrado.',
                 ], 404);
             }
 
-            //Eliminar estado de pago
+            // Eliminar estado de pago
             $estadoPago->delete();
 
             // Respuesta exitosa
             return response()->json([
-                'message' => 'Estado de pago eliminado exitosamente.'
+                'message' => 'Estado de pago eliminado exitosamente.',
             ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
 
             return response()->json([
                 'message' => 'Error al eliminar el Estado de pago.',
@@ -304,7 +304,7 @@ class EstadoPagosController extends Controller
         } catch (\Exception $e) {
 
             return response()->json([
-                'message' => 'Error interno al eliminar el Estado de pago.'
+                'message' => 'Error interno al eliminar el Estado de pago.',
             ], 500);
         }
     }
@@ -320,38 +320,38 @@ class EstadoPagosController extends Controller
                 required: true,
                 description: 'ID del estado de pago a restaurar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Estado de pago restaurado correctamente.'),
             new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
             new OA\Response(response: 409, description: 'El estado de pago no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),
-            new OA\Response(response: 500, description: 'Error interno al restaurar el estado de pago.')
+            new OA\Response(response: 500, description: 'Error interno al restaurar el estado de pago.'),
         ]
     )]
     public function restore($id)
     {
         try {
 
-            if (!is_numeric($id) || (int) $id <= 0) {
+            if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID del estado de pago no es válido.'
+                    'message' => 'El ID del estado de pago no es válido.',
                 ], 422);
             }
 
             $estadoPago = EstadoPagos::withTrashed()->find($id);
 
-            if (!$estadoPago) {
+            if (! $estadoPago) {
                 return response()->json([
-                    'message' => 'Estado de pago no encontrado.'
+                    'message' => 'Estado de pago no encontrado.',
                 ], 404);
             }
 
             // Verificar que realmente esté eliminada
-            if (!$estadoPago->trashed()) {
+            if (! $estadoPago->trashed()) {
                 return response()->json([
-                    'message' => 'El estado de pago no está eliminado.'
+                    'message' => 'El estado de pago no está eliminado.',
                 ], 409);
             }
 
@@ -363,14 +363,13 @@ class EstadoPagosController extends Controller
                     'id' => $estadoPago->id,
                     'nombre' => $estadoPago->nombre,
                     'descripcion' => $estadoPago->descripcion,
-                ]
+                ],
             ], 200);
         } catch (\Exception $e) {
 
             return response()->json([
-                'message' => 'Error interno al restaurar el estado de pago.'
+                'message' => 'Error interno al restaurar el estado de pago.',
             ], 500);
         }
     }
-
 }

@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\RoleResource;
 use App\Models\Role;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
 class RoleController extends Controller
@@ -17,7 +20,7 @@ class RoleController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Roles obtenidos correctamente.'),
             new OA\Response(response: 404, description: 'No hay roles disponibles.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor.')
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
     )]
     public function index()
@@ -27,17 +30,17 @@ class RoleController extends Controller
 
             if ($roles->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay roles disponibles.'
+                    'message' => 'No hay roles disponibles.',
                 ], 404);
             }
 
             return response()->json([
                 'message' => 'Roles obtenidos correctamente.',
-                'roles' => RoleResource::collection($roles)
+                'roles' => RoleResource::collection($roles),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error interno al obtener los roles.'
+                'message' => 'Error interno al obtener los roles.',
             ], 500);
         }
     }
@@ -60,14 +63,14 @@ class RoleController extends Controller
                 required: ['nombre'],
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', maxLength: 30, example: 'Administrador'),
-                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Rol con todos los permisos')
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Rol con todos los permisos'),
                 ]
             )
         ),
         responses: [
             new OA\Response(response: 201, description: 'Rol creado correctamente.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
-            new OA\Response(response: 500, description: 'Error interno al crear el rol.')
+            new OA\Response(response: 500, description: 'Error interno al crear el rol.'),
         ]
     )]
     public function store(Request $request)
@@ -87,17 +90,17 @@ class RoleController extends Controller
             ]);
 
             // Crear Rol
-            $role = new Role();
+            $role = new Role;
             $role->nombre = $validated['nombre'];
             $role->descripcion = $validated['descripcion'];
             $role->save();
 
             return response()->json([
                 'message' => 'Rol creado correctamente',
-                'rol' => new RoleResource($role)
+                'rol' => new RoleResource($role),
             ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            //Captura errores de validación    
+        } catch (ValidationException $e) {
+            // Captura errores de validación
             return response()->json([
                 'message' => 'Error de validación.',
                 'errors' => $e->errors(),
@@ -122,12 +125,12 @@ class RoleController extends Controller
                 required: true,
                 description: 'ID del rol',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Rol obtenido exitosamente.'),
             new OA\Response(response: 404, description: 'Rol no encontrado.'),
-            new OA\Response(response: 500, description: 'Error interno al obtener el rol.')
+            new OA\Response(response: 500, description: 'Error interno al obtener el rol.'),
         ]
     )]
     public function show($id)
@@ -136,16 +139,16 @@ class RoleController extends Controller
             $roles = Role::findOrFail($id);
 
             return response()->json([
-                'rol' => new RoleResource($roles)
+                'rol' => new RoleResource($roles),
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Rol no encontrado.'
+                'message' => 'Rol no encontrado.',
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al obtener el rol',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -169,7 +172,7 @@ class RoleController extends Controller
                 required: true,
                 description: 'ID del rol a actualizar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         requestBody: new OA\RequestBody(
             required: true,
@@ -177,7 +180,7 @@ class RoleController extends Controller
                 required: ['nombre'],
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', maxLength: 30, example: 'Cajero'),
-                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Rol para gestión de cobros')
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Rol para gestión de cobros'),
                 ]
             )
         ),
@@ -185,7 +188,7 @@ class RoleController extends Controller
             new OA\Response(response: 200, description: 'Rol actualizado correctamente.'),
             new OA\Response(response: 404, description: 'Rol no encontrado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
-            new OA\Response(response: 500, description: 'Error interno al actualizar el rol.')
+            new OA\Response(response: 500, description: 'Error interno al actualizar el rol.'),
         ]
     )]
     public function update(Request $request, $id)
@@ -200,9 +203,9 @@ class RoleController extends Controller
                     'required',
                     'string',
                     'max:30',
-                    'unique:roles,nombre,' . $role->id,
+                    'unique:roles,nombre,'.$role->id,
                     Rule::unique('roles', 'nombre')
-                        ->ignore($role->id)
+                        ->ignore($role->id),
                 ],
                 'descripcion' => 'nullable|string|max:255',
             ], [
@@ -225,14 +228,14 @@ class RoleController extends Controller
                 'message' => 'Rol actualizado correctamente.',
                 'rol' => [
                     'nombre' => $role->nombre,
-                    'descripcion' => $role->descripcion
-                ]
+                    'descripcion' => $role->descripcion,
+                ],
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Rol no encontrado.'
+                'message' => 'Rol no encontrado.',
             ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Error de validación.',
                 'errors' => $e->errors(),
@@ -257,33 +260,33 @@ class RoleController extends Controller
                 required: true,
                 description: 'ID del rol a eliminar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Rol eliminado correctamente.'),
             new OA\Response(response: 404, description: 'Rol no encontrado.'),
             new OA\Response(response: 409, description: 'No se puede eliminar el rol porque está siendo utilizado por otros registros.'),
             new OA\Response(response: 422, description: 'El ID del rol no es válido.'),
-            new OA\Response(response: 500, description: 'Error interno al eliminar el rol.')
+            new OA\Response(response: 500, description: 'Error interno al eliminar el rol.'),
         ]
     )]
     public function destroy($id)
     {
         try {
             // Verificar que el ID sea válido
-            if (!is_numeric($id) || (int) $id <= 0) {
+            if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID del rol no es válido.'
+                    'message' => 'El ID del rol no es válido.',
                 ], 422);
             }
 
             // Buscar el rol
             $role = Role::findOrFail($id);
 
-            //Verificar si el rol existe antes de eliminarlo
-            if (!$role) {
+            // Verificar si el rol existe antes de eliminarlo
+            if (! $role) {
                 return response()->json([
-                    'message' => 'Rol no encontrado.'
+                    'message' => 'Rol no encontrado.',
                 ], 404);
             }
 
@@ -292,21 +295,78 @@ class RoleController extends Controller
 
             // Respuesta exitosa
             return response()->json([
-                'message' => 'Rol eliminado correctamente.'
+                'message' => 'Rol eliminado correctamente.',
             ], 200);
 
-
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             // Error relacionado con la base de datos
             return response()->json([
                 'message' => 'Error - No se puede eliminar el rol porque está siendo utilizado por otros registros.',
-        ], 409);
+            ], 409);
 
         } catch (\Exception $e) {
             // Error general
             return response()->json([
                 'message' => 'Error interno al eliminar el rol.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    #[OA\Put(
+        path: '/api/roles/{id}/restore',
+        summary: 'Restaurar un rol eliminado',
+        tags: ['Roles'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del rol a restaurar',
+                schema: new OA\Schema(type: 'integer')
+            ),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Rol restaurado correctamente.'),
+            new OA\Response(response: 404, description: 'Rol no encontrado.'),
+            new OA\Response(response: 409, description: 'El rol no está eliminado.'),
+            new OA\Response(response: 422, description: 'El ID no es válido.'),
+            new OA\Response(response: 500, description: 'Error interno al restaurar el rol.'),
+        ]
+    )]
+    public function restore($id)
+    {
+        try {
+            if (! is_numeric($id) || (int) $id <= 0) {
+                return response()->json([
+                    'message' => 'El ID del rol no es válido.',
+                ], 422);
+            }
+
+            $role = Role::withTrashed()->find($id);
+
+            if (! $role) {
+                return response()->json([
+                    'message' => 'Rol no encontrado.',
+                ], 404);
+            }
+
+            if (! $role->trashed()) {
+                return response()->json([
+                    'message' => 'El rol no está eliminado.',
+                ], 409);
+            }
+
+            $role->restore();
+
+            return response()->json([
+                'message' => 'Rol restaurado correctamente.',
+                'rol' => new RoleResource($role),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al restaurar el rol.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

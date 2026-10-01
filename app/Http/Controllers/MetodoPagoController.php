@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\MetodoPago;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
 class MetodoPagoController extends Controller
@@ -16,14 +19,14 @@ class MetodoPagoController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Métodos de pago obtenidos correctamente.'),
             new OA\Response(response: 404, description: 'No hay métodos de pago disponibles.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor.')
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
     )]
     public function index()
     {
         // es un select *, le restrinjo los campos de todo lo que quiero ver
-        try{
-            
+        try {
+
             $metodosPago = MetodoPago::select(
                 'id',
                 'nombre',
@@ -33,18 +36,18 @@ class MetodoPagoController extends Controller
 
             if ($metodosPago->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay métodos de pago disponibles.'
+                    'message' => 'No hay métodos de pago disponibles.',
                 ], 404);
             }
 
             return response()->json([
                 'message' => 'Métodos de pago obtenidos correctamente.',
-                'metodosPago' => $metodosPago
+                'metodosPago' => $metodosPago,
             ], 200);
         } catch (\Exception $e) {
 
             return response()->json([
-                'message' => 'Error interno al obtener los métodos de pago.'
+                'message' => 'Error interno al obtener los métodos de pago.',
             ], 500);
         }
     }
@@ -67,19 +70,19 @@ class MetodoPagoController extends Controller
                 required: ['nombre'],
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', maxLength: 50, example: 'Efectivo'),
-                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Pago en efectivo al recibir')
+                    new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Pago en efectivo al recibir'),
                 ]
             )
         ),
         responses: [
             new OA\Response(response: 201, description: 'Método de pago creado correctamente.'),
             new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
-            new OA\Response(response: 500, description: 'Error interno al crear el método de pago.')
+            new OA\Response(response: 500, description: 'Error interno al crear el método de pago.'),
         ]
     )]
-    public function store(Request $request) 
+    public function store(Request $request)
     {
-        try{
+        try {
             // Validación
             $validated = $request->validate([
                 'nombre' => 'required|string|max:50|unique:metodos_pago,nombre',
@@ -93,9 +96,10 @@ class MetodoPagoController extends Controller
                 'descripcion.max' => 'La descripción del método de pago no debe exceder los 255 caracteres.',
             ]);
             // Crear Método de Pago
-            $metodoPago = new MetodoPago();
+            $metodoPago = new MetodoPago;
             $metodoPago->nombre = $validated['nombre'];
-            $metodoPago->descripcion = $validated['descripcion'];
+            $metodoPago->descripcion = $validated['descripcion'] ?? null;
+            $metodoPago->activo = true;
             $metodoPago->save();
 
             $metodoPago->refresh();
@@ -103,27 +107,26 @@ class MetodoPagoController extends Controller
             return response()->json([
                 'message' => 'Método de pago creado correctamente',
                 'metodoPago' => [
+                    'id' => $metodoPago->id,
                     'nombre' => $metodoPago->nombre,
-                    'estado' => $metodoPago->estado == 1 ? 'Activo' : 'Inactivo',
-                    'descripcion' => $metodoPago->descripcion
-                ]
+                    'activo' => (bool) $metodoPago->activo,
+                    'descripcion' => $metodoPago->descripcion,
+                ],
             ], 201);
-        }catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Captura errores de validación
             return response()->json([
                 'message' => 'Datos inválidos',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             // Captura cualquier otro error
             return response()->json([
                 'message' => 'Error interno al crear el Método de pago',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
-
-    
 
     #[OA\Get(
         path: '/api/metodos-pago/{id}',
@@ -136,15 +139,15 @@ class MetodoPagoController extends Controller
                 required: true,
                 description: 'ID del método de pago',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Método de pago obtenido correctamente.'),
             new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
-            new OA\Response(response: 500, description: 'Error interno al obtener el método de pago.')
+            new OA\Response(response: 500, description: 'Error interno al obtener el método de pago.'),
         ]
     )]
-    public function show($id)    
+    public function show($id)
     {
         try {
             $metodoPago = MetodoPago::findOrFail($id);
@@ -152,22 +155,23 @@ class MetodoPagoController extends Controller
             return response()->json([
                 'message' => 'Método de pago obtenido correctamente.',
                 'metodoPago' => [
+                    'id' => $metodoPago->id,
                     'nombre' => $metodoPago->nombre,
-                    'estado' => $metodoPago->estado == 1 ? 'Activo' : 'Inactivo',
-                    
-                ]
+                    'activo' => (bool) $metodoPago->activo,
+                    'descripcion' => $metodoPago->descripcion,
+                ],
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Método de pago no encontrado.'
+                'message' => 'Método de pago no encontrado.',
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al obtener el método de pago.',
-                'error' => $e->getMessage()  
+                'error' => $e->getMessage(),
             ], 500);
         }
-        
+
     }
 
     /**
@@ -175,7 +179,7 @@ class MetodoPagoController extends Controller
      */
     public function edit(MetodoPago $metodoPago)
     {
-        //ESTE SE BORRA?
+        //
     }
 
     #[OA\Put(
@@ -189,16 +193,16 @@ class MetodoPagoController extends Controller
                 required: true,
                 description: 'ID del método de pago a actualizar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['nombre', 'estado'],
+                required: ['nombre', 'activo'],
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', minLength: 5, maxLength: 50, example: 'Tarjeta de Débito'),
                     new OA\Property(property: 'descripcion', type: 'string', maxLength: 255, nullable: true, example: 'Pago con tarjeta'),
-                    new OA\Property(property: 'estado', type: 'integer', enum: [0, 1], example: 1, description: '1: Activo, 0: Inactivo')
+                    new OA\Property(property: 'activo', type: 'boolean', example: true, description: 'Estado activo o inactivo'),
                 ]
             )
         ),
@@ -206,7 +210,7 @@ class MetodoPagoController extends Controller
             new OA\Response(response: 200, description: 'Método de pago actualizado correctamente.'),
             new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
             new OA\Response(response: 422, description: 'Datos inválidos.'),
-            new OA\Response(response: 500, description: 'Error interno al actualizar el método de pago.')
+            new OA\Response(response: 500, description: 'Error interno al actualizar el método de pago.'),
         ]
     )]
     public function update(Request $request, $id)
@@ -219,16 +223,14 @@ class MetodoPagoController extends Controller
                 'nombre' => [
                     'required',
                     'string',
-                    'min:5', //ej: banco 
+                    'min:5',
                     'max:50',
-                    'unique:metodos_pago,nombre,' . $metodoPago->id,
-                    Rule::unique('categorias', 'nombre')
-                        ->ignore($metodoPago->id),
-                    ],
+                    Rule::unique('metodos_pago', 'nombre')->ignore($metodoPago->id),
+                ],
                 'descripcion' => 'nullable|string|max:255',
-                'estado' => [
+                'activo' => [
                     'required',
-                    Rule::in([0, 1]),
+                    'boolean',
                 ],
             ], [
                 'nombre.required' => 'El nombre del método de pago es obligatorio.',
@@ -238,32 +240,33 @@ class MetodoPagoController extends Controller
                 'nombre.unique' => 'Ya existe un método de pago con ese nombre.',
                 'descripcion.string' => 'La descripción del método de pago debe ser una cadena de texto.',
                 'descripcion.max' => 'La descripción del método de pago no debe exceder los 255 caracteres.',
-                'estado.required' => 'El estado del método de pago es obligatorio.',
-                'estado.in' => 'El estado debe ser 1 (Activo) o 0 (Inactivo).',
+                'activo.required' => 'El campo activo es obligatorio.',
+                'activo.boolean' => 'El campo activo debe ser un valor booleano.',
             ]);
 
-            //Actualizar Método de Pago
+            // Actualizar Método de Pago
             $metodoPago->nombre = $validated['nombre'];
-            $metodoPago->descripcion = $validated['descripcion'];
-            $metodoPago->estado = $validated['estado'];
+            $metodoPago->descripcion = $validated['descripcion'] ?? null;
+            $metodoPago->activo = $validated['activo'];
             $metodoPago->save();
 
             return response()->json([
                 'message' => 'Método de pago actualizado correctamente.',
                 'metodoPago' => [
+                    'id' => $metodoPago->id,
                     'nombre' => $metodoPago->nombre,
-                    'estado' => $metodoPago->estado == 1 ? 'Activo' : 'Inactivo',
-                    'descripcion' => $metodoPago->descripcion
-                ]
+                    'activo' => (bool) $metodoPago->activo,
+                    'descripcion' => $metodoPago->descripcion,
+                ],
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Método de pago no encontrado.'
+                'message' => 'Método de pago no encontrado.',
             ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Datos inválidos',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
@@ -271,6 +274,7 @@ class MetodoPagoController extends Controller
             ], 500);
         }
     }
+
     #[OA\Delete(
         path: '/api/metodos-pago/{id}',
         summary: 'Eliminar un método de pago por ID',
@@ -282,55 +286,56 @@ class MetodoPagoController extends Controller
                 required: true,
                 description: 'ID del método de pago a eliminar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Método de pago eliminado correctamente.'),
             new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
             new OA\Response(response: 409, description: 'Error de integridad referencial.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
-            new OA\Response(response: 500, description: 'Error interno al eliminar el método de pago.')
+            new OA\Response(response: 500, description: 'Error interno al eliminar el método de pago.'),
         ]
     )]
     public function destroy($id = null)
     {
-        try{
-            //Verificar que el ID sea válido
-            if (!is_numeric($id) || $id <= 0) {
+        try {
+            // Verificar que el ID sea válido
+            if (! is_numeric($id) || $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID del método de pago debe ser un número positivo.'
+                    'message' => 'El ID del método de pago debe ser un número positivo.',
                 ], 422);
             }
 
-            //Buscar el Método de pago por ID
+            // Buscar el Método de pago por ID
             $metodoPago = MetodoPago::find($id);
-            //Verifica si existe
-            if (!$metodoPago) {
+            // Verifica si existe
+            if (! $metodoPago) {
                 return response()->json([
-                    'message' => 'Método de pago no encontrado.'
+                    'message' => 'Método de pago no encontrado.',
                 ], 404);
             }
 
-            //Eliminar el Método de pago
+            // Eliminar el Método de pago
             $metodoPago->delete();
 
-            //Respuesta exitosa
+            // Respuesta exitosa
             return response()->json([
-                'message' => 'Método de pago eliminado correctamente.'
+                'message' => 'Método de pago eliminado correctamente.',
             ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             // Error relacionado con la base de datos
             return response()->json([
-                'message' => 'Error interno al eliminar el método de pago.'
+                'message' => 'Error interno al eliminar el método de pago.',
             ], 409);
-            
-            //Error general
+
+            // Error general
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error interno al eliminar el método de pago.'
+                'message' => 'Error interno al eliminar el método de pago.',
             ], 500);
         }
     }
+
     #[OA\Put(
         path: '/api/metodos-pago/{id}/restore',
         summary: 'Restaurar un método de pago eliminado',
@@ -342,23 +347,23 @@ class MetodoPagoController extends Controller
                 required: true,
                 description: 'ID del método de pago a restaurar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Método de pago restaurado correctamente.'),
             new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
             new OA\Response(response: 409, description: 'El método de pago no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),
-            new OA\Response(response: 500, description: 'Error interno al restaurar el método de pago.')
+            new OA\Response(response: 500, description: 'Error interno al restaurar el método de pago.'),
         ]
     )]
     public function restore($id)
     {
         try {
             // Verificar que el ID sea válido
-            if (!is_numeric($id) || (int) $id <= 0) {
+            if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID del método de pago no es válido.'
+                    'message' => 'El ID del método de pago no es válido.',
                 ], 422);
             }
 
@@ -366,18 +371,18 @@ class MetodoPagoController extends Controller
             $metodoPago = MetodoPago::withTrashed()->find($id);
 
             // Verificar si existe
-            if (!$metodoPago) {
+            if (! $metodoPago) {
                 return response()->json([
-                    'message' => 'Método de pago no encontrado o no está eliminado.'
+                    'message' => 'Método de pago no encontrado o no está eliminado.',
                 ], 404);
             }
             // Verificar que realmente esté eliminada
-            if (!$metodoPago->trashed()) {
+            if (! $metodoPago->trashed()) {
                 return response()->json([
-                    'message' => 'El método de pago no está eliminado.'
+                    'message' => 'El método de pago no está eliminado.',
                 ], 409);
             }
-            
+
             // Restaurar el método de pago
             $metodoPago->restore();
 
@@ -387,13 +392,13 @@ class MetodoPagoController extends Controller
                 'metodoPago' => [
                     'id' => $metodoPago->id,
                     'nombre' => $metodoPago->nombre,
-                    'estado' => $metodoPago->estado == 1 ? 'Activo' : 'Inactivo',
-                    'descripcion' => $metodoPago->descripcion
-                ]
+                    'activo' => (bool) $metodoPago->activo,
+                    'descripcion' => $metodoPago->descripcion,
+                ],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error interno al restaurar el método de pago.'
+                'message' => 'Error interno al restaurar el método de pago.',
             ], 500);
         }
     }

@@ -21,7 +21,7 @@ class ProductoController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Productos obtenidos correctamente.'),
             new OA\Response(response: 404, description: 'No hay productos disponibles para mostrar.'),
-            new OA\Response(response: 500, description: 'Error al obtener los productos.')
+            new OA\Response(response: 500, description: 'Error al obtener los productos.'),
         ]
     )]
     public function index()
@@ -31,13 +31,13 @@ class ProductoController extends Controller
 
             if ($productos->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay productos disponibles para mostrar.'
+                    'message' => 'No hay productos disponibles para mostrar.',
                 ], 404);
             }
 
             return response()->json([
                 'message' => 'Productos obtenidos correctamente.',
-                'productos' => ProductoResource::collection($productos)
+                'productos' => ProductoResource::collection($productos),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -68,7 +68,7 @@ class ProductoController extends Controller
                     new OA\Property(property: 'nombre', type: 'string', maxLength: 100, example: 'Hamburguesa Doble'),
                     new OA\Property(property: 'descripcion', type: 'string', nullable: true, example: 'Doble carne, queso cheddar y panceta'),
                     new OA\Property(property: 'precio', type: 'number', format: 'float', example: 4500.50),
-                    new OA\Property(property: 'imagen', type: 'string', nullable: true, example: 'hamburguesa-doble.jpg'),
+                    new OA\Property(property: 'imagen', type: 'string', format: 'uri', nullable: true, example: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500'),
                     new OA\Property(property: 'activo', type: 'boolean', example: true),
                 ]
             )
@@ -119,7 +119,7 @@ class ProductoController extends Controller
             ]);
 
             // Crear producto
-            $producto = new Producto();
+            $producto = new Producto;
             $producto->nombre = $validated['nombre'];
             $producto->nombre_activo = $validated['nombre'];
             $producto->descripcion = $validated['descripcion'] ?? null;
@@ -159,12 +159,12 @@ class ProductoController extends Controller
                 required: true,
                 description: 'ID del producto',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Producto obtenido correctamente.'),
             new OA\Response(response: 404, description: 'Producto no encontrado.'),
-            new OA\Response(response: 500, description: 'Error al obtener el producto.')
+            new OA\Response(response: 500, description: 'Error al obtener el producto.'),
         ]
     )]
     public function show($id)
@@ -174,15 +174,15 @@ class ProductoController extends Controller
 
             return response()->json([
                 'message' => 'Producto obtenido correctamente.',
-                'producto' => new ProductoResource($producto)
+                'producto' => new ProductoResource($producto),
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Producto no encontrado.'
+                'message' => 'Producto no encontrado.',
             ], 404);
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al obtener el producto.'
+                'message' => 'Error al obtener el producto.',
             ], 500);
         }
     }
@@ -217,6 +217,7 @@ class ProductoController extends Controller
                     new OA\Property(property: 'nombre', type: 'string', maxLength: 100, example: 'Hamburguesa Triple'),
                     new OA\Property(property: 'descripcion', type: 'string', nullable: true, example: 'Triple carne y queso'),
                     new OA\Property(property: 'precio', type: 'number', format: 'float', example: 5500.00),
+                    new OA\Property(property: 'imagen', type: 'string', format: 'uri', nullable: true, example: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500'),
                     new OA\Property(property: 'activo', type: 'boolean', example: true),
                 ]
             )
@@ -325,12 +326,12 @@ class ProductoController extends Controller
                 required: true,
                 description: 'ID del producto a eliminar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Producto eliminado correctamente.'),
             new OA\Response(response: 404, description: 'Producto no encontrado.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor.')
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
     )]
     public function destroy($id)
@@ -375,16 +376,53 @@ class ProductoController extends Controller
                 required: true,
                 description: 'ID del producto a restaurar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Producto restaurado correctamente.'),
             new OA\Response(response: 404, description: 'Producto no encontrado.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor.')
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
     )]
     public function restore($id)
     {
-        //
+        try {
+            if (! is_numeric($id) || (int) $id <= 0) {
+                return response()->json([
+                    'message' => 'El ID del producto no es válido.',
+                ], 422);
+            }
+
+            $producto = Producto::withTrashed()->find($id);
+
+            if (! $producto) {
+                return response()->json([
+                    'message' => 'Producto no encontrado.',
+                ], 404);
+            }
+
+            if (! $producto->trashed()) {
+                return response()->json([
+                    'message' => 'El producto no está eliminado.',
+                ], 409);
+            }
+
+            DB::transaction(function () use ($producto) {
+                $producto->restore();
+                $producto->activo = true;
+                $producto->nombre_activo = $producto->nombre;
+                $producto->save();
+            });
+
+            return response()->json([
+                'message' => 'Producto restaurado correctamente.',
+                'producto' => new ProductoResource($producto->load('categoria')),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al restaurar el producto.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

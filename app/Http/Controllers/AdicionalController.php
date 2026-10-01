@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\AdicionalResource;
 use App\Models\Adicional;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;     
+use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
 class AdicionalController extends Controller
@@ -17,7 +19,7 @@ class AdicionalController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Adicionales obtenidos correctamente.'),
             new OA\Response(response: 404, description: 'No hay adicionales disponibles.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor.')
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
     )]
     public function index()
@@ -27,13 +29,13 @@ class AdicionalController extends Controller
 
             if ($adicionales->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay adicionales disponibles.'
+                    'message' => 'No hay adicionales disponibles.',
                 ], 404);
             }
 
             return response()->json([
                 'message' => 'Adicionales obtenidos correctamente.',
-                'adicionales' => AdicionalResource::collection($adicionales)
+                'adicionales' => AdicionalResource::collection($adicionales),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -53,17 +55,17 @@ class AdicionalController extends Controller
             content: new OA\JsonContent(
                 required: ['nombre', 'precio'],
                 properties: [
-                    new OA\Property(property: 'nombre', type: 'string', maxLength: 255, example: 'Salsa Extra'),
+                    new OA\Property(property: 'nombre', type: 'string', maxLength: 50, example: 'Salsa Extra'),
                     new OA\Property(property: 'descripcion', type: 'string', nullable: true, example: 'Porción extra de salsa cheddar'),
                     new OA\Property(property: 'precio', type: 'number', format: 'float', example: 500.00),
-                    new OA\Property(property: 'activo', type: 'boolean', example: true)
+                    new OA\Property(property: 'activo', type: 'boolean', example: true),
                 ]
             )
         ),
         responses: [
             new OA\Response(response: 201, description: 'Adicional creado correctamente.'),
             new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
-            new OA\Response(response: 500, description: 'Error interno al crear el adicional.')
+            new OA\Response(response: 500, description: 'Error interno al crear el adicional.'),
         ]
     )]
     public function store(Request $request)
@@ -71,23 +73,23 @@ class AdicionalController extends Controller
         try {
             // Validación
             $validated = $request->validate([
-                'nombre' => 'required|string|max:255',
+                'nombre' => 'required|string|max:50',
                 'descripcion' => 'nullable|string',
                 'precio' => 'required|numeric|gt:0',
                 'activo' => 'boolean',
             ], [
                 'nombre.required' => 'El nombre es obligatorio.',
-                'nombre.max' => 'El nombre no debe exceder los 255 caracteres.',
-                
+                'nombre.max' => 'El nombre no debe exceder los 50 caracteres.',
+
                 'precio.required' => 'El precio es obligatorio.',
                 'precio.numeric' => 'El precio debe ser un valor numérico.',
                 'precio.gt' => 'El precio debe ser mayor a 0.',
-                
+
                 'activo.boolean' => 'El campo activo debe ser verdadero o falso.',
             ]);
 
             // Crear adicional
-            $adicional = new Adicional();
+            $adicional = new Adicional;
             $adicional->nombre = $validated['nombre'];
             $adicional->descripcion = $validated['descripcion'] ?? null;
             $adicional->precio = $validated['precio'];
@@ -96,19 +98,19 @@ class AdicionalController extends Controller
 
             return response()->json([
                 'message' => 'Adicional creado correctamente',
-                'adicional' => new AdicionalResource($adicional)
+                'adicional' => new AdicionalResource($adicional),
             ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Captura errores de validación
             return response()->json([
                 'message' => 'Datos inválidos',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             // Captura cualquier otro error
             return response()->json([
                 'message' => 'Error interno al crear el adicional',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -124,12 +126,12 @@ class AdicionalController extends Controller
                 required: true,
                 description: 'ID del adicional',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Adicional obtenido correctamente.'),
             new OA\Response(response: 404, description: 'Adicional no encontrado.'),
-            new OA\Response(response: 500, description: 'Error interno al obtener el adicional.')
+            new OA\Response(response: 500, description: 'Error interno al obtener el adicional.'),
         ]
     )]
     public function show($id)
@@ -138,16 +140,16 @@ class AdicionalController extends Controller
             $adicional = Adicional::findOrFail($id);
 
             return response()->json([
-                'adicional' => new AdicionalResource($adicional)
+                'adicional' => new AdicionalResource($adicional),
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Adicional no encontrado'
+                'message' => 'Adicional no encontrado',
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al obtener el adicional',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -163,17 +165,17 @@ class AdicionalController extends Controller
                 required: true,
                 description: 'ID del adicional a actualizar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 required: ['nombre', 'precio'],
                 properties: [
-                    new OA\Property(property: 'nombre', type: 'string', maxLength: 255, example: 'Salsa Extra'),
+                    new OA\Property(property: 'nombre', type: 'string', maxLength: 50, example: 'Salsa Extra'),
                     new OA\Property(property: 'descripcion', type: 'string', nullable: true, example: 'Porción extra de salsa cheddar'),
                     new OA\Property(property: 'precio', type: 'number', format: 'float', example: 600.00),
-                    new OA\Property(property: 'activo', type: 'boolean', example: true)
+                    new OA\Property(property: 'activo', type: 'boolean', example: true),
                 ]
             )
         ),
@@ -181,7 +183,7 @@ class AdicionalController extends Controller
             new OA\Response(response: 200, description: 'Adicional actualizado correctamente.'),
             new OA\Response(response: 404, description: 'Adicional no encontrado.'),
             new OA\Response(response: 422, description: 'Datos inválidos.'),
-            new OA\Response(response: 500, description: 'Error interno al actualizar el adicional.')
+            new OA\Response(response: 500, description: 'Error interno al actualizar el adicional.'),
         ]
     )]
     public function update(Request $request, $id)
@@ -193,18 +195,18 @@ class AdicionalController extends Controller
 
             // Validar datos
             $validated = $request->validate([
-                'nombre' => 'required|string|max:255',
+                'nombre' => 'required|string|max:50',
                 'descripcion' => 'nullable|string',
                 'precio' => 'required|numeric|gt:0',
                 'activo' => 'boolean',
             ], [
                 'nombre.required' => 'El nombre es obligatorio.',
-                'nombre.max' => 'El nombre no debe exceder los 255 caracteres.',
-                
+                'nombre.max' => 'El nombre no debe exceder los 50 caracteres.',
+
                 'precio.required' => 'El precio es obligatorio.',
                 'precio.numeric' => 'El precio debe ser un valor numérico.',
                 'precio.gt' => 'El precio debe ser mayor a 0.',
-                
+
                 'activo.boolean' => 'El campo activo debe ser verdadero o falso.',
             ]);
 
@@ -220,23 +222,23 @@ class AdicionalController extends Controller
 
             return response()->json([
                 'message' => 'Adicional actualizado correctamente.',
-                'adicional' => new AdicionalResource($adicional)
+                'adicional' => new AdicionalResource($adicional),
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
 
             return response()->json([
-                'message' => 'Adicional no encontrado.'
+                'message' => 'Adicional no encontrado.',
             ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
 
             return response()->json([
                 'message' => 'Los datos enviados no son válidos.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
 
             return response()->json([
-                'message' => 'Error interno al actualizar el adicional.'
+                'message' => 'Error interno al actualizar el adicional.',
             ], 500);
         }
     }
@@ -252,23 +254,23 @@ class AdicionalController extends Controller
                 required: true,
                 description: 'ID del adicional a eliminar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Adicional eliminado correctamente.'),
             new OA\Response(response: 404, description: 'Adicional no encontrado.'),
             new OA\Response(response: 409, description: 'Error de integridad referencial.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
-            new OA\Response(response: 500, description: 'Error interno al eliminar el adicional.')
+            new OA\Response(response: 500, description: 'Error interno al eliminar el adicional.'),
         ]
     )]
     public function destroy($id)
     {
         try {
             // Verificar que el ID sea válido
-            if (!is_numeric($id) || (int) $id <= 0) {
+            if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID del adicional no es válido.'
+                    'message' => 'El ID del adicional no es válido.',
                 ], 422);
             }
 
@@ -276,9 +278,9 @@ class AdicionalController extends Controller
             $adicional = Adicional::find($id);
 
             // Verificar si existe
-            if (!$adicional) {
+            if (! $adicional) {
                 return response()->json([
-                    'message' => 'Adicional no encontrado.'
+                    'message' => 'Adicional no encontrado.',
                 ], 404);
             }
 
@@ -287,19 +289,19 @@ class AdicionalController extends Controller
 
             // Respuesta exitosa
             return response()->json([
-                'message' => 'Adicional eliminado correctamente.'
+                'message' => 'Adicional eliminado correctamente.',
             ], 200);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
 
             // Error relacionado con la base de datos
             return response()->json([
-                'message' => 'No se puede eliminar el adicional porque está siendo utilizado por otros registros.'
+                'message' => 'No se puede eliminar el adicional porque está siendo utilizado por otros registros.',
             ], 409);
         } catch (\Exception $e) {
 
             // Error general
             return response()->json([
-                'message' => 'Error interno al eliminar el adicional.'
+                'message' => 'Error interno al eliminar el adicional.',
             ], 500);
         }
     }
@@ -315,38 +317,38 @@ class AdicionalController extends Controller
                 required: true,
                 description: 'ID del adicional a restaurar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Adicional restaurado correctamente.'),
             new OA\Response(response: 404, description: 'Adicional no encontrado.'),
             new OA\Response(response: 409, description: 'El adicional no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),
-            new OA\Response(response: 500, description: 'Error interno al restaurar el adicional.')
+            new OA\Response(response: 500, description: 'Error interno al restaurar el adicional.'),
         ]
     )]
     public function restore($id)
     {
         try {
 
-            if (!is_numeric($id) || (int) $id <= 0) {
+            if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID del adicional no es válido.'
+                    'message' => 'El ID del adicional no es válido.',
                 ], 422);
             }
 
             $adicional = Adicional::withTrashed()->find($id);
 
-            if (!$adicional) {
+            if (! $adicional) {
                 return response()->json([
-                    'message' => 'Adicional no encontrado.'
+                    'message' => 'Adicional no encontrado.',
                 ], 404);
             }
 
             // Verificar que realmente esté eliminado
-            if (!$adicional->trashed()) {
+            if (! $adicional->trashed()) {
                 return response()->json([
-                    'message' => 'El adicional no está eliminado.'
+                    'message' => 'El adicional no está eliminado.',
                 ], 409);
             }
 
@@ -354,12 +356,12 @@ class AdicionalController extends Controller
 
             return response()->json([
                 'message' => 'Adicional restaurado correctamente.',
-                'adicional' => new AdicionalResource($adicional)
+                'adicional' => new AdicionalResource($adicional),
             ], 200);
         } catch (\Exception $e) {
 
             return response()->json([
-                'message' => 'Error interno al restaurar el adicional.'
+                'message' => 'Error interno al restaurar el adicional.',
             ], 500);
         }
     }

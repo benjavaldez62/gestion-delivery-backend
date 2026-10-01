@@ -36,4 +36,3 @@ class Producto extends Model
         return $this->hasMany(PedidoItem::class);
     }
 }
-

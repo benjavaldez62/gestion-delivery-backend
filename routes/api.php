@@ -1,29 +1,30 @@
 <?php
 
+use App\Http\Controllers\AdicionalController;
+use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\ComprobanteController;
+use App\Http\Controllers\EstadoPagosController;
+use App\Http\Controllers\MetodoPagoController;
+use App\Http\Controllers\PagoController;
+use App\Http\Controllers\PedidoItemController;
+use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\RoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CategoriaController;
-use App\Http\Controllers\ProductoController;
-use App\Http\Controllers\MetodoPagoController;
-use App\Http\Controllers\EstadoPagosController;
-use App\Http\Controllers\PagoController;
-use App\Http\Controllers\ComprobanteController;
-use App\Http\Controllers\AdicionalController;
-use App\Http\Controllers\PedidoItemController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
 // Rutas para Roles
-Route::get('/roles', [App\Http\Controllers\RoleController::class, 'index']);
-Route::post('/roles', [App\Http\Controllers\RoleController::class, 'store']);
-Route::get('/roles/{id}', [App\Http\Controllers\RoleController::class, 'show']);
-Route::put('/roles/{id}', [App\Http\Controllers\RoleController::class, 'update']);
-Route::delete('/roles/{id}', [App\Http\Controllers\RoleController::class, 'destroy']);
-Route::put('/roles/{id}/restore', [App\Http\Controllers\RoleController::class, 'restore']);
+Route::get('/roles', [RoleController::class, 'index']);
+Route::post('/roles', [RoleController::class, 'store']);
+Route::get('/roles/{id}', [RoleController::class, 'show']);
+Route::put('/roles/{id}', [RoleController::class, 'update']);
+Route::delete('/roles/{id}', [RoleController::class, 'destroy']);
+Route::put('/roles/{id}/restore', [RoleController::class, 'restore']);
 
-//Rutas para categorías
+// Rutas para categorías
 Route::post('/categorias', [CategoriaController::class, 'store']);
 Route::get('/categorias', [CategoriaController::class, 'index']);
 Route::get('/categorias/{id}', [CategoriaController::class, 'show']);
@@ -31,15 +32,15 @@ Route::put('/categorias/{id}', [CategoriaController::class, 'update']);
 Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy']);
 Route::put('/categorias/{id}/restore', [CategoriaController::class, 'restore']);
 
-//Rutas para productos
-Route::get('/productos', [ProductoController::class, 'index']); //listo
+// Rutas para productos
+Route::get('/productos', [ProductoController::class, 'index']); // listo
 Route::post('/productos', [ProductoController::class, 'store']);
-Route::get('/productos/{id}', [ProductoController::class, 'show']); //listo
+Route::get('/productos/{id}', [ProductoController::class, 'show']); // listo
 Route::put('/productos/{id}', [ProductoController::class, 'update']);
 Route::delete('/productos/{id}', [ProductoController::class, 'destroy']);
 Route::put('/productos/{id}/restore', [ProductoController::class, 'restore']);
 
-//Rutas para MetodoPago
+// Rutas para MetodoPago
 Route::get('/metodos-pago', [MetodoPagoController::class, 'index']);
 Route::post('/metodos-pago', [MetodoPagoController::class, 'store']);
 Route::get('/metodos-pago/{id}', [MetodoPagoController::class, 'show']);
@@ -47,7 +48,7 @@ Route::put('/metodos-pago/{id}', [MetodoPagoController::class, 'update']);
 Route::delete('/metodos-pago/{id}', [MetodoPagoController::class, 'destroy']);
 Route::put('/metodos-pago/{id}/restore', [MetodoPagoController::class, 'restore']);
 
-//Rutas para EstadoPagos
+// Rutas para EstadoPagos
 Route::get('/estado-pagos', [EstadoPagosController::class, 'index']);
 Route::post('/estado-pagos', [EstadoPagosController::class, 'store']);
 Route::get('/estado-pagos/{id}', [EstadoPagosController::class, 'show']);
@@ -68,7 +69,7 @@ Route::get('/comprobantes', [ComprobanteController::class, 'index']);
 Route::post('/comprobantes', [ComprobanteController::class, 'store']);
 Route::get('/comprobantes/{id}', [ComprobanteController::class, 'show']);
 Route::delete('/comprobantes/{id}', [ComprobanteController::class, 'destroy']);
-Route::post('/comprobantes/{id}/restore', [ComprobanteController::class, 'restore']);
+Route::put('/comprobantes/{id}/restore', [ComprobanteController::class, 'restore']);
 
 // Rutas para Adicionales
 Route::get('/adicionales', [AdicionalController::class, 'index']);

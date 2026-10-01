@@ -29,10 +29,8 @@ class OpenApi
         security: [['sanctum' => []]],
         responses: [
             new OA\Response(response: 200, description: 'Datos del usuario autenticado'),
-            new OA\Response(response: 401, description: 'No autenticado')
+            new OA\Response(response: 401, description: 'No autenticado'),
         ]
     )]
-    public function user()
-    {
-    }
+    public function user() {}
 }
