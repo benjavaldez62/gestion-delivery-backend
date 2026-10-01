@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\AdicionalController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComprobanteController;
 use App\Http\Controllers\EstadoPagosController;
 use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\PagoController;
+use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\PedidoItemController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\RoleController;
@@ -85,3 +87,19 @@ Route::post('/pedidos/{pedido}/items', [PedidoItemController::class, 'store']);
 Route::get('/pedido-items/{pedidoItem}', [PedidoItemController::class, 'show']);
 Route::put('/pedido-items/{pedidoItem}', [PedidoItemController::class, 'update']);
 Route::delete('/pedido-items/{pedidoItem}', [PedidoItemController::class, 'destroy']);
+
+// Rutas para Clientes
+Route::get('/clientes', [ClienteController::class, 'index']);
+Route::post('/clientes', [ClienteController::class, 'store']);
+Route::get('/clientes/{id}', [ClienteController::class, 'show']);
+Route::put('/clientes/{id}', [ClienteController::class, 'update']);
+Route::delete('/clientes/{id}', [ClienteController::class, 'destroy']);
+Route::put('/clientes/{id}/restore', [ClienteController::class, 'restore']);
+
+// Rutas para Pedidos
+Route::get('/pedidos', [PedidoController::class, 'index']);
+Route::post('/pedidos', [PedidoController::class, 'store']);
+Route::get('/pedidos/{id}', [PedidoController::class, 'show']);
+Route::put('/pedidos/{id}', [PedidoController::class, 'update']);
+Route::delete('/pedidos/{id}', [PedidoController::class, 'destroy']);
+Route::put('/pedidos/{id}/restore', [PedidoController::class, 'restore']);
