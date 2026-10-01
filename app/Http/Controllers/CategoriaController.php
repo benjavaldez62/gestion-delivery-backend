@@ -89,7 +89,7 @@ class CategoriaController extends Controller
             $categoria = new Categoria();
             $categoria->nombre = $validated['nombre'];
             $categoria->nombre_activo = $validated['nombre']; //sincronización con column derivada
-            $categoria->descripcion = $validated['descripcion'];
+            $categoria->descripcion = $validated['descripcion'] ?? null;
             $categoria->activo = true; // por defecto, está activo al crearlo.
             $categoria->save();
 
@@ -369,15 +369,13 @@ class CategoriaController extends Controller
             }
 
             $categoria->restore();
+            $categoria->nombre_activo = $categoria->nombre; // sincronizar columna derivada
+            $categoria->activo = true; // reactivar al restaurar
+            $categoria->save();
 
             return response()->json([
                 'message' => 'Categoría restaurada correctamente.',
-                'categoria' => [
-                    'id' => $categoria->id,
-                    'nombre' => $categoria->nombre,
-                    'descripcion' => $categoria->descripcion,
-                    'estado' => $categoria->estado
-                ]
+                'categoria' => new CategoriaResource($categoria)
             ], 200);
         } catch (\Exception $e) {
 
