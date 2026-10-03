@@ -25,6 +25,7 @@ Route::get('/roles/{id}', [RoleController::class, 'show']);
 Route::put('/roles/{id}', [RoleController::class, 'update']);
 Route::delete('/roles/{id}', [RoleController::class, 'destroy']);
 Route::put('/roles/{id}/restore', [RoleController::class, 'restore']);
+Route::get('/roles-desactivados', [RoleController::class, 'indexDesactivados']);
 
 // Rutas para categorías
 Route::post('/categorias', [CategoriaController::class, 'store']);
@@ -33,6 +34,7 @@ Route::get('/categorias/{id}', [CategoriaController::class, 'show']);
 Route::put('/categorias/{id}', [CategoriaController::class, 'update']);
 Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy']);
 Route::put('/categorias/{id}/restore', [CategoriaController::class, 'restore']);
+Route::get('/categorias-desactivadas', [CategoriaController::class, 'indexDesactivadas']);
 
 // Rutas para productos
 Route::get('/productos', [ProductoController::class, 'index']); // listo

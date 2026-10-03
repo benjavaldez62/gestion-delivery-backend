@@ -44,6 +44,41 @@ class RoleController extends Controller
             ], 500);
         }
     }
+    
+    #[OA\Get(
+        path: '/api/roles-desactivados',
+        summary: 'Listar todos los roles desactivados',
+        tags: ['Roles'],
+        responses: [
+            new OA\Response(response: 200, description: 'Roles desactivados obtenidos correctamente.'),
+            new OA\Response(response: 404, description: 'No hay roles desactivados disponibles.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
+        ]
+    )]
+    public function indexDesactivados()
+    {
+        try {
+            $rolesDesactivados = Role::onlyTrashed()->get();
+
+            // Validación si NO hay roles desactivadas. Mostramos mensaje de error 404.
+            if ($rolesDesactivados->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay roles desactivados .',
+                ], 404);
+            }
+
+            // Si existen roles desactivadas, las retornamos.
+            return response()->json([
+                'message' => 'Roles desactivados obtenidos correctamente.',
+                'rolesDesactivados' => RoleResource::collection($rolesDesactivados),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al obtener los roles desactivados.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
     /**
      * Show the form for creating a new resource.

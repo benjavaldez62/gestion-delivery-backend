@@ -319,6 +319,26 @@
                 }
             }
         },
+        "/api/categorias-desactivadas": {
+            "get": {
+                "tags": [
+                    "Categorías"
+                ],
+                "summary": "Listar todas las categorías desactivadas",
+                "operationId": "caa5acee1dff0a3130edd5b242b1dbca",
+                "responses": {
+                    "200": {
+                        "description": "Categorías obtenidas correctamente."
+                    },
+                    "404": {
+                        "description": "No hay categorías desactivadas disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            }
+        },
         "/api/categorias/{id}": {
             "get": {
                 "tags": [
@@ -2409,6 +2429,26 @@
                     },
                     "500": {
                         "description": "Error interno al crear el rol."
+                    }
+                }
+            }
+        },
+        "/api/roles-desactivados": {
+            "get": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Listar todos los roles desactivados",
+                "operationId": "6b2b59945b80e9aade1d587a50e625a2",
+                "responses": {
+                    "200": {
+                        "description": "Roles desactivados obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay roles desactivados disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
                     }
                 }
             }
