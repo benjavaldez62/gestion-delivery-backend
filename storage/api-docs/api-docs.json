@@ -85,6 +85,26 @@
                 }
             }
         },
+        "/api/adicionales-desactivados": {
+            "get": {
+                "tags": [
+                    "Adicionales"
+                ],
+                "summary": "Listar todos los adicionales desactivados",
+                "operationId": "c5f541d4e1d2ad6ae6f5441aeb009ba5",
+                "responses": {
+                    "200": {
+                        "description": "Adicionales desactivados obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay adicionales desactivados."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            }
+        },
         "/api/adicionales/{id}": {
             "get": {
                 "tags": [
@@ -575,6 +595,26 @@
                     },
                     "500": {
                         "description": "Error interno al crear el cliente."
+                    }
+                }
+            }
+        },
+        "/api/clientes-desactivados": {
+            "get": {
+                "tags": [
+                    "Clientes"
+                ],
+                "summary": "Listar todos los clientes desactivados",
+                "operationId": "d8a437416659570c8be8d401475ad746",
+                "responses": {
+                    "200": {
+                        "description": "Clientes desactivados obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay clientes desactivados para mostrar."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor al obtener los clientes desactivados."
                     }
                 }
             }
@@ -2197,6 +2237,26 @@
                     },
                     "500": {
                         "description": "Error interno al crear el producto."
+                    }
+                }
+            }
+        },
+        "/api/productos-desactivados": {
+            "get": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Listar todos los productos desactivados",
+                "operationId": "d7f6e10c37936332c2d31aae9fce3f57",
+                "responses": {
+                    "200": {
+                        "description": "Productos desactivados obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay productos desactivados para mostrar."
+                    },
+                    "500": {
+                        "description": "Error al obtener los productos desactivados."
                     }
                 }
             }
