@@ -28,12 +28,14 @@ class CategoriaController extends Controller
         try {
             $categorias = Categoria::all();
 
+            // Validación si NO hay categorias disponibles. Mostramos mensaje de error 404.
             if ($categorias->isEmpty()) {
                 return response()->json([
                     'message' => 'No hay categorías disponibles.',
                 ], 404);
             }
 
+            // Si existen categorias disponibles, las retornamos.
             return response()->json([
                 'message' => 'Categorías obtenidas correctamente.',
                 'categorias' => CategoriaResource::collection($categorias),
@@ -41,6 +43,42 @@ class CategoriaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al obtener las categorías.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    #[OA\Get(
+        path: '/api/categorias-desactivadas',
+        summary: 'Listar todas las categorías desactivadas',
+        tags: ['Categorías'],
+        responses: [
+            new OA\Response(response: 200, description: 'Categorías obtenidas correctamente.'),
+            new OA\Response(response: 404, description: 'No hay categorías desactivadas disponibles.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
+        ]
+    )]
+    public function indexDesactivadas()
+    {
+        try {
+            $categoriasDesactivadas = Categoria::onlyTrashed()->get();
+
+            // Validación si NO hay categorias disponibles o desactivadas. Mostramos mensaje de error 404.
+            if ($categoriasDesactivadas->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay categorías desactivadas.',
+                ], 404);
+            }
+
+            // Si existen categorias desactivadas, las retornamos.
+            return response()->json([
+                'message' => 'Categorías obtenidas correctamente.',
+                'categoriasDesactivadas' => CategoriaResource::collection($categoriasDesactivadas),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al obtener las categorías desactivadas.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

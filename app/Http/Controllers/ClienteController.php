@@ -46,6 +46,42 @@ class ClienteController extends Controller
         }
     }
 
+    #[OA\Get(
+        path: '/api/clientes-desactivados',
+        summary: 'Listar todos los clientes desactivados',
+        tags: ['Clientes'],
+        responses: [
+            new OA\Response(response: 200, description: "Clientes desactivados obtenidos correctamente."),
+            new OA\Response(response: 404, description: "No hay clientes desactivados para mostrar."),
+            new OA\Response(response: 500,description: "Error interno del servidor al obtener los clientes desactivados.")
+        ]
+    )]
+    public function indexDesactivados() {
+        try {
+            // llamamos lo inhabilitado
+            $clientesDesactivados = Cliente::onlyTrashed()->get();
+
+            // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
+            if ($clientesDesactivados->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay clientes desactivados para mostrar.'
+                ], 404);
+            }
+
+            // Caso 200: retornamos lo desactivado
+            return response()->json([
+                'message' => 'Clientes desactivados obtenidos correctamente.',
+                'clientesDesactivados' => ClienteResource::collection($clientesDesactivados)
+            ], 200);
+        } catch(\Exception $e) {
+            // Caso 500: Falla en el servidor -> retornamos mensaje.
+            return response()->json([
+                'message' => 'Error interno al obtener los clientes desactivados.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     #[OA\Post(
         path: '/api/clientes',
         summary: 'Crear un nuevo cliente',

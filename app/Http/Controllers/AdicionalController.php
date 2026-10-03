@@ -43,9 +43,44 @@ class AdicionalController extends Controller
             ], 500);
         }
     }
+    
+    #[OA\Get(
+        path: '/api/adicionales-desactivados',
+        summary: 'Listar todos los adicionales desactivados',
+        tags: ['Adicionales'],
+        responses: [
+            new OA\Response(response: 200, description: 'Adicionales desactivados obtenidos correctamente.'),
+            new OA\Response(response: 404, description: 'No hay adicionales desactivados.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
+        ]
+    )]
+    public function indexDesactivados()
+    {
+        try {
+            $adicionalesDesactivados = Adicional::onlyTrashed()->get();
+
+            // Caso para cuando NO hay nada inhabilitado
+            if ($adicionalesDesactivados->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay adicionales desactivados.',
+                ], 404);
+            }
+
+            // Caso para cuando HAY algo inhabilitado
+            return response()->json([
+                'message' => 'Adicionales desactivados obtenidos correctamente.',
+                'adicionalesDesactivados' => AdicionalResource::collection($adicionalesDesactivados),
+            ], 200);
+        // Caso para cuando hay falla por servidor
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al obtener los adicionales desactivados.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
     // crea un adicional nuevo
-
     #[OA\Post(
         path: '/api/adicionales',
         summary: 'Crear un nuevo adicional',
@@ -239,6 +274,7 @@ class AdicionalController extends Controller
 
             return response()->json([
                 'message' => 'Error interno al actualizar el adicional.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
