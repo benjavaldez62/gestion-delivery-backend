@@ -54,6 +54,7 @@ Route::post('/comprobantes', [ComprobanteController::class, 'store']);
 Route::get('/comprobantes/{id}', [ComprobanteController::class, 'show']);
 Route::delete('/comprobantes/{id}', [ComprobanteController::class, 'destroy']);
 Route::put('/comprobantes/{id}/restore', [ComprobanteController::class, 'restore']);
+Route::get('/comprobantes-desactivados', [ComprobanteController::class, 'indexDesactivados']);
 
 // Rutas para EstadoPagos
 Route::get('/estado-pagos', [EstadoPagosController::class, 'index']);
@@ -62,6 +63,7 @@ Route::get('/estado-pagos/{id}', [EstadoPagosController::class, 'show']);
 Route::put('/estado-pagos/{id}', [EstadoPagosController::class, 'update']);
 Route::delete('/estado-pagos/{id}', [EstadoPagosController::class, 'destroy']);
 Route::put('/estado-pagos/{id}/restore', [EstadoPagosController::class, 'restore']);
+Route::get('/estado-pagos-desactivados', [EstadoPagosController::class, 'indexDesactivados']);
 
 // Rutas para EstadoPedido
 

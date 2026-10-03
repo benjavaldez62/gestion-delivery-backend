@@ -868,6 +868,26 @@
                 }
             }
         },
+        "/api/comprobantes-desactivados": {
+            "get": {
+                "tags": [
+                    "Comprobantes"
+                ],
+                "summary": "Listar todos los comprobantes desactivados",
+                "operationId": "76e5cdf2f3b5592c9eb821beb9da323b",
+                "responses": {
+                    "200": {
+                        "description": "Comprobantes desactivados obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay comprobantes desactivados para mostrar."
+                    },
+                    "505": {
+                        "description": "Error interno del servidor al obtener los comprobantes desactivados."
+                    }
+                }
+            }
+        },
         "/api/comprobantes/{id}": {
             "get": {
                 "tags": [
@@ -1019,6 +1039,26 @@
                     },
                     "500": {
                         "description": "Error interno al crear el estado de pago."
+                    }
+                }
+            }
+        },
+        "/api/estado-pagos-desactivados": {
+            "get": {
+                "tags": [
+                    "Estados de Pago"
+                ],
+                "summary": "Listar todos los estados de pago desactivados",
+                "operationId": "267ed1939479910ce4b39c8476bfd8d3",
+                "responses": {
+                    "200": {
+                        "description": "Estados de pagos desactivados obtenidos exitosamente."
+                    },
+                    "404": {
+                        "description": "No se encontraron estados de pagos desactivados."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor al obtener estados de pago desactivados."
                     }
                 }
             }
