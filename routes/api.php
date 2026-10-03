@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdicionalController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComprobanteController;
@@ -17,6 +18,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+// Login
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 // Rutas para Roles
 Route::get('/roles', [RoleController::class, 'index']);

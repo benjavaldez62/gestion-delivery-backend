@@ -255,6 +255,60 @@
                 }
             }
         },
+        "/api/login": {
+            "post": {
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Iniciar sesión",
+                "description": "Valida las credenciales de un usuario activo y devuelve un token de acceso de Sanctum.",
+                "operationId": "a3b306d14572d1f4bd6c064b3233e7b8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "andreasanchez@test.com",
+                                        "maxLength": 255
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "12345678"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login exitoso."
+                    },
+                    "401": {
+                        "description": "Las credenciales proporcionadas son incorrectas."
+                    },
+                    "403": {
+                        "description": "El usuario se encuentra inactivo."
+                    },
+                    "422": {
+                        "description": "Los datos proporcionados no son válidos."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                }
+            }
+        },
         "/api/categorias": {
             "get": {
                 "tags": [
@@ -2613,6 +2667,10 @@
             "description": "Adicionales"
         },
         {
+            "name": "Autenticación",
+            "description": "Autenticación"
+        },
+        {
             "name": "Categorías",
             "description": "Categorías"
         },
@@ -2651,10 +2709,6 @@
         {
             "name": "Roles",
             "description": "Roles"
-        },
-        {
-            "name": "Autenticación",
-            "description": "Autenticación"
         }
     ]
 }
