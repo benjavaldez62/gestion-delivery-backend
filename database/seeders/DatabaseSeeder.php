@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             CategoriaSeeder::class,
             ProductoSeeder::class,
+            EstadoPedidoSeeder::class,
+          //  PedidoItemSeeder::class,
           //PedidoSeeder::class,
             MetodoPagoSeeder::class,
             EstadoPagoSeeder::class,
