@@ -5,6 +5,7 @@ use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComprobanteController;
 use App\Http\Controllers\EstadoPagosController;
+use App\Http\Controllers\EstadoPedidoController;
 use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\PedidoController;
@@ -66,7 +67,13 @@ Route::put('/estado-pagos/{id}/restore', [EstadoPagosController::class, 'restore
 Route::get('/estado-pagos-desactivados', [EstadoPagosController::class, 'indexDesactivados']);
 
 // Rutas para EstadoPedido
-
+Route::get('/estado-pedidos', [EstadoPedidoController::class, 'index']);
+Route::post('/estado-pedidos', [EstadoPedidoController::class, 'store']);
+Route::get('/estado-pedidos/{id}', [EstadoPedidoController::class, 'show']);
+Route::put('/estado-pedidos/{id}', [EstadoPedidoController::class, 'update']);
+Route::delete('/estado-pedidos/{id}', [EstadoPedidoController::class, 'destroy']);
+Route::put('/estado-pedidos/{id}/restore', [EstadoPedidoController::class, 'restore']);
+Route::get('/estado-pedidos-desactivados', [EstadoPedidoController::class, 'indexDesactivados']);
 
 // Rutas para MetodoPago
 Route::get('/metodos-pago', [MetodoPagoController::class, 'index']);

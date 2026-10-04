@@ -1225,6 +1225,252 @@
                 }
             }
         },
+        "/api/estado-pedidos": {
+            "get": {
+                "tags": [
+                    "Estados de Pedido"
+                ],
+                "summary": "Listar todos los estados de pedidos",
+                "operationId": "46f62740f0c066d04706761397c0eaef",
+                "responses": {
+                    "200": {
+                        "description": "Estados de pedidos obtenidos exitosamente."
+                    },
+                    "404": {
+                        "description": "No se encontraron estados de pedidos para mostrar."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor al obtener estados de pedidos."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Estados de Pedido"
+                ],
+                "summary": "Crear un nuevo estado de pedido",
+                "operationId": "0b86039d64b938228bd1e1ddf6f21861",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Pendiente",
+                                        "maxLength": 50
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "El pedido fue creado correctamente",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Estados de pedido creado correctamente."
+                    },
+                    "422": {
+                        "description": "Datos inválidos o error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al crear el estado de pedido."
+                    }
+                }
+            }
+        },
+        "/api/estado-pedidos-desactivados": {
+            "get": {
+                "tags": [
+                    "Estados de Pedido"
+                ],
+                "summary": "Listar todos los estados de pedidos desactivados",
+                "operationId": "754d65f57407bb067d904d97e4880d36",
+                "responses": {
+                    "200": {
+                        "description": "Estados de pedidos obtenidos exitosamente."
+                    },
+                    "404": {
+                        "description": "No se encontraron estados de pedidos para mostrar."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor al obtener estados de pedidos."
+                    }
+                }
+            }
+        },
+        "/api/estado-pedidos/{id}": {
+            "get": {
+                "tags": [
+                    "Estados de Pedido"
+                ],
+                "summary": "Obtener un estado de pedido por ID",
+                "operationId": "9589b7cc418cd2c4d899ee9c4998c786",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de estado de pedido",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Estado de pedido obtenido exitosamente."
+                    },
+                    "404": {
+                        "description": "Estado de pedido no encontrado."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el estado de pedido."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Estados de Pedido"
+                ],
+                "summary": "Actualizar un estado de pedido por ID",
+                "operationId": "37be75a49c695278b7f545e8e7bde7b7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del estado de pedido a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Pendiente",
+                                        "maxLength": 50
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "example": "Pedido aún no ingresó a cocina.",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Estado de pedido actualizado correctamente."
+                    },
+                    "404": {
+                        "description": "Estado de pedido no encontrado."
+                    },
+                    "422": {
+                        "description": "Datos inválidos."
+                    },
+                    "500": {
+                        "description": "Error interno al actualizar el estado de pedido."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Estados de pedido"
+                ],
+                "summary": "Eliminar un estado de pedido por ID",
+                "operationId": "91edca0b70fdd5e26e0a71af250e48ea",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del estado de pedido a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Estado de pedido eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Estado de pedido no encontrado."
+                    },
+                    "409": {
+                        "description": "No se puede eliminar el estado de pedido porque está siendo utilizado por otros registros."
+                    },
+                    "422": {
+                        "description": "ID no válido."
+                    },
+                    "500": {
+                        "description": "Error interno al eliminar el estado de pedido."
+                    }
+                }
+            }
+        },
+        "/api/estado-pedidos/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Estados de Pedido"
+                ],
+                "summary": "Restaurar un estado de pedido eliminado",
+                "operationId": "d9cf31a5dd436071ea5594376213c2c4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del estado de pedido a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Estado de pedido restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Estado de pedido no encontrado."
+                    },
+                    "409": {
+                        "description": "El estado de pedido no está eliminado."
+                    },
+                    "422": {
+                        "description": "El ID no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar el estado de pedido."
+                    }
+                }
+            }
+        },
         "/api/metodos-pago": {
             "get": {
                 "tags": [
@@ -2767,6 +3013,14 @@
         {
             "name": "Estados de Pago",
             "description": "Estados de Pago"
+        },
+        {
+            "name": "Estados de Pedido",
+            "description": "Estados de Pedido"
+        },
+        {
+            "name": "Estados de pedido",
+            "description": "Estados de pedido"
         },
         {
             "name": "Métodos de Pago",
