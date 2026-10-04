@@ -31,7 +31,7 @@ class MetodoPagoController extends Controller
                 'id',
                 'nombre',
                 'descripcion',
-                'estado'
+                'activo'
             )->get();
 
             if ($metodosPago->isEmpty()) {
@@ -48,7 +48,9 @@ class MetodoPagoController extends Controller
 
             return response()->json([
                 'message' => 'Error interno al obtener los métodos de pago.',
+                'error' => $e->getMessage(),
             ], 500);
+
         }
     }
 

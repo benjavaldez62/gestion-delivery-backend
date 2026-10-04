@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdicionalController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComprobanteController;
@@ -29,7 +30,7 @@ Route::put('/adicionales/{id}/restore', [AdicionalController::class, 'restore'])
 Route::get('/adicionales-desactivados', [AdicionalController::class, 'indexDesactivados']);
 
 // Rutas para Authentication
-
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 // Rutas para Categorías
 Route::post('/categorias', [CategoriaController::class, 'store']);
