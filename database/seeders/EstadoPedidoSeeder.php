@@ -21,6 +21,11 @@ class EstadoPedidoSeeder extends Seeder
         ]);
 
         EstadoPedido::create([
+            'nombre' => 'Listo para entregar',
+            'descripcion' => 'El pedido está listo para ser entregado.',
+        ]);
+
+        EstadoPedido::create([
             'nombre' => 'En camino',
             'descripcion' => 'El pedido fue despachado y está en camino con el repartidor',
         ]);
