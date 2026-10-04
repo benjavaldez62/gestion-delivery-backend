@@ -334,6 +334,42 @@ class PagoController extends Controller
         }
     }
 
+    #[OA\Get(
+        path: '/api/pagos-desactivados',
+        summary: 'Listar todos los pagos desactivados',
+        tags: ['Pagos'],
+        responses: [
+            new OA\Response(response: 200, description: 'Pagos desactivados obtenidos correctamente.'),
+            new OA\Response(response: 404, description: 'No hay pagos desactivados para mostrar.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor al obtener pagos desactivados.'),
+        ]
+    )]
+    public function indexDesactivados() {
+        try {
+            // llamamos lo inhabilitado
+            $pagosDesactivados = Pago::onlyTrashed()->get();
+
+            // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
+            if ($pagosDesactivados->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay pagos desactivados para mostrar.'
+                ], 404);
+            }
+
+            // Caso 200: retornamos lo desactivado
+            return response()->json([
+                'message' => 'Pagos desactivados obtenidos correctamente.',
+                'pagosDesactivados' => PagoResource::collection($pagosDesactivados)
+            ], 200);
+        } catch (\Exception $e){
+            // Caso 500: Falla en el servidor -> retornamos mensaje.
+            return response()->json([
+                'message' => 'Error interno del servidor al obtener pagos desactivados.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     #[OA\Put(
         path: '/api/pagos/{id}/restore',
         summary: 'Restaurar un pago eliminado',

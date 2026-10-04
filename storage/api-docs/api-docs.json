@@ -1757,6 +1757,26 @@
                 }
             }
         },
+        "/api/metodos-pago-desactivados": {
+            "get": {
+                "tags": [
+                    "Métodos de Pago"
+                ],
+                "summary": "Listar todos los métodos de pago desactivados",
+                "operationId": "9d88aff098a72b1a491e514b0efd12ff",
+                "responses": {
+                    "200": {
+                        "description": "Métodos de pago desactivados obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay métodos de pago desactivados para mostrar."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor al obtener los métodos de pago desactivados."
+                    }
+                }
+            }
+        },
         "/api/pagos": {
             "get": {
                 "tags": [
@@ -1977,6 +1997,26 @@
                     },
                     "500": {
                         "description": "Error interno al eliminar el pago."
+                    }
+                }
+            }
+        },
+        "/api/pagos-desactivados": {
+            "get": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Listar todos los pagos desactivados",
+                "operationId": "c3ca722ab448dd70a72c96d01f62fd59",
+                "responses": {
+                    "200": {
+                        "description": "Pagos desactivados obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay pagos desactivados para mostrar."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor al obtener pagos desactivados."
                     }
                 }
             }
@@ -2245,6 +2285,26 @@
                 }
             }
         },
+        "/api/pedidos-desactivados": {
+            "get": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Listar todos los pedidos desactivados",
+                "operationId": "6b087e4d964c7c71d08ebb151b571a34",
+                "responses": {
+                    "200": {
+                        "description": "Pedidos desactivados obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay pedidos desactivados para mostrar."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor al obtener pedidos desactivados."
+                    }
+                }
+            }
+        },
         "/api/pedidos/{id}/restore": {
             "put": {
                 "tags": [
@@ -2493,6 +2553,26 @@
                     },
                     "500": {
                         "description": "Error interno al eliminar el ítem."
+                    }
+                }
+            }
+        },
+        "pedido-items-desactivados": {
+            "get": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Listar todos los items de pedido desactivados",
+                "operationId": "01df60498b70e596dd7452f98b856aec",
+                "responses": {
+                    "200": {
+                        "description": "Items de pedido desactivados obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "No hay items de pedido desactivados para mostrar."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor al obtener items de pedido desactivados."
                     }
                 }
             }

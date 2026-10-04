@@ -83,6 +83,7 @@ Route::get('/metodos-pago/{id}', [MetodoPagoController::class, 'show']);
 Route::put('/metodos-pago/{id}', [MetodoPagoController::class, 'update']);
 Route::delete('/metodos-pago/{id}', [MetodoPagoController::class, 'destroy']);
 Route::put('/metodos-pago/{id}/restore', [MetodoPagoController::class, 'restore']);
+Route::get('/metodos-pago-desactivados', [MetodoPagoController::class, 'indexDesactivados']);
 
 // Rutas para Pagos
 Route::get('/pagos', [PagoController::class, 'index']);
@@ -91,6 +92,7 @@ Route::get('/pagos/{id}', [PagoController::class, 'show']);
 Route::put('/pagos/{id}', [PagoController::class, 'update']);
 Route::delete('/pagos/{id}', [PagoController::class, 'destroy']);
 Route::put('/pagos/{id}/restore', [PagoController::class, 'restore']);
+Route::get('/pagos-desactivados', [PagoController::class, 'indexDesactivados']);
 
 // Rutas para Pedidos
 Route::get('/pedidos', [PedidoController::class, 'index']);
@@ -99,6 +101,7 @@ Route::get('/pedidos/{id}', [PedidoController::class, 'show']);
 Route::put('/pedidos/{id}', [PedidoController::class, 'update']);
 Route::delete('/pedidos/{id}', [PedidoController::class, 'destroy']);
 Route::put('/pedidos/{id}/restore', [PedidoController::class, 'restore']);
+Route::get('/pedidos-desactivados', [PedidoController::class, 'indexDesactivados']);
 
 // Rutas para PedidoItem
 Route::get('/pedido-items', [PedidoItemController::class, 'index']);
@@ -106,6 +109,7 @@ Route::post('/pedidos/{pedido}/items', [PedidoItemController::class, 'store']);
 Route::get('/pedido-items/{pedidoItem}', [PedidoItemController::class, 'show']);
 Route::put('/pedido-items/{pedidoItem}', [PedidoItemController::class, 'update']);
 Route::delete('/pedido-items/{pedidoItem}', [PedidoItemController::class, 'destroy']);
+Route::get('/pedido-items-desactivados', [PedidoItemController::class, 'indexDesactivados']);
 
 // Rutas para Productos
 Route::get('/productos', [ProductoController::class, 'index']); 
