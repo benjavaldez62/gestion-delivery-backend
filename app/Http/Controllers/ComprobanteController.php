@@ -44,8 +44,44 @@ class ComprobanteController extends Controller
         }
     }
 
-    // Crea un comprobante nuevo
+    // Listar comprobantes desactivados
+    #[OA\Get(
+        path: '/api/comprobantes-desactivados',
+        summary: 'Listar todos los comprobantes desactivados',
+        tags: ['Comprobantes'],
+        responses: [
+            new OA\Response(response: 200, description: 'Comprobantes desactivados obtenidos correctamente.'),
+            new OA\Response(response: 404, description: 'No hay comprobantes desactivados para mostrar.'),
+            new OA\Response(response: 505, description: 'Error interno del servidor al obtener los comprobantes desactivados.')
+        ]
+    )]
+    public function indexDesactivados() {
+        try {
+            // llamamos lo inhabilitado
+            $comprobantesDesactivados = Comprobante::onlyTrashed()->get();
 
+            // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
+            if ($comprobantesDesactivados->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay comprobantes desactivados para mostrar.'
+                ], 404);
+            }
+
+            // Caso 200: retornamos lo desactivado
+            return response()->json([
+                'message' => 'Comprobantes desactivados obtenidos correctamente.',
+                'comprobantesDesactivados' => ComprobanteResource::collection($comprobantesDesactivados)
+            ], 200);
+        } catch (\Exception $e){
+            // Caso 500: Falla en el servidor -> retornamos mensaje.
+            return response()->json([
+                'message' => 'Error interno del servidor al obtener los comprobantes desactivados.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Crea un comprobante nuevo
     #[OA\Post(
         path: '/api/comprobantes',
         summary: 'Crear un nuevo comprobante',

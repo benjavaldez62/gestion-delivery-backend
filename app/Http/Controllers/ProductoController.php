@@ -12,6 +12,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
+use function Pest\Laravel\json;
+
 class ProductoController extends Controller
 {
     #[OA\Get(
@@ -43,6 +45,42 @@ class ProductoController extends Controller
             return response()->json([
                 'message' => 'Error al obtener los productos.',
                 'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    #[OA\Get(
+        path: '/api/productos-desactivados',
+        summary: 'Listar todos los productos desactivados',
+        tags: ['Productos'],
+        responses: [
+            new OA\Response(response: 200, description: 'Productos desactivados obtenidos correctamente.'),
+            new OA\Response(response: 404, description: 'No hay productos desactivados para mostrar.'),
+            new OA\Response(response: 500, description: 'Error al obtener los productos desactivados.'),
+        ]
+    )]
+    public function indexDesactivados() {
+        try {
+            // llamamos lo inhabilitado
+            $productosDesactivados = Producto::onlyTrashed()->get();
+
+            // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
+            if($productosDesactivados->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay productos desactivados para mostrar.'
+                ], 404);
+            }
+
+            // Caso 200: retornamos lo desactivado
+            return response()->json([
+                'message' => 'Productos desactivados obtenidos correctamente.',
+                'productosDesactivados' => ProductoResource::collection($productosDesactivados)
+            ], 200);
+        } catch(\Exception $e) {
+            // Caso 500: Falla en el servidor -> retornamos mensaje.
+            return response()->json([
+                'message' => 'Error al obtener los productos desactivados.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

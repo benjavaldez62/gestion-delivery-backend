@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\EstadoPagosResource;
 use App\Models\EstadoPagos;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
@@ -47,6 +48,46 @@ class EstadoPagosController extends Controller
         }
     }
 
+    /* ================
+        GET para DESACTVADOS
+    =================== */
+    #[OA\Get(
+        path: '/api/estado-pagos-desactivados',
+        summary: 'Listar todos los estados de pago desactivados',
+        tags: ['Estados de Pago'],
+        responses: [
+            new OA\Response(response: 200, description: 'Estados de pagos desactivados obtenidos exitosamente.'),
+            new OA\Response(response: 404, description: 'No se encontraron estados de pagos desactivados.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor al obtener estados de pago desactivados.'),
+        ]
+    )]
+    public function indexDesactivados()
+    {
+        try {
+            // llamamos lo inhabilitado
+            $estadoPagosDesactivados = EstadoPagos::onlyTrashed()->get();
+
+            // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
+            if ($estadoPagosDesactivados->isEmpty()) {
+                return response()->json([
+                    'message' => 'No se encontraron estados de pagos desactivados.'
+                ], 404);
+            }
+
+            // Caso 200: retornamos lo desactivado
+            return response()->json([
+                'message' => 'Estados de pagos desactivados obtenidos exitosamente.',
+                'estadoPagosDesactivados' => EstadoPagosResource::collection($estadoPagosDesactivados)
+            ], 200);
+        } catch (\Exception $e) {
+            // Caso 500: Falla en el servidor -> retornamos mensaje.
+            return response()->json([
+                'message' => 'Error interno del servidor al obtener estados de pago desactivados.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     #[OA\Post(
         path: '/api/estado-pagos',
         summary: 'Crear un nuevo estado de pago',
@@ -71,10 +112,11 @@ class EstadoPagosController extends Controller
     {
         try {
             // validacion
-            $validated = $request->validate([
-                'nombre' => 'required|string|max:255|unique:estado_pagos,nombre',
-                'descripcion' => 'nullable|string|max:255',
-            ],
+            $validated = $request->validate(
+                [
+                    'nombre' => 'required|string|max:255|unique:estado_pagos,nombre',
+                    'descripcion' => 'nullable|string|max:255',
+                ],
                 [
                     'nombre.required' => 'El nombre del Estado de pago es obligatorio',
                     'nombre.string' => 'El nombre del Estado de pago debe ser una cadena de texto',
@@ -82,7 +124,8 @@ class EstadoPagosController extends Controller
                     'nombre.unique' => 'El nombre del Estado de pago ya existe',
                     'descripcion.string' => 'La descripción del Estado de pago debe ser una cadena de texto',
                     'descripcion.max' => 'La descripción del Estado de pago no debe exceder los 255 caracteres',
-                ]);
+                ]
+            );
 
             // Creación del Estado
             $estadoPago = new EstadoPagos;
@@ -152,7 +195,6 @@ class EstadoPagosController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
-
     }
 
     /**
@@ -198,19 +240,18 @@ class EstadoPagosController extends Controller
         try {
             $estadoPago = EstadoPagos::findOrFail($id);
 
-            $validated = $request->validate([
-                'nombre' => [
-                    'required',
-                    'string',
-                    'min:4',
-                    'max:50',
-                    'unique:estado_pagos,nombre,'.$estadoPago->id,
+            $validated = $request->validate(
+                [
+                    'nombre' => [
+                        'required',
+                        'string',
+                        'min:4',
+                        'max:50',
+                        'unique:estado_pagos,nombre,' . $estadoPago->id,
+                    ],
+                    'descripcion' => 'nullable|string|max:255',
+                    'estado' => [],
                 ],
-                'descripcion' => 'nullable|string|max:255',
-                'estado' => [
-
-                ],
-            ],
                 [
                     'nombre.required' => 'El nombre del Estado de pago es obligatorio',
                     'nombre.string' => 'El nombre del Estado de pago debe ser una cadena de texto',
@@ -218,7 +259,8 @@ class EstadoPagosController extends Controller
                     'nombre.unique' => 'El nombre del Estado de pago ya existe',
                     'descripcion.string' => 'La descripción del Estado de pago debe ser una cadena de texto',
                     'descripcion.max' => 'La descripción del Estado de pago no debe exceder los 255 caracteres',
-                ]);
+                ]
+            );
 
             $estadoPago->nombre = $validated['nombre'];
             $estadoPago->descripcion = $validated['descripcion'];

@@ -366,4 +366,40 @@ class PedidoItemController extends Controller
             ], 500);
         }
     }
+
+    #[OA\Get(
+        path: 'pedido-items-desactivados',
+        summary: 'Listar todos los items de pedido desactivados',
+        tags: ['Pedidos'],
+        responses: [
+            new OA\Response(response: 200, description: 'Items de pedido desactivados obtenidos correctamente.'),
+            new OA\Response(response: 404, description: 'No hay items de pedido desactivados para mostrar.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor al obtener items de pedido desactivados.')
+        ]
+    )]
+    public function indexDesactivados() {
+        try {
+            // llamamos lo inhabilitado
+            $pedidoItemsDesacivados = PedidoItem::onlyTrashed()->get();
+
+            // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
+            if ($pedidoItemsDesacivados->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay items de pedido desactivados para mostrar.'
+                ], 404);
+            }
+
+            // Caso 200: retornamos lo desactivado
+            return response()->json([
+                'message' => 'Items de pedido desactivados obtenidos correctamente',
+                'pedidoItemsDesactivados' => PedidoItemResource::collection($pedidoItemsDesacivados)
+            ], 200);
+        } catch (\Exception $e){
+            // Caso 500: Falla en el servidor -> retornamos mensaje.
+            return response()->json([
+                'message' => 'Error interno del servidor al obtener items de pedido desactivados',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

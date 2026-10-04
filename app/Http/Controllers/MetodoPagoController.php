@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\MetodoPagoResource;
 use App\Models\MetodoPago;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
@@ -401,6 +402,42 @@ class MetodoPagoController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al restaurar el método de pago.',
+            ], 500);
+        }
+    }
+
+    #[OA\Get(
+        path: '/api/metodos-pago-desactivados',
+        summary: 'Listar todos los métodos de pago desactivados',
+        tags: ['Métodos de Pago'],
+        responses: [
+            new OA\Response(response: 200, description: 'Métodos de pago desactivados obtenidos correctamente.'),
+            new OA\Response(response: 404, description: 'No hay métodos de pago desactivados para mostrar.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor al obtener los métodos de pago desactivados.')
+        ]
+    )]
+    public function indexDesactivados() {
+        try {
+            // llamamos lo inhabilitado
+            $metodosPagoDesactivados = MetodoPago::onlyTrashed()->get();
+
+            // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
+            if ($metodosPagoDesactivados->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay métodos de pago desactivados para mostrar.'
+                ], 404);
+            }
+
+            // Caso 200: retornamos lo desactivado
+            return response()->json([
+                'message' => 'Métodos de pago desactivados obtenidos correctamente.',
+                'metodosPagoDesactivados' => MetodoPagoResource::collection($metodosPagoDesactivados)
+            ], 200);
+        } catch (\Exception $e){
+            // Caso 500: Falla en el servidor -> retornamos mensaje.
+            return response()->json([
+                'message' => 'Error interno del servidor al obtener los métodos de pago desactivados.',
+                'metodosPagosDesactivados' => $e->getMessage()
             ], 500);
         }
     }
