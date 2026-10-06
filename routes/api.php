@@ -31,6 +31,7 @@ Route::get('/adicionales-desactivados', [AdicionalController::class, 'indexDesac
 
 // Rutas para Authentication
 Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 // Rutas para Categorías
 Route::post('/categorias', [CategoriaController::class, 'store']);
