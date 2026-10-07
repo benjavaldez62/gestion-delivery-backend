@@ -3117,6 +3117,29 @@
                 }
             }
         },
+        "/api/users": {
+            "get": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Listar todos los usuarios",
+                "operationId": "c457726701591d1183b53aa71fc13441",
+                "responses": {
+                    "200": {
+                        "description": "Usuarios obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "404": {
+                        "description": "No hay usuarios disponibles para mostrar."
+                    },
+                    "500": {
+                        "description": "Error al obtener los usuarios."
+                    }
+                }
+            }
+        },
         "/api/user": {
             "get": {
                 "tags": [
@@ -3206,6 +3229,10 @@
         {
             "name": "Roles",
             "description": "Roles"
+        },
+        {
+            "name": "Usuarios",
+            "description": "Usuarios"
         }
     ]
 }
