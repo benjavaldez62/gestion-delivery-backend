@@ -22,8 +22,6 @@ class UserResource extends JsonResource
             'direccion' => $this->direccion,
             'activo' => (bool) $this->activo,
             'role' => new RoleResource($this->whenLoaded('role')),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
         ];
     }
 }
