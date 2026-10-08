@@ -429,9 +429,68 @@ class UserController extends Controller
     /* =============
     *   RESTAURAR
     *  ============= */
+        #[OA\Put(
+        path: '/api/users/{id}/restore',
+        summary: 'Restaurar un usuario eliminado',
+        tags: ['Usuarios'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del usuario a restaurar',
+                schema: new OA\Schema(type: 'integer')
+            ),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Usuario restaurado correctamente.'),
+            new OA\Response(response: 404, description: 'Usuario no encontrado.'),
+            new OA\Response(response: 409, description: 'El usuario no está eliminado.'),
+            new OA\Response(response: 422, description: 'El ID proporcionado no es válido.'),
+            new OA\Response(response: 500, description: 'Error interno al restaurar al usuario.'),
+        ]
+    )]
     public function restore(string $id)
     {
-        //
+        try {
+            // Validamos que se nos pase un ID válido
+            if (! is_numeric($id) || (int) $id <= 0) {
+                return response()->json([
+                    'message' => 'El ID proporcionado no es válido.'
+                ], 422);
+            }
+
+            // Buscamos el usuario desactivado a restaurar
+            $user = User::withTrashed()->find($id);
+
+            // CASO 404: no se encuentra el user pasado por ID
+            if (! $user) {
+                return response()->json([
+                    'message' => 'Usuario no encontrado.'
+                ], 404);
+            }
+
+            // CASO 409: el user pasado NO está eliminado
+            if (! $user->trashed()) {
+                return response()->json([
+                    'message' => 'El usuario no está eliminado.'
+                ], 409);
+            }
+
+            // CASO 200: restauramos y retornamos mensaje exitoso
+            $user->restore();
+
+            return response()->json([
+                'message' => 'Usuario restaurado correctamente.',
+                'user' => new UserResource($user)
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al intentar restaurar al usuario.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /* ===================================

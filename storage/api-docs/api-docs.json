@@ -3358,6 +3358,43 @@
                 }
             }
         },
+        "/api/users/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Restaurar un usuario eliminado",
+                "operationId": "1fb250dd533e5f93acefd38936d3a24a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del usuario a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usuario restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Usuario no encontrado."
+                    },
+                    "409": {
+                        "description": "El usuario no está eliminado."
+                    },
+                    "422": {
+                        "description": "El ID proporcionado no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar al usuario."
+                    }
+                }
+            }
+        },
         "/api/users-desactivados": {
             "get": {
                 "tags": [
