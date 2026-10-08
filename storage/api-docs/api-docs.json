@@ -3321,6 +3321,41 @@
                         "description": "Error al intentar actualizar un usuario."
                     }
                 }
+            },
+            "delete": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Elimina un usuario por ID",
+                "operationId": "fa56cffde745d3f152f95cbacd936c0b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del usuario a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usuario eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Usuario no encontrado."
+                    },
+                    "409": {
+                        "description": "No se puede eliminar el usuario porque está siendo utilizado en otros registros."
+                    },
+                    "422": {
+                        "description": "El ID del usuario no es válido."
+                    },
+                    "500": {
+                        "description": "Error al intentar eliminar al usuario."
+                    }
+                }
             }
         },
         "/api/user": {

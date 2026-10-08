@@ -346,14 +346,14 @@ class UserController extends Controller
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Usuario no encontrado.',
-                'error' => $e->getMessage() 
+                'error' => $e->getMessage()
             ], 404);
-        } catch(ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Los datos proporcionados no son válidos.',
                 'error' => $e->getMessage()
-            ], 422); 
-        } catch(\Exception $e) {
+            ], 422);
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al intentar actualizar el usuario',
                 'error' => $e->getMessage()
@@ -364,9 +364,67 @@ class UserController extends Controller
     /* =============
     *   ELIMINAR
     *  ============= */
-    public function destroy(string $id)
+    #[OA\Delete(
+        path: '/api/users/{id}',
+        summary: 'Elimina un usuario por ID',
+        tags: ['Usuarios'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del usuario a eliminar',
+                schema: new OA\Schema(type: 'integer')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Usuario eliminado correctamente.'),
+            //new OA\Response(response: 401, description: 'No autenticado - No tiene permiso para realizar esta acción.'),
+            new OA\Response(response: 404, description: 'Usuario no encontrado.'),
+            new OA\Response(response: 409, description: 'No se puede eliminar el usuario porque está siendo utilizado en otros registros.'),
+            new OA\Response(response: 422, description: 'El ID del usuario no es válido.'),
+            new OA\Response(response: 500, description: 'Error al intentar eliminar al usuario.'),
+        ]
+    )]
+    public function destroy($id)
     {
-        //
+        try {
+            // Verificar que el ID sea válido
+            if (! is_numeric($id) || (int) $id <= 0) {
+                return response()->json([
+                    'message' => 'El ID del usuario no es válido.',
+                ], 422);
+            }
+
+            // Buscamos el usuario a eliminar
+            $user = User::findOrFail($id);
+
+            // Verificamos si el usuario existe antes de eliminarlo
+            if (! $user) {
+                return response()->json([
+                    'message' => 'Usuario no encontrado.'
+                ], 404);
+            }
+
+            // Eliminamos el usuario -desactivación lógica-
+            $user->delete();
+
+            // Mostramos respuesta exitosa
+            return response()->json([
+                'message' => 'Usuario eliminado correctamente.'
+            ], 200);
+            
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'No se puede eliminar el usuario porque está siendo utilizado en otros registros.',
+                'error' => $e->getMessage()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al intentar eliminar al usuario.',
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /* =============
