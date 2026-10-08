@@ -171,12 +171,13 @@ class UserController extends Controller
             $user->password = $validated['password'];
             $user->activo = true; // por defecto, está activo al crearse
             $user->role_id = $validated['role_id'];
+    
             $user->save();
             
             // CASO 201, mandamos mensaje
             return response()->json([
                 'message' => 'Usuario creado correctamente.',
-                'user' => UserResource::collection($user)
+                'user' => $user
             ], 201); 
         } catch(ValidationException $e) {
             return response()->json([
