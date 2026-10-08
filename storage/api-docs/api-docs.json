@@ -3117,6 +3117,307 @@
                 }
             }
         },
+        "/api/users": {
+            "get": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Listar todos los usuarios",
+                "operationId": "c457726701591d1183b53aa71fc13441",
+                "responses": {
+                    "200": {
+                        "description": "Usuarios obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "404": {
+                        "description": "No hay usuarios disponibles para mostrar."
+                    },
+                    "500": {
+                        "description": "Error al obtener los usuarios."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Crear un nuevo usuario",
+                "operationId": "592819a0265360b2014512d6dbfaf0e7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "role_id"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Celeste Ferrari",
+                                        "maxLength": 150
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "celesteferrari@gmail.com",
+                                        "maxLength": 255
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "12345678",
+                                        "minLength": 8
+                                    },
+                                    "role_id": {
+                                        "description": "ID del rol del usuario: 1=Admin, 2=Cocinero, 3=Repartidor.",
+                                        "type": "integer",
+                                        "example": 2
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Usuario creado correctamente."
+                    },
+                    "422": {
+                        "description": "Los datos proporcionados no son válidos."
+                    },
+                    "500": {
+                        "description": "Error interno al crear el usuario."
+                    }
+                }
+            }
+        },
+        "/api/users/{id}": {
+            "get": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Obtener un usuario por ID",
+                "operationId": "36a33ff774d5cba33c039dec2c3e0287",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del usuario",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usuario obtenido correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "404": {
+                        "description": "Usuario no encontrado."
+                    },
+                    "500": {
+                        "description": "Error al obtener el usuario."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Actualizar un usuario por ID",
+                "operationId": "b9091397c8b25f12c6adb74be6ce3a5a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del usuario a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "role_id",
+                                    "activo",
+                                    "telefono",
+                                    "direccion"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Marta Duglas",
+                                        "maxLength": 150,
+                                        "minLength": 8
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "martaduglas@ejemplo.com",
+                                        "maxLength": 255
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "12345678",
+                                        "minLength": 8
+                                    },
+                                    "role_id": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "telefono": {
+                                        "type": "string",
+                                        "example": "+5493455124468",
+                                        "maxLength": 10,
+                                        "minLength": 7
+                                    },
+                                    "direccion": {
+                                        "type": "string",
+                                        "example": "SM de Oro 79",
+                                        "maxLength": 255,
+                                        "minLength": 5
+                                    },
+                                    "activo": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Usuario actualizado correctamente."
+                    },
+                    "404": {
+                        "description": "Usuario no encontrado."
+                    },
+                    "422": {
+                        "description": "Los datos proporcionados no son válidos."
+                    },
+                    "500": {
+                        "description": "Error al intentar actualizar un usuario."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Elimina un usuario por ID",
+                "operationId": "fa56cffde745d3f152f95cbacd936c0b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del usuario a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usuario eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Usuario no encontrado."
+                    },
+                    "409": {
+                        "description": "No se puede eliminar el usuario porque está siendo utilizado en otros registros."
+                    },
+                    "422": {
+                        "description": "El ID del usuario no es válido."
+                    },
+                    "500": {
+                        "description": "Error al intentar eliminar al usuario."
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/restore": {
+            "put": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Restaurar un usuario eliminado",
+                "operationId": "1fb250dd533e5f93acefd38936d3a24a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del usuario a restaurar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usuario restaurado correctamente."
+                    },
+                    "404": {
+                        "description": "Usuario no encontrado."
+                    },
+                    "409": {
+                        "description": "El usuario no está eliminado."
+                    },
+                    "422": {
+                        "description": "El ID proporcionado no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al restaurar al usuario."
+                    }
+                }
+            }
+        },
+        "/api/users-desactivados": {
+            "get": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Listar los usuarios desactivados",
+                "operationId": "a9dec3d80220af51e29ebd57128c1d73",
+                "responses": {
+                    "200": {
+                        "description": "Usuarios desactivados obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado - No tienes permisos para realizar esta acción."
+                    },
+                    "404": {
+                        "description": "No hay usuarios desactivados para mostrar."
+                    },
+                    "500": {
+                        "description": "Error al intentar obtener los usuarios desactivados."
+                    }
+                }
+            }
+        },
         "/api/user": {
             "get": {
                 "tags": [
@@ -3206,6 +3507,10 @@
         {
             "name": "Roles",
             "description": "Roles"
+        },
+        {
+            "name": "Usuarios",
+            "description": "Usuarios"
         }
     ]
 }

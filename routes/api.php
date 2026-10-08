@@ -13,6 +13,7 @@ use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\PedidoItemController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -130,16 +131,11 @@ Route::delete('/roles/{id}', [RoleController::class, 'destroy']);
 Route::put('/roles/{id}/restore', [RoleController::class, 'restore']);
 Route::get('/roles-desactivados', [RoleController::class, 'indexDesactivados']);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Rutas para Usuarios
+Route::get('/users', [UserController::class, 'index']);
+Route::post('/users', [UserController::class, 'store']);
+Route::get('/users/{id}', [UserController::class, 'show']);
+Route::put('/users/{id}', [UserController::class, 'update']);
+Route::delete('/users/{id}', [UserController::class, 'destroy']);
+Route::put('/users/{id}/restore', [UserController::class, 'restore']);
+Route::get('users-desactivados', [UserController::class, 'indexDesactivados']);
