@@ -413,7 +413,6 @@ class UserController extends Controller
             return response()->json([
                 'message' => 'Usuario eliminado correctamente.'
             ], 200);
-            
         } catch (QueryException $e) {
             return response()->json([
                 'message' => 'No se puede eliminar el usuario porque está siendo utilizado en otros registros.',
@@ -433,5 +432,45 @@ class UserController extends Controller
     public function restore(string $id)
     {
         //
+    }
+
+    /* ===================================
+    *   LISTAR LOS USUARIOS DESACTIVADOS
+    *  =================================== */
+    #[OA\Get(
+        path: '/api/users-desactivados',
+        summary: 'Listar los usuarios desactivados',
+        tags: ['Usuarios'],
+        responses: [
+            new OA\Response(response: 200, description: 'Usuarios desactivados obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado - No tienes permisos para realizar esta acción.'),
+            new OA\Response(response: 404, description: 'No hay usuarios desactivados para mostrar.'),
+            new OA\Response(response: 500, description: 'Error al intentar obtener los usuarios desactivados.')
+        ],
+    )]
+    public function indexDesactivados() {
+        try {
+            // llamamos lo inhabilitado
+            $usersDesactivados = User::onlyTrashed()->get();
+
+            // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
+            if ($usersDesactivados->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay usuarios desactivados para mostrar.'
+                ], 404);
+            }
+
+            // Caso 200: retornamos lo desactivado
+            return response()->json([
+                'message' => 'Usuarios desactivados obtenidos correctamente.',
+                'usuariosDesactivados' => UserResource::collection($usersDesactivados)
+            ], 200);
+        } catch (\Exception $e){
+            // Caso 500: Falla en el servidor -> retornamos mensaje.
+            return response()->json([
+                'message' => 'Error al intentar obtener los usuarios desactivados.',
+                'error' => $e->getMessage() 
+            ], 500); 
+        }
     }
 }

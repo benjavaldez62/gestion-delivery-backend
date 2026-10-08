@@ -3358,6 +3358,29 @@
                 }
             }
         },
+        "/api/users-desactivados": {
+            "get": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Listar los usuarios desactivados",
+                "operationId": "a9dec3d80220af51e29ebd57128c1d73",
+                "responses": {
+                    "200": {
+                        "description": "Usuarios desactivados obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado - No tienes permisos para realizar esta acción."
+                    },
+                    "404": {
+                        "description": "No hay usuarios desactivados para mostrar."
+                    },
+                    "500": {
+                        "description": "Error al intentar obtener los usuarios desactivados."
+                    }
+                }
+            }
+        },
         "/api/user": {
             "get": {
                 "tags": [
