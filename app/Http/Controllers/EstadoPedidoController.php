@@ -163,7 +163,7 @@ class EstadoPedidoController extends Controller
     #[OA\Delete(
         path: '/api/estado-pedidos/{id}',
         summary: 'Eliminar un estado de pedido por ID',
-        tags: ['Estados de pedido'],
+        tags: ['Estados de Pedido'],
         parameters: [
             new OA\Parameter(
                 name: 'id',

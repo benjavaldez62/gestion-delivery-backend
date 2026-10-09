@@ -1477,7 +1477,7 @@
             },
             "delete": {
                 "tags": [
-                    "Estados de pedido"
+                    "Estados de Pedido"
                 ],
                 "summary": "Eliminar un estado de pedido por ID",
                 "operationId": "91edca0b70fdd5e26e0a71af250e48ea",
@@ -3479,10 +3479,6 @@
         {
             "name": "Estados de Pedido",
             "description": "Estados de Pedido"
-        },
-        {
-            "name": "Estados de pedido",
-            "description": "Estados de pedido"
         },
         {
             "name": "Métodos de Pago",
