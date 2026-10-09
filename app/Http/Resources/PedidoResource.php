@@ -18,6 +18,17 @@ class PedidoResource extends JsonResource
             'id' => $this->id,
             'subtotal' => $this->subtotal ? (float) $this->subtotal : null,
             'monto_total' => (float) $this->monto_total,
+            'metodo_pago_id' => $this->metodo_pago_id,
+            'metodo_pago' => $this->whenLoaded('metodoPago', function () {
+                if (! $this->metodoPago) {
+                    return null;
+                }
+
+                return [
+                    'id' => $this->metodoPago->id,
+                    'nombre' => $this->metodoPago->nombre,
+                ];
+            }),
             'cliente' => new ClienteResource($this->whenLoaded('cliente')),
             'cocinero' => new UserResource($this->whenLoaded('cocinero')),
             'repartidor' => new UserResource($this->whenLoaded('repartidor')),

@@ -2136,6 +2136,11 @@
                                         "example": 2500,
                                         "nullable": true
                                     },
+                                    "metodo_pago_id": {
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
                                     "cocinero_id": {
                                         "type": "integer",
                                         "example": 2,
@@ -2239,6 +2244,11 @@
                                         "type": "number",
                                         "format": "float",
                                         "example": 3000,
+                                        "nullable": true
+                                    },
+                                    "metodo_pago_id": {
+                                        "type": "integer",
+                                        "example": 1,
                                         "nullable": true
                                     },
                                     "cocinero_id": {
