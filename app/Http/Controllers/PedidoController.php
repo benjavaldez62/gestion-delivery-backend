@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\ClienteResource;
 use App\Http\Resources\PedidoResource;
 use App\Models\Pedido;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -30,8 +29,11 @@ class PedidoController extends Controller
     {
         try {
             $user = $request->user();
+            $userRoleName = $user?->role?->nombre;
+            $isAllowedRole = in_array((int) $user?->role_id, [1, 2, 3], true)
+                || ($userRoleName && strcasecmp($userRoleName, 'superadmin') === 0);
 
-            if (! $user || ! $user->activo || ! in_array((int) $user->role_id, [1, 2, 3], true)) {
+            if (! $user || ! $user->activo || ! $isAllowedRole) {
                 return response()->json([
                     'message' => 'No autorizado para consultar los pedidos.',
                 ], 403);
@@ -346,7 +348,8 @@ class PedidoController extends Controller
             new OA\Response(response: 500, description: 'Error interno del servidor al obtener pedidos desactivados.'),
         ]
     )]
-    public function indexDesactivados() {
+    public function indexDesactivados()
+    {
         try {
             // llamamos lo inhabilitado
             $pedidosDesactivados = Pedido::onlyTrashed()->get();
@@ -354,16 +357,16 @@ class PedidoController extends Controller
             // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
             if ($pedidosDesactivados->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay pedidos desactivados para mostrar.'
+                    'message' => 'No hay pedidos desactivados para mostrar.',
                 ], 404);
             }
 
             // Caso 200: retornamos lo desactivado
             return response()->json([
                 'message' => 'Pedidos desactivados obtenidos correctamente.',
-                'pedidosDesactivados' => PedidoResource::collection($pedidosDesactivados)
+                'pedidosDesactivados' => PedidoResource::collection($pedidosDesactivados),
             ], 200);
-        } catch (\Exception $e){
+        } catch (\Exception $e) {
             // Caso 500: Falla en el servidor -> retornamos mensaje.
             return response()->json([
                 'message' => 'Error interno del servidor al obtener pedidos desactivados.',

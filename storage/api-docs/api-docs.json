@@ -2591,13 +2591,13 @@
                 }
             }
         },
-        "/api/pedido-items-desactivados": {
+        "pedido-items-desactivados": {
             "get": {
                 "tags": [
                     "Pedidos"
                 ],
                 "summary": "Listar todos los items de pedido desactivados",
-                "operationId": "89b98336d3b213d79fe655a7c85d1a2a",
+                "operationId": "01df60498b70e596dd7452f98b856aec",
                 "responses": {
                     "200": {
                         "description": "Items de pedido desactivados obtenidos correctamente."
