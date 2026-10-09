@@ -17,15 +17,26 @@ class PedidoController extends Controller
         path: '/api/pedidos',
         summary: 'Listar todos los pedidos',
         tags: ['Pedidos'],
+        security: [['sanctum' => []]],
         responses: [
             new OA\Response(response: 200, description: 'Pedidos obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado'),
+            new OA\Response(response: 403, description: 'No autorizado'),
             new OA\Response(response: 404, description: 'No hay pedidos disponibles.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
     )]
-    public function index()
+    public function index(Request $request)
     {
         try {
+            $user = $request->user();
+
+            if (! $user || ! $user->activo || ! in_array((int) $user->role_id, [1, 2, 3], true)) {
+                return response()->json([
+                    'message' => 'No autorizado para consultar los pedidos.',
+                ], 403);
+            }
+
             $pedidos = Pedido::with([
                 'cliente',
                 'cocinero',
@@ -33,7 +44,7 @@ class PedidoController extends Controller
                 'estadoPedido',
                 'items.producto',
                 'pagos',
-            ])->get();
+            ])->orderBy('created_at', 'desc')->get();
 
             if ($pedidos->isEmpty()) {
                 return response()->json([

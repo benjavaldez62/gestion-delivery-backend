@@ -2092,13 +2092,24 @@
                     "200": {
                         "description": "Pedidos obtenidos correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado"
+                    },
+                    "403": {
+                        "description": "No autorizado"
+                    },
                     "404": {
                         "description": "No hay pedidos disponibles."
                     },
                     "500": {
                         "description": "Error interno del servidor."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "post": {
                 "tags": [
@@ -2580,13 +2591,13 @@
                 }
             }
         },
-        "pedido-items-desactivados": {
+        "/api/pedido-items-desactivados": {
             "get": {
                 "tags": [
                     "Pedidos"
                 ],
                 "summary": "Listar todos los items de pedido desactivados",
-                "operationId": "01df60498b70e596dd7452f98b856aec",
+                "operationId": "89b98336d3b213d79fe655a7c85d1a2a",
                 "responses": {
                     "200": {
                         "description": "Items de pedido desactivados obtenidos correctamente."
