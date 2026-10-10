@@ -368,9 +368,9 @@ class PedidoItemController extends Controller
     }
 
     #[OA\Get(
-        path: 'pedido-items-desactivados',
+        path: '/pedido-items-desactivados',
         summary: 'Listar todos los items de pedido desactivados',
-        tags: ['Pedidos'],
+        tags: ['PedidoItems'],
         responses: [
             new OA\Response(response: 200, description: 'Items de pedido desactivados obtenidos correctamente.'),
             new OA\Response(response: 404, description: 'No hay items de pedido desactivados para mostrar.'),
