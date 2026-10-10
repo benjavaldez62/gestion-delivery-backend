@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             PedidoSeeder::class,
             PedidoItemSeeder::class,
             EstadoPagoSeeder::class,
-        //PagoSeeder::class,
+            // PagoSeeder::class,
         ]);
     }
 }

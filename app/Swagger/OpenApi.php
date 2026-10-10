@@ -4,6 +4,9 @@ namespace App\Swagger;
 
 use OpenApi\Attributes as OA;
 
+#[OA\OpenApi(
+    security: [['sanctum' => []]]
+)]
 #[OA\Info(
     version: '1.0.0',
     title: 'API Sistema de Delivery',
