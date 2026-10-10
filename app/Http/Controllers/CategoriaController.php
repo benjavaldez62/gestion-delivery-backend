@@ -17,6 +17,7 @@ class CategoriaController extends Controller
         path: '/api/categorias',
         summary: 'Listar todas las categorías',
         tags: ['Categorías'],
+        security: [],
         responses: [
             new OA\Response(response: 200, description: 'Categorías obtenidas correctamente.'),
             new OA\Response(response: 404, description: 'No hay categorías disponibles.'),
@@ -157,6 +158,7 @@ class CategoriaController extends Controller
         path: '/api/categorias/{id}',
         summary: 'Obtener una categoría por ID',
         tags: ['Categorías'],
+        security: [],
         parameters: [
             new OA\Parameter(
                 name: 'id',

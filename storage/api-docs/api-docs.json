@@ -29,7 +29,8 @@
                     "500": {
                         "description": "Error interno del servidor."
                     }
-                }
+                },
+                "security": []
             },
             "post": {
                 "tags": [
@@ -133,7 +134,8 @@
                     "500": {
                         "description": "Error interno al obtener el adicional."
                     }
-                }
+                },
+                "security": []
             },
             "put": {
                 "tags": [
@@ -326,7 +328,8 @@
                     "500": {
                         "description": "Error interno del servidor."
                     }
-                }
+                },
+                "security": []
             }
         },
         "/api/logout": {
@@ -369,7 +372,8 @@
                     "500": {
                         "description": "Error interno del servidor."
                     }
-                }
+                },
+                "security": []
             },
             "post": {
                 "tags": [
@@ -464,7 +468,8 @@
                     "500": {
                         "description": "Error interno al obtener la categoría."
                     }
-                }
+                },
+                "security": []
             },
             "put": {
                 "tags": [
@@ -2628,7 +2633,8 @@
                     "500": {
                         "description": "Error al obtener los productos."
                     }
-                }
+                },
+                "security": []
             },
             "post": {
                 "tags": [
@@ -2743,7 +2749,8 @@
                     "500": {
                         "description": "Error al obtener el producto."
                     }
-                }
+                },
+                "security": []
             },
             "put": {
                 "tags": [
@@ -3462,6 +3469,11 @@
             }
         }
     },
+    "security": [
+        {
+            "sanctum": []
+        }
+    ],
     "tags": [
         {
             "name": "Adicionales",
