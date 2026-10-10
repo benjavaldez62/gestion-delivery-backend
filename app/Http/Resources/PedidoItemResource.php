@@ -15,9 +15,8 @@ class PedidoItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'pedido_id' => $this->pedido_id,
-            'producto' => new ProductoResource($this->whenLoaded('producto')),
+           
+            'producto' => $this->whenLoaded('producto', fn () => ['id' =>$this->producto->id,'nombre' =>$this->producto->nombre]),
             'cantidad' => $this->cantidad,
             'precio_unitario' => (float) $this->precio_unitario,
             'subtotal' => (float) $this->subtotal,

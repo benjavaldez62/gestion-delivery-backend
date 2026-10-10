@@ -1482,7 +1482,7 @@
             },
             "delete": {
                 "tags": [
-                    "Estados de pedido"
+                    "Estados de Pedido"
                 ],
                 "summary": "Eliminar un estado de pedido por ID",
                 "operationId": "91edca0b70fdd5e26e0a71af250e48ea",
@@ -2152,6 +2152,11 @@
                                         "example": 2500,
                                         "nullable": true
                                     },
+                                    "metodo_pago_id": {
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
                                     "cocinero_id": {
                                         "type": "integer",
                                         "example": 2,
@@ -2255,6 +2260,11 @@
                                         "type": "number",
                                         "format": "float",
                                         "example": 3000,
+                                        "nullable": true
+                                    },
+                                    "metodo_pago_id": {
+                                        "type": "integer",
+                                        "example": 1,
                                         "nullable": true
                                     },
                                     "cocinero_id": {
@@ -2596,13 +2606,13 @@
                 }
             }
         },
-        "pedido-items-desactivados": {
+        "/pedido-items-desactivados": {
             "get": {
                 "tags": [
-                    "Pedidos"
+                    "PedidoItems"
                 ],
                 "summary": "Listar todos los items de pedido desactivados",
-                "operationId": "01df60498b70e596dd7452f98b856aec",
+                "operationId": "fb1e4ef22fe8e208c316fb0e6b854fd2",
                 "responses": {
                     "200": {
                         "description": "Items de pedido desactivados obtenidos correctamente."
@@ -3502,10 +3512,6 @@
         {
             "name": "Estados de Pedido",
             "description": "Estados de Pedido"
-        },
-        {
-            "name": "Estados de pedido",
-            "description": "Estados de pedido"
         },
         {
             "name": "Métodos de Pago",

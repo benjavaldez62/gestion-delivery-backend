@@ -44,6 +44,7 @@ class PedidoController extends Controller
                 'cocinero',
                 'repartidor',
                 'estadoPedido',
+                'metodoPago',
                 'items.producto',
                 'pagos',
             ])->orderBy('created_at', 'desc')->get();
@@ -79,6 +80,7 @@ class PedidoController extends Controller
                     new OA\Property(property: 'estado_pedidos_id', type: 'integer', example: 1),
                     new OA\Property(property: 'subtotal', type: 'number', format: 'float', nullable: true, example: 2500.00),
                     new OA\Property(property: 'monto_total', type: 'number', format: 'float', nullable: true, example: 2500.00),
+                    new OA\Property(property: 'metodo_pago_id', type: 'integer', nullable: true, example: 1),
                     new OA\Property(property: 'cocinero_id', type: 'integer', nullable: true, example: 2),
                     new OA\Property(property: 'repartidor_id', type: 'integer', nullable: true, example: 3),
                 ]
@@ -98,6 +100,7 @@ class PedidoController extends Controller
                 'estado_pedidos_id' => 'required|integer|exists:estado_pedidos,id',
                 'subtotal' => 'nullable|numeric|min:0',
                 'monto_total' => 'nullable|numeric|min:0',
+                'metodo_pago_id' => 'nullable|integer|exists:metodos_pago,id',
                 'cocinero_id' => 'nullable|integer|exists:users,id',
                 'repartidor_id' => 'nullable|integer|exists:users,id',
             ], [
@@ -111,6 +114,8 @@ class PedidoController extends Controller
                 'subtotal.min' => 'El subtotal no puede ser negativo.',
                 'monto_total.numeric' => 'El monto total debe ser un valor numérico.',
                 'monto_total.min' => 'El monto total no puede ser negativo.',
+                'metodo_pago_id.integer' => 'El ID del método de pago debe ser un número entero.',
+                'metodo_pago_id.exists' => 'El método de pago seleccionado no existe.',
                 'cocinero_id.integer' => 'El ID del cocinero debe ser un número entero.',
                 'cocinero_id.exists' => 'El cocinero seleccionado no existe.',
                 'repartidor_id.integer' => 'El ID del repartidor debe ser un número entero.',
@@ -122,7 +127,7 @@ class PedidoController extends Controller
             }
 
             $pedido = Pedido::create($validated);
-            $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido']);
+            $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago']);
 
             return response()->json([
                 'message' => 'Pedido creado correctamente.',
@@ -175,6 +180,7 @@ class PedidoController extends Controller
                 'cocinero',
                 'repartidor',
                 'estadoPedido',
+                'metodoPago',
                 'items.producto',
                 'pagos',
             ])->findOrFail($id);
@@ -215,6 +221,7 @@ class PedidoController extends Controller
                     new OA\Property(property: 'estado_pedidos_id', type: 'integer', example: 2),
                     new OA\Property(property: 'subtotal', type: 'number', format: 'float', nullable: true, example: 3000.00),
                     new OA\Property(property: 'monto_total', type: 'number', format: 'float', nullable: true, example: 3000.00),
+                    new OA\Property(property: 'metodo_pago_id', type: 'integer', nullable: true, example: 1),
                     new OA\Property(property: 'cocinero_id', type: 'integer', nullable: true, example: 2),
                     new OA\Property(property: 'repartidor_id', type: 'integer', nullable: true, example: 3),
                 ]
@@ -243,6 +250,7 @@ class PedidoController extends Controller
                 'estado_pedidos_id' => 'sometimes|required|integer|exists:estado_pedidos,id',
                 'subtotal' => 'nullable|numeric|min:0',
                 'monto_total' => 'nullable|numeric|min:0',
+                'metodo_pago_id' => 'sometimes|nullable|integer|exists:metodos_pago,id',
                 'cocinero_id' => 'nullable|integer|exists:users,id',
                 'repartidor_id' => 'nullable|integer|exists:users,id',
             ], [
@@ -256,6 +264,8 @@ class PedidoController extends Controller
                 'subtotal.min' => 'El subtotal no puede ser negativo.',
                 'monto_total.numeric' => 'El monto total debe ser un valor numérico.',
                 'monto_total.min' => 'El monto total no puede ser negativo.',
+                'metodo_pago_id.integer' => 'El ID del método de pago debe ser un número entero.',
+                'metodo_pago_id.exists' => 'El método de pago seleccionado no existe.',
                 'cocinero_id.integer' => 'El ID del cocinero debe ser un número entero.',
                 'cocinero_id.exists' => 'El cocinero seleccionado no existe.',
                 'repartidor_id.integer' => 'El ID del repartidor debe ser un número entero.',
@@ -263,7 +273,7 @@ class PedidoController extends Controller
             ]);
 
             $pedido->update($validated);
-            $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'items.producto', 'pagos']);
+            $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago', 'items.producto', 'pagos']);
 
             return response()->json([
                 'message' => 'Pedido actualizado correctamente.',
@@ -352,7 +362,7 @@ class PedidoController extends Controller
     {
         try {
             // llamamos lo inhabilitado
-            $pedidosDesactivados = Pedido::onlyTrashed()->get();
+            $pedidosDesactivados = Pedido::onlyTrashed()->with('metodoPago')->get();
 
             // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
             if ($pedidosDesactivados->isEmpty()) {
@@ -420,7 +430,7 @@ class PedidoController extends Controller
             }
 
             $pedido->restore();
-            $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido']);
+            $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago']);
 
             return response()->json([
                 'message' => 'Pedido restaurado correctamente.',

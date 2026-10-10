@@ -21,6 +21,7 @@ class Pedido extends Model
         'cocinero_id',
         'repartidor_id',
         'estado_pedidos_id',
+        'metodo_pago_id',
     ];
 
     protected $casts = [
@@ -46,6 +47,11 @@ class Pedido extends Model
     public function estadoPedido(): BelongsTo
     {
         return $this->belongsTo(EstadoPedido::class, 'estado_pedidos_id');
+    }
+
+    public function metodoPago(): BelongsTo
+    {
+        return $this->belongsTo(MetodoPago::class, 'metodo_pago_id');
     }
 
     public function items(): HasMany
