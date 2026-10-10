@@ -21,9 +21,9 @@ class DatabaseSeeder extends Seeder
             CategoriaSeeder::class,
             ProductoSeeder::class,
             MetodoPagoSeeder::class,
+            EstadoPedidoSeeder::class,
             PedidoSeeder::class,
             PedidoItemSeeder::class,
-            EstadoPedidoSeeder::class,
             EstadoPagoSeeder::class,
         //PagoSeeder::class,
         ]);
