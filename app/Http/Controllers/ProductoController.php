@@ -12,14 +12,13 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
-use function Pest\Laravel\json;
-
 class ProductoController extends Controller
 {
     #[OA\Get(
         path: '/api/productos',
         summary: 'Listar todos los productos',
         tags: ['Productos'],
+        security: [],
         responses: [
             new OA\Response(response: 200, description: 'Productos obtenidos correctamente.'),
             new OA\Response(response: 404, description: 'No hay productos disponibles para mostrar.'),
@@ -59,28 +58,29 @@ class ProductoController extends Controller
             new OA\Response(response: 500, description: 'Error al obtener los productos desactivados.'),
         ]
     )]
-    public function indexDesactivados() {
+    public function indexDesactivados()
+    {
         try {
             // llamamos lo inhabilitado
             $productosDesactivados = Producto::onlyTrashed()->get();
 
             // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
-            if($productosDesactivados->isEmpty()) {
+            if ($productosDesactivados->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay productos desactivados para mostrar.'
+                    'message' => 'No hay productos desactivados para mostrar.',
                 ], 404);
             }
 
             // Caso 200: retornamos lo desactivado
             return response()->json([
                 'message' => 'Productos desactivados obtenidos correctamente.',
-                'productosDesactivados' => ProductoResource::collection($productosDesactivados)
+                'productosDesactivados' => ProductoResource::collection($productosDesactivados),
             ], 200);
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             // Caso 500: Falla en el servidor -> retornamos mensaje.
             return response()->json([
                 'message' => 'Error al obtener los productos desactivados.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -190,6 +190,7 @@ class ProductoController extends Controller
         path: '/api/productos/{id}',
         summary: 'Obtener un producto por ID',
         tags: ['Productos'],
+        security: [],
         parameters: [
             new OA\Parameter(
                 name: 'id',

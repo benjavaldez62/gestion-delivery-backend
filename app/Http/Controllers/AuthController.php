@@ -18,6 +18,7 @@ class AuthController extends Controller
         summary: 'Iniciar sesión',
         description: 'Valida las credenciales de un usuario activo y devuelve un token de acceso de Sanctum.',
         tags: ['Autenticación'],
+        security: [],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -102,14 +103,14 @@ class AuthController extends Controller
         description: 'Elimina el token de Sanctum utilizado actualmente.',
         tags: ['Autenticación'],
         security: [
-            ['sanctum' => []]
+            ['sanctum' => []],
         ],
         responses: [
             new OA\Response(response: 200, description: 'Sesión cerrada correctamente.'),
-            new OA\Response(response: 401, description: 'No autenticado o token inválido.')
+            new OA\Response(response: 401, description: 'No autenticado o token inválido.'),
         ]
     )]
-    public function logout(Request $request) 
+    public function logout(Request $request)
     {
         // traemos del contexto al usuario
         $user = $request->user();
@@ -120,7 +121,7 @@ class AuthController extends Controller
         // mandamos respuesta de cierre de sesión exitoso
         return response()->json([
             'success' => true,
-            'message' => 'Sesión cerrada correctamente.'
+            'message' => 'Sesión cerrada correctamente.',
         ], 200);
 
     }

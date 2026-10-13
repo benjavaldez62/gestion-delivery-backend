@@ -16,6 +16,7 @@ class AdicionalController extends Controller
         path: '/api/adicionales',
         summary: 'Listar todos los adicionales',
         tags: ['Adicionales'],
+        security: [],
         responses: [
             new OA\Response(response: 200, description: 'Adicionales obtenidos correctamente.'),
             new OA\Response(response: 404, description: 'No hay adicionales disponibles.'),
@@ -43,7 +44,7 @@ class AdicionalController extends Controller
             ], 500);
         }
     }
-    
+
     #[OA\Get(
         path: '/api/adicionales-desactivados',
         summary: 'Listar todos los adicionales desactivados',
@@ -71,7 +72,7 @@ class AdicionalController extends Controller
                 'message' => 'Adicionales desactivados obtenidos correctamente.',
                 'adicionalesDesactivados' => AdicionalResource::collection($adicionalesDesactivados),
             ], 200);
-        // Caso para cuando hay falla por servidor
+            // Caso para cuando hay falla por servidor
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al obtener los adicionales desactivados.',
@@ -154,6 +155,7 @@ class AdicionalController extends Controller
         path: '/api/adicionales/{id}',
         summary: 'Obtener un adicional por ID',
         tags: ['Adicionales'],
+        security: [],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -274,7 +276,7 @@ class AdicionalController extends Controller
 
             return response()->json([
                 'message' => 'Error interno al actualizar el adicional.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
