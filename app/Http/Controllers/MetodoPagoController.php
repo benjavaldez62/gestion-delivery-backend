@@ -318,6 +318,10 @@ class MetodoPagoController extends Controller
                 ], 404);
             }
 
+            // Cambiamos la disponibilidad a 'false' antes de eliminarlo
+            $metodoPago->activo = false;
+            $metodoPago->save();
+
             // Eliminar el Método de pago
             $metodoPago->delete();
 
@@ -388,6 +392,10 @@ class MetodoPagoController extends Controller
 
             // Restaurar el método de pago
             $metodoPago->restore();
+
+            // Cambiamos la disponibilidad por 'true'
+            $metodoPago->activo = true;
+            $metodoPago->save();
 
             // Respuesta exitosa
             return response()->json([
