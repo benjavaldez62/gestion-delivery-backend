@@ -322,6 +322,10 @@ class AdicionalController extends Controller
                 ], 404);
             }
 
+            // Cambiamos la disponibilidad a 'false' antes de eliminarlo
+            $adicional->activo = false;
+            $adicional->save();
+
             // Eliminar adicional
             $adicional->delete();
 
@@ -391,6 +395,10 @@ class AdicionalController extends Controller
             }
 
             $adicional->restore();
+
+            // Cambiamos la disponibilidad por 'true'
+            $adicional->activo = true;
+            $adicional->save();
 
             return response()->json([
                 'message' => 'Adicional restaurado correctamente.',

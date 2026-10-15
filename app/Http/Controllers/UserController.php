@@ -406,6 +406,10 @@ class UserController extends Controller
                 ], 404);
             }
 
+            // Cambiamos la disponibilidad a 'false' antes de eliminarlo
+            $user->activo = false;
+            $user->save();
+
             // Eliminamos el usuario -desactivación lógica-
             $user->delete();
 
@@ -479,6 +483,10 @@ class UserController extends Controller
 
             // CASO 200: restauramos y retornamos mensaje exitoso
             $user->restore();
+
+            // Cambiamos la disponibilidad por 'true'
+            $user->activo = true;
+            $user->save();
 
             return response()->json([
                 'message' => 'Usuario restaurado correctamente.',
