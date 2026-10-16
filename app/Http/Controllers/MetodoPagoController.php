@@ -19,6 +19,7 @@ class MetodoPagoController extends Controller
         tags: ['Métodos de Pago'],
         responses: [
             new OA\Response(response: 200, description: 'Métodos de pago obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No hay métodos de pago disponibles.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
@@ -79,6 +80,7 @@ class MetodoPagoController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Método de pago creado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear el método de pago.'),
         ]
@@ -146,6 +148,7 @@ class MetodoPagoController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Método de pago obtenido correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
             new OA\Response(response: 500, description: 'Error interno al obtener el método de pago.'),
         ]
@@ -211,6 +214,7 @@ class MetodoPagoController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Método de pago actualizado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
             new OA\Response(response: 422, description: 'Datos inválidos.'),
             new OA\Response(response: 500, description: 'Error interno al actualizar el método de pago.'),
@@ -293,6 +297,7 @@ class MetodoPagoController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Método de pago eliminado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
             new OA\Response(response: 409, description: 'Error de integridad referencial.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
@@ -358,6 +363,7 @@ class MetodoPagoController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Método de pago restaurado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Método de pago no encontrado.'),
             new OA\Response(response: 409, description: 'El método de pago no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),
@@ -420,8 +426,9 @@ class MetodoPagoController extends Controller
         tags: ['Métodos de Pago'],
         responses: [
             new OA\Response(response: 200, description: 'Métodos de pago desactivados obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No hay métodos de pago desactivados para mostrar.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor al obtener los métodos de pago desactivados.')
+            new OA\Response(response: 500, description: 'Error interno del servidor al obtener los métodos de pago desactivados.'),
         ]
     )]
     public function indexDesactivados() {

@@ -18,6 +18,7 @@ class EstadoPagosController extends Controller
         tags: ['Estados de Pago'],
         responses: [
             new OA\Response(response: 200, description: 'Estados de pagos obtenidos exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No se encontraron estados de pagos.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
@@ -57,6 +58,7 @@ class EstadoPagosController extends Controller
         tags: ['Estados de Pago'],
         responses: [
             new OA\Response(response: 200, description: 'Estados de pagos desactivados obtenidos exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No se encontraron estados de pagos desactivados.'),
             new OA\Response(response: 500, description: 'Error interno del servidor al obtener estados de pago desactivados.'),
         ]
@@ -104,6 +106,7 @@ class EstadoPagosController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Estado de pago creado exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear el estado de pago.'),
         ]
@@ -171,6 +174,7 @@ class EstadoPagosController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Estado de pago obtenido exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
             new OA\Response(response: 500, description: 'Error interno al obtener el estado de pago.'),
         ]
@@ -230,6 +234,7 @@ class EstadoPagosController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Estado de pago actualizado exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al actualizar el estado de pago.'),
@@ -305,6 +310,7 @@ class EstadoPagosController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Estado de pago eliminado exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
             new OA\Response(response: 409, description: 'No se puede eliminar el estado de pago porque está en uso.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
@@ -366,6 +372,7 @@ class EstadoPagosController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Estado de pago restaurado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Estado de pago no encontrado.'),
             new OA\Response(response: 409, description: 'El estado de pago no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),

@@ -54,6 +54,7 @@ class ProductoController extends Controller
         tags: ['Productos'],
         responses: [
             new OA\Response(response: 200, description: 'Productos desactivados obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No hay productos desactivados para mostrar.'),
             new OA\Response(response: 500, description: 'Error al obtener los productos desactivados.'),
         ]
@@ -113,6 +114,7 @@ class ProductoController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Producto creado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear el producto.'),
         ]
@@ -263,6 +265,7 @@ class ProductoController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Producto actualizado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Producto no encontrado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
@@ -369,6 +372,7 @@ class ProductoController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Producto eliminado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Producto no encontrado.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
@@ -419,6 +423,7 @@ class ProductoController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Producto restaurado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Producto no encontrado.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]

@@ -50,6 +50,7 @@ class PedidoItemController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Ítems del pedido obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 422, description: 'Parámetro pedido_id requerido o no válido.'),
             new OA\Response(response: 404, description: 'No se encontraron ítems para el pedido ingresado.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
@@ -113,6 +114,7 @@ class PedidoItemController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Ítem agregado correctamente al pedido.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 400, description: 'El pedido no está en un estado editable.'),
             new OA\Response(response: 404, description: 'Pedido o producto no encontrado.'),
             new OA\Response(response: 422, description: 'Datos de entrada no válidos.'),
@@ -195,6 +197,7 @@ class PedidoItemController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Ítem obtenido correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Ítem no encontrado.'),
             new OA\Response(response: 500, description: 'Error interno al obtener el ítem.'),
         ]
@@ -243,6 +246,7 @@ class PedidoItemController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Ítem actualizado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 400, description: 'El pedido no está en un estado editable.'),
             new OA\Response(response: 404, description: 'Ítem no encontrado.'),
             new OA\Response(response: 422, description: 'Datos de entrada no válidos.'),
@@ -313,6 +317,7 @@ class PedidoItemController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Ítem eliminado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 400, description: 'Estado del pedido no editable o el pedido no puede quedar sin ítems.'),
             new OA\Response(response: 404, description: 'Ítem no encontrado.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
@@ -368,13 +373,14 @@ class PedidoItemController extends Controller
     }
 
     #[OA\Get(
-        path: '/pedido-items-desactivados',
+        path: '/api/pedido-items-desactivados',
         summary: 'Listar todos los items de pedido desactivados',
         tags: ['PedidoItems'],
         responses: [
             new OA\Response(response: 200, description: 'Items de pedido desactivados obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No hay items de pedido desactivados para mostrar.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor al obtener items de pedido desactivados.')
+            new OA\Response(response: 500, description: 'Error interno del servidor al obtener items de pedido desactivados.'),
         ]
     )]
     public function indexDesactivados() {

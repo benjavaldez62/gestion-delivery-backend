@@ -24,10 +24,11 @@ class UserController extends Controller
         summary: "Listar todos los usuarios",
         tags: ['Usuarios'],
         responses: [
-            new OA\Response(response: 200, description: "Usuarios obtenidos correctamente."),
-            new OA\Response(response: 401, description: "No autenticado."),
-            new OA\Response(response: 404, description: "No hay usuarios disponibles para mostrar."),
-            new OA\Response(response: 500, description: "Error al obtener los usuarios.")
+            new OA\Response(response: 200, description: 'Usuarios obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
+            new OA\Response(response: 404, description: 'No hay usuarios disponibles para mostrar.'),
+            new OA\Response(response: 500, description: 'Error al obtener los usuarios.'),
         ]
     )]
     public function index()
@@ -74,6 +75,7 @@ class UserController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Usuario obtenido correctamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Usuario no encontrado.'),
             new OA\Response(response: 500, description: 'Error al obtener el usuario.'),
         ]
@@ -132,7 +134,8 @@ class UserController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Usuario creado correctamente.'),
-            // 401 va acá? "NO AUTENTICADO"
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 422, description: 'Los datos proporcionados no son válidos.'),
             new OA\Response(response: 500, description: 'Error interno al crear el usuario.'),
         ]
@@ -235,7 +238,8 @@ class UserController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Usuario actualizado correctamente.'),
-            //new OA\Response(response: 401, description: 'No está autenticado para realizar esta acción.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Usuario no encontrado.'),
             new OA\Response(response: 422, description: 'Los datos proporcionados no son válidos.'),
             new OA\Response(response: 500, description: 'Error al intentar actualizar un usuario.'),
@@ -379,7 +383,8 @@ class UserController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Usuario eliminado correctamente.'),
-            //new OA\Response(response: 401, description: 'No autenticado - No tiene permiso para realizar esta acción.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Usuario no encontrado.'),
             new OA\Response(response: 409, description: 'No se puede eliminar el usuario porque está siendo utilizado en otros registros.'),
             new OA\Response(response: 422, description: 'El ID del usuario no es válido.'),
@@ -448,6 +453,8 @@ class UserController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Usuario restaurado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Usuario no encontrado.'),
             new OA\Response(response: 409, description: 'El usuario no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID proporcionado no es válido.'),
@@ -510,9 +517,10 @@ class UserController extends Controller
         tags: ['Usuarios'],
         responses: [
             new OA\Response(response: 200, description: 'Usuarios desactivados obtenidos correctamente.'),
-            new OA\Response(response: 401, description: 'No autenticado - No tienes permisos para realizar esta acción.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'No hay usuarios desactivados para mostrar.'),
-            new OA\Response(response: 500, description: 'Error al intentar obtener los usuarios desactivados.')
+            new OA\Response(response: 500, description: 'Error al intentar obtener los usuarios desactivados.'),
         ],
     )]
     public function indexDesactivados() {

@@ -19,6 +19,7 @@ class EstadoPedidoController extends Controller
         tags: ["Estados de Pedido"],
         responses: [
             new OA\Response(response: 200, description: 'Estados de pedidos obtenidos exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No se encontraron estados de pedidos para mostrar.'),
             new OA\Response(response: 500, description: 'Error interno del servidor al obtener estados de pedidos.'),
         ]
@@ -34,6 +35,7 @@ class EstadoPedidoController extends Controller
         tags: ["Estados de Pedido"],
         responses: [
             new OA\Response(response: 200, description: 'Estados de pedidos obtenidos exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No se encontraron estados de pedidos para mostrar.'),
             new OA\Response(response: 500, description: 'Error interno del servidor al obtener estados de pedidos.'),
         ]
@@ -86,6 +88,7 @@ class EstadoPedidoController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Estados de pedido creado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear el estado de pedido.'),
         ]
@@ -110,6 +113,7 @@ class EstadoPedidoController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Estado de pedido obtenido exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Estado de pedido no encontrado.'),
             new OA\Response(response: 500, description: 'Error interno al obtener el estado de pedido.'),
         ]
@@ -150,6 +154,7 @@ class EstadoPedidoController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Estado de pedido actualizado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Estado de pedido no encontrado.'),
             new OA\Response(response: 422, description: 'Datos inválidos.'),
             new OA\Response(response: 500, description: 'Error interno al actualizar el estado de pedido.'),
@@ -175,6 +180,7 @@ class EstadoPedidoController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Estado de pedido eliminado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Estado de pedido no encontrado.'),
             new OA\Response(response: 409, description: 'No se puede eliminar el estado de pedido porque está siendo utilizado por otros registros.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
@@ -201,6 +207,7 @@ class EstadoPedidoController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Estado de pedido restaurado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Estado de pedido no encontrado.'),
             new OA\Response(response: 409, description: 'El estado de pedido no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),

@@ -88,6 +88,7 @@ class PedidoController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Pedido creado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear el pedido.'),
         ]
@@ -161,6 +162,7 @@ class PedidoController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Pedido obtenido exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Pedido no encontrado.'),
             new OA\Response(response: 422, description: 'El ID del pedido no es válido.'),
             new OA\Response(response: 500, description: 'Error interno al obtener el pedido.'),
@@ -229,6 +231,7 @@ class PedidoController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Pedido actualizado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Pedido no encontrado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al actualizar el pedido.'),
@@ -311,6 +314,7 @@ class PedidoController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Pedido eliminado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Pedido no encontrado.'),
             new OA\Response(response: 409, description: 'No se puede eliminar el pedido porque está siendo utilizado por otros registros.'),
             new OA\Response(response: 422, description: 'El ID del pedido no es válido.'),
@@ -354,6 +358,7 @@ class PedidoController extends Controller
         tags: ['Pedidos'],
         responses: [
             new OA\Response(response: 200, description: 'Pedidos desactivados obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No hay pedidos desactivados para mostrar.'),
             new OA\Response(response: 500, description: 'Error interno del servidor al obtener pedidos desactivados.'),
         ]
@@ -400,6 +405,7 @@ class PedidoController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Pedido restaurado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Pedido no encontrado.'),
             new OA\Response(response: 409, description: 'El pedido no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),

@@ -19,6 +19,8 @@ class RoleController extends Controller
         tags: ['Roles'],
         responses: [
             new OA\Response(response: 200, description: 'Roles obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'No hay roles disponibles.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
@@ -51,6 +53,8 @@ class RoleController extends Controller
         tags: ['Roles'],
         responses: [
             new OA\Response(response: 200, description: 'Roles desactivados obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'No hay roles desactivados disponibles.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
@@ -104,6 +108,8 @@ class RoleController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Rol creado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear el rol.'),
         ]
@@ -164,6 +170,8 @@ class RoleController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Rol obtenido exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Rol no encontrado.'),
             new OA\Response(response: 500, description: 'Error interno al obtener el rol.'),
         ]
@@ -221,6 +229,8 @@ class RoleController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Rol actualizado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Rol no encontrado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al actualizar el rol.'),
@@ -299,6 +309,8 @@ class RoleController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Rol eliminado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Rol no encontrado.'),
             new OA\Response(response: 409, description: 'No se puede eliminar el rol porque está siendo utilizado por otros registros.'),
             new OA\Response(response: 422, description: 'El ID del rol no es válido.'),
@@ -363,6 +375,8 @@ class RoleController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Rol restaurado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Rol no encontrado.'),
             new OA\Response(response: 409, description: 'El rol no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),

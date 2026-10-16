@@ -18,6 +18,7 @@ class ComprobanteController extends Controller
         tags: ['Comprobantes'],
         responses: [
             new OA\Response(response: 200, description: 'Comprobantes obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No hay comprobantes disponibles.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
@@ -51,8 +52,9 @@ class ComprobanteController extends Controller
         tags: ['Comprobantes'],
         responses: [
             new OA\Response(response: 200, description: 'Comprobantes desactivados obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No hay comprobantes desactivados para mostrar.'),
-            new OA\Response(response: 505, description: 'Error interno del servidor al obtener los comprobantes desactivados.')
+            new OA\Response(response: 500, description: 'Error interno del servidor al obtener los comprobantes desactivados.'),
         ]
     )]
     public function indexDesactivados() {
@@ -101,6 +103,7 @@ class ComprobanteController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Comprobante creado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear el comprobante.'),
         ]
@@ -174,6 +177,7 @@ class ComprobanteController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Comprobante obtenido correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Comprobante no encontrado.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
@@ -214,6 +218,7 @@ class ComprobanteController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Comprobante eliminado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Comprobante no encontrado.'),
             new OA\Response(response: 500, description: 'Error interno al eliminar el comprobante.'),
         ]
@@ -278,6 +283,7 @@ class ComprobanteController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Comprobante restaurado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Comprobante no encontrado entre los eliminados.'),
             new OA\Response(response: 500, description: 'Error interno al restaurar el comprobante.'),
         ]
