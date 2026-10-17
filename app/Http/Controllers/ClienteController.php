@@ -19,6 +19,7 @@ class ClienteController extends Controller
         tags: ['Clientes'],
         responses: [
             new OA\Response(response: 200, description: 'Clientes obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No hay clientes disponibles.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
@@ -51,9 +52,10 @@ class ClienteController extends Controller
         summary: 'Listar todos los clientes desactivados',
         tags: ['Clientes'],
         responses: [
-            new OA\Response(response: 200, description: "Clientes desactivados obtenidos correctamente."),
-            new OA\Response(response: 404, description: "No hay clientes desactivados para mostrar."),
-            new OA\Response(response: 500,description: "Error interno del servidor al obtener los clientes desactivados.")
+            new OA\Response(response: 200, description: 'Clientes desactivados obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 404, description: 'No hay clientes desactivados para mostrar.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor al obtener los clientes desactivados.'),
         ]
     )]
     public function indexDesactivados() {
@@ -99,6 +101,7 @@ class ClienteController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Cliente creado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear el cliente.'),
         ]
@@ -156,6 +159,7 @@ class ClienteController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Cliente obtenido exitosamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Cliente no encontrado.'),
             new OA\Response(response: 422, description: 'El ID del cliente no es válido.'),
             new OA\Response(response: 500, description: 'Error interno al obtener el cliente.'),
@@ -212,6 +216,7 @@ class ClienteController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Cliente actualizado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Cliente no encontrado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al actualizar el cliente.'),
@@ -289,6 +294,7 @@ class ClienteController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Cliente eliminado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Cliente no encontrado.'),
             new OA\Response(response: 409, description: 'No se puede eliminar el cliente porque está siendo utilizado por otros registros.'),
             new OA\Response(response: 422, description: 'El ID del cliente no es válido.'),
@@ -341,6 +347,7 @@ class ClienteController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Cliente restaurado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Cliente no encontrado.'),
             new OA\Response(response: 409, description: 'El cliente no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),

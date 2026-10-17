@@ -55,6 +55,7 @@ class CategoriaController extends Controller
         tags: ['Categorías'],
         responses: [
             new OA\Response(response: 200, description: 'Categorías obtenidas correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No hay categorías desactivadas disponibles.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
@@ -100,6 +101,7 @@ class CategoriaController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Categoría creada correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear la categoría.'),
         ]
@@ -220,6 +222,7 @@ class CategoriaController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Categoría actualizada correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Categoría no encontrada.'),
             new OA\Response(response: 422, description: 'Datos inválidos.'),
             new OA\Response(response: 500, description: 'Error interno al actualizar la categoría.'),
@@ -313,6 +316,7 @@ class CategoriaController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Categoría eliminada correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Categoría no encontrada.'),
             new OA\Response(response: 409, description: 'No se puede eliminar la categoría porque está siendo utilizada por otros registros.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
@@ -380,6 +384,7 @@ class CategoriaController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Categoría restaurada correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Categoría no encontrada.'),
             new OA\Response(response: 409, description: 'La categoría no está eliminada.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),

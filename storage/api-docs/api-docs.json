@@ -77,6 +77,9 @@
                     "201": {
                         "description": "Adicional creado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "422": {
                         "description": "Datos inválidos o error de validación."
                     },
@@ -96,6 +99,9 @@
                 "responses": {
                     "200": {
                         "description": "Adicionales desactivados obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No hay adicionales desactivados."
@@ -193,6 +199,9 @@
                     "200": {
                         "description": "Adicional actualizado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Adicional no encontrado."
                     },
@@ -224,6 +233,9 @@
                 "responses": {
                     "200": {
                         "description": "Adicional eliminado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Adicional no encontrado."
@@ -261,6 +273,9 @@
                 "responses": {
                     "200": {
                         "description": "Adicional restaurado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Adicional no encontrado."
@@ -411,6 +426,9 @@
                     "201": {
                         "description": "Categoría creada correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "422": {
                         "description": "Datos inválidos o error de validación."
                     },
@@ -430,6 +448,9 @@
                 "responses": {
                     "200": {
                         "description": "Categorías obtenidas correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No hay categorías desactivadas disponibles."
@@ -526,6 +547,9 @@
                     "200": {
                         "description": "Categoría actualizada correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Categoría no encontrada."
                     },
@@ -557,6 +581,9 @@
                 "responses": {
                     "200": {
                         "description": "Categoría eliminada correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Categoría no encontrada."
@@ -595,6 +622,9 @@
                     "200": {
                         "description": "Categoría restaurada correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Categoría no encontrada."
                     },
@@ -620,6 +650,9 @@
                 "responses": {
                     "200": {
                         "description": "Clientes obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No hay clientes disponibles."
@@ -672,6 +705,9 @@
                     "201": {
                         "description": "Cliente creado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "422": {
                         "description": "Error de validación."
                     },
@@ -691,6 +727,9 @@
                 "responses": {
                     "200": {
                         "description": "Clientes desactivados obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No hay clientes desactivados para mostrar."
@@ -722,6 +761,9 @@
                 "responses": {
                     "200": {
                         "description": "Cliente obtenido exitosamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Cliente no encontrado."
@@ -785,6 +827,9 @@
                     "200": {
                         "description": "Cliente actualizado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Cliente no encontrado."
                     },
@@ -816,6 +861,9 @@
                 "responses": {
                     "200": {
                         "description": "Cliente eliminado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Cliente no encontrado."
@@ -854,6 +902,9 @@
                     "200": {
                         "description": "Cliente restaurado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Cliente no encontrado."
                     },
@@ -879,6 +930,9 @@
                 "responses": {
                     "200": {
                         "description": "Comprobantes obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No hay comprobantes disponibles."
@@ -941,6 +995,9 @@
                     "201": {
                         "description": "Comprobante creado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "422": {
                         "description": "Datos inválidos o error de validación."
                     },
@@ -961,10 +1018,13 @@
                     "200": {
                         "description": "Comprobantes desactivados obtenidos correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "No hay comprobantes desactivados para mostrar."
                     },
-                    "505": {
+                    "500": {
                         "description": "Error interno del servidor al obtener los comprobantes desactivados."
                     }
                 }
@@ -991,6 +1051,9 @@
                 "responses": {
                     "200": {
                         "description": "Comprobante obtenido correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Comprobante no encontrado."
@@ -1020,6 +1083,9 @@
                 "responses": {
                     "200": {
                         "description": "Comprobante eliminado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Comprobante no encontrado."
@@ -1052,6 +1118,9 @@
                     "200": {
                         "description": "Comprobante restaurado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Comprobante no encontrado entre los eliminados."
                     },
@@ -1071,6 +1140,9 @@
                 "responses": {
                     "200": {
                         "description": "Estados de pagos obtenidos exitosamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No se encontraron estados de pagos."
@@ -1116,6 +1188,9 @@
                     "201": {
                         "description": "Estado de pago creado exitosamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "422": {
                         "description": "Error de validación."
                     },
@@ -1135,6 +1210,9 @@
                 "responses": {
                     "200": {
                         "description": "Estados de pagos desactivados obtenidos exitosamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No se encontraron estados de pagos desactivados."
@@ -1166,6 +1244,9 @@
                 "responses": {
                     "200": {
                         "description": "Estado de pago obtenido exitosamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Estado de pago no encontrado."
@@ -1223,6 +1304,9 @@
                     "200": {
                         "description": "Estado de pago actualizado exitosamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Estado de pago no encontrado."
                     },
@@ -1254,6 +1338,9 @@
                 "responses": {
                     "200": {
                         "description": "Estado de pago eliminado exitosamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Estado de pago no encontrado."
@@ -1292,6 +1379,9 @@
                     "200": {
                         "description": "Estado de pago restaurado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Estado de pago no encontrado."
                     },
@@ -1317,6 +1407,9 @@
                 "responses": {
                     "200": {
                         "description": "Estados de pedidos obtenidos exitosamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No se encontraron estados de pedidos para mostrar."
@@ -1362,6 +1455,9 @@
                     "201": {
                         "description": "Estados de pedido creado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "422": {
                         "description": "Datos inválidos o error de validación."
                     },
@@ -1381,6 +1477,9 @@
                 "responses": {
                     "200": {
                         "description": "Estados de pedidos obtenidos exitosamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No se encontraron estados de pedidos para mostrar."
@@ -1412,6 +1511,9 @@
                 "responses": {
                     "200": {
                         "description": "Estado de pedido obtenido exitosamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Estado de pedido no encontrado."
@@ -1469,6 +1571,9 @@
                     "200": {
                         "description": "Estado de pedido actualizado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Estado de pedido no encontrado."
                     },
@@ -1500,6 +1605,9 @@
                 "responses": {
                     "200": {
                         "description": "Estado de pedido eliminado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Estado de pedido no encontrado."
@@ -1538,6 +1646,9 @@
                     "200": {
                         "description": "Estado de pedido restaurado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Estado de pedido no encontrado."
                     },
@@ -1563,6 +1674,9 @@
                 "responses": {
                     "200": {
                         "description": "Métodos de pago obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No hay métodos de pago disponibles."
@@ -1608,6 +1722,9 @@
                     "201": {
                         "description": "Método de pago creado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "422": {
                         "description": "Datos inválidos o error de validación."
                     },
@@ -1638,6 +1755,9 @@
                 "responses": {
                     "200": {
                         "description": "Método de pago obtenido correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Método de pago no encontrado."
@@ -1701,6 +1821,9 @@
                     "200": {
                         "description": "Método de pago actualizado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Método de pago no encontrado."
                     },
@@ -1732,6 +1855,9 @@
                 "responses": {
                     "200": {
                         "description": "Método de pago eliminado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Método de pago no encontrado."
@@ -1770,6 +1896,9 @@
                     "200": {
                         "description": "Método de pago restaurado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Método de pago no encontrado."
                     },
@@ -1796,6 +1925,9 @@
                     "200": {
                         "description": "Métodos de pago desactivados obtenidos correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "No hay métodos de pago desactivados para mostrar."
                     },
@@ -1815,6 +1947,9 @@
                 "responses": {
                     "200": {
                         "description": "Pagos obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No hay pagos disponibles."
@@ -1881,6 +2016,9 @@
                     "201": {
                         "description": "Pago creado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "422": {
                         "description": "Datos inválidos o error de validación."
                     },
@@ -1911,6 +2049,9 @@
                 "responses": {
                     "200": {
                         "description": "Pago obtenido correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Pago no encontrado."
@@ -1982,6 +2123,9 @@
                     "200": {
                         "description": "Pago actualizado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Pago no encontrado."
                     },
@@ -2014,6 +2158,9 @@
                     "200": {
                         "description": "Pago eliminado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Pago no encontrado."
                     },
@@ -2039,6 +2186,9 @@
                 "responses": {
                     "200": {
                         "description": "Pagos desactivados obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No hay pagos desactivados para mostrar."
@@ -2070,6 +2220,9 @@
                 "responses": {
                     "200": {
                         "description": "Pago restaurado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Pago no encontrado."
@@ -2177,6 +2330,9 @@
                     "201": {
                         "description": "Pedido creado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "422": {
                         "description": "Error de validación."
                     },
@@ -2207,6 +2363,9 @@
                 "responses": {
                     "200": {
                         "description": "Pedido obtenido exitosamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Pedido no encontrado."
@@ -2287,6 +2446,9 @@
                     "200": {
                         "description": "Pedido actualizado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Pedido no encontrado."
                     },
@@ -2319,6 +2481,9 @@
                     "200": {
                         "description": "Pedido eliminado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Pedido no encontrado."
                     },
@@ -2344,6 +2509,9 @@
                 "responses": {
                     "200": {
                         "description": "Pedidos desactivados obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No hay pedidos desactivados para mostrar."
@@ -2375,6 +2543,9 @@
                 "responses": {
                     "200": {
                         "description": "Pedido restaurado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Pedido no encontrado."
@@ -2412,6 +2583,9 @@
                 "responses": {
                     "200": {
                         "description": "Ítems del pedido obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "422": {
                         "description": "Parámetro pedido_id requerido o no válido."
@@ -2471,6 +2645,9 @@
                     "201": {
                         "description": "Ítem agregado correctamente al pedido."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "400": {
                         "description": "El pedido no está en un estado editable."
                     },
@@ -2507,6 +2684,9 @@
                 "responses": {
                     "200": {
                         "description": "Ítem obtenido correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "Ítem no encontrado."
@@ -2556,6 +2736,9 @@
                     "200": {
                         "description": "Ítem actualizado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "400": {
                         "description": "El pedido no está en un estado editable."
                     },
@@ -2591,6 +2774,9 @@
                     "200": {
                         "description": "Ítem eliminado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "400": {
                         "description": "Estado del pedido no editable o el pedido no puede quedar sin ítems."
                     },
@@ -2606,16 +2792,19 @@
                 }
             }
         },
-        "/pedido-items-desactivados": {
+        "/api/pedido-items-desactivados": {
             "get": {
                 "tags": [
                     "PedidoItems"
                 ],
                 "summary": "Listar todos los items de pedido desactivados",
-                "operationId": "fb1e4ef22fe8e208c316fb0e6b854fd2",
+                "operationId": "89b98336d3b213d79fe655a7c85d1a2a",
                 "responses": {
                     "200": {
                         "description": "Items de pedido desactivados obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No hay items de pedido desactivados para mostrar."
@@ -2702,6 +2891,9 @@
                     "201": {
                         "description": "Producto creado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "422": {
                         "description": "Error de validación."
                     },
@@ -2721,6 +2913,9 @@
                 "responses": {
                     "200": {
                         "description": "Productos desactivados obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
                     },
                     "404": {
                         "description": "No hay productos desactivados para mostrar."
@@ -2828,6 +3023,9 @@
                     "200": {
                         "description": "Producto actualizado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Producto no encontrado."
                     },
@@ -2860,6 +3058,9 @@
                     "200": {
                         "description": "Producto eliminado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Producto no encontrado."
                     },
@@ -2891,6 +3092,9 @@
                     "200": {
                         "description": "Producto restaurado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
                     "404": {
                         "description": "Producto no encontrado."
                     },
@@ -2910,6 +3114,12 @@
                 "responses": {
                     "200": {
                         "description": "Roles obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
                     },
                     "404": {
                         "description": "No hay roles disponibles."
@@ -2955,6 +3165,12 @@
                     "201": {
                         "description": "Rol creado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "422": {
                         "description": "Error de validación."
                     },
@@ -2974,6 +3190,12 @@
                 "responses": {
                     "200": {
                         "description": "Roles desactivados obtenidos correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
                     },
                     "404": {
                         "description": "No hay roles desactivados disponibles."
@@ -3005,6 +3227,12 @@
                 "responses": {
                     "200": {
                         "description": "Rol obtenido exitosamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
                     },
                     "404": {
                         "description": "Rol no encontrado."
@@ -3061,6 +3289,12 @@
                     "200": {
                         "description": "Rol actualizado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "404": {
                         "description": "Rol no encontrado."
                     },
@@ -3092,6 +3326,12 @@
                 "responses": {
                     "200": {
                         "description": "Rol eliminado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
                     },
                     "404": {
                         "description": "Rol no encontrado."
@@ -3130,6 +3370,12 @@
                     "200": {
                         "description": "Rol restaurado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "404": {
                         "description": "Rol no encontrado."
                     },
@@ -3158,6 +3404,9 @@
                     },
                     "401": {
                         "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
                     },
                     "404": {
                         "description": "No hay usuarios disponibles para mostrar."
@@ -3217,6 +3466,12 @@
                     "201": {
                         "description": "Usuario creado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "422": {
                         "description": "Los datos proporcionados no son válidos."
                     },
@@ -3250,6 +3505,9 @@
                     },
                     "401": {
                         "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
                     },
                     "404": {
                         "description": "Usuario no encontrado."
@@ -3339,6 +3597,12 @@
                     "200": {
                         "description": "Usuario actualizado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "404": {
                         "description": "Usuario no encontrado."
                     },
@@ -3370,6 +3634,12 @@
                 "responses": {
                     "200": {
                         "description": "Usuario eliminado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
                     },
                     "404": {
                         "description": "Usuario no encontrado."
@@ -3408,6 +3678,12 @@
                     "200": {
                         "description": "Usuario restaurado correctamente."
                     },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "404": {
                         "description": "Usuario no encontrado."
                     },
@@ -3435,7 +3711,10 @@
                         "description": "Usuarios desactivados obtenidos correctamente."
                     },
                     "401": {
-                        "description": "No autenticado - No tienes permisos para realizar esta acción."
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
                     },
                     "404": {
                         "description": "No hay usuarios desactivados para mostrar."

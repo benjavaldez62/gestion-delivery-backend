@@ -51,6 +51,7 @@ class AdicionalController extends Controller
         tags: ['Adicionales'],
         responses: [
             new OA\Response(response: 200, description: 'Adicionales desactivados obtenidos correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'No hay adicionales desactivados.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
@@ -100,6 +101,7 @@ class AdicionalController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: 'Adicional creado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear el adicional.'),
         ]
@@ -218,6 +220,7 @@ class AdicionalController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Adicional actualizado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Adicional no encontrado.'),
             new OA\Response(response: 422, description: 'Datos inválidos.'),
             new OA\Response(response: 500, description: 'Error interno al actualizar el adicional.'),
@@ -296,6 +299,7 @@ class AdicionalController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Adicional eliminado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Adicional no encontrado.'),
             new OA\Response(response: 409, description: 'Error de integridad referencial.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
@@ -363,6 +367,7 @@ class AdicionalController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Adicional restaurado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Adicional no encontrado.'),
             new OA\Response(response: 409, description: 'El adicional no está eliminado.'),
             new OA\Response(response: 422, description: 'El ID no es válido.'),
