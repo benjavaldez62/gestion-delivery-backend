@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePedidoItemRequest;
+use App\Http\Requests\UpdatePedidoItemRequest;
 use App\Http\Resources\PedidoItemResource;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
@@ -39,6 +41,7 @@ class PedidoItemController extends Controller
         path: '/api/pedido-items',
         summary: 'Listar los ítems de un pedido puntual',
         tags: ['PedidoItems'],
+        security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'pedido_id',
@@ -51,6 +54,7 @@ class PedidoItemController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Ítems del pedido obtenidos correctamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 422, description: 'Parámetro pedido_id requerido o no válido.'),
             new OA\Response(response: 404, description: 'No se encontraron ítems para el pedido ingresado.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
@@ -93,6 +97,7 @@ class PedidoItemController extends Controller
         path: '/api/pedidos/{pedido}/items',
         summary: 'Agregar un nuevo producto a un pedido existente',
         tags: ['PedidoItems'],
+        security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'pedido',
@@ -115,13 +120,14 @@ class PedidoItemController extends Controller
         responses: [
             new OA\Response(response: 201, description: 'Ítem agregado correctamente al pedido.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 400, description: 'El pedido no está en un estado editable.'),
             new OA\Response(response: 404, description: 'Pedido o producto no encontrado.'),
-            new OA\Response(response: 422, description: 'Datos de entrada no válidos.'),
+            new OA\Response(response: 422, description: 'Datos de entrada no válidos o producto inactivo.'),
             new OA\Response(response: 500, description: 'Error interno al agregar el ítem.'),
         ]
     )]
-    public function store(Request $request, $pedido)
+    public function store(StorePedidoItemRequest $request, $pedido)
     {
         try {
             $pedidoModel = Pedido::findOrFail($pedido);
@@ -132,18 +138,19 @@ class PedidoItemController extends Controller
                 ], 400);
             }
 
-            $validated = $request->validate([
-                'producto_id' => 'required|integer|exists:productos,id',
-                'cantidad' => 'required|integer|min:1',
-            ], [
-                'producto_id.required' => 'El producto es obligatorio.',
-                'producto_id.exists' => 'El producto seleccionado no existe.',
-                'cantidad.required' => 'La cantidad es obligatoria.',
-                'cantidad.integer' => 'La cantidad debe ser un número entero.',
-                'cantidad.min' => 'La cantidad debe ser mayor a 0.',
-            ]);
+            $validated = $request->validated();
 
             $producto = Producto::findOrFail($validated['producto_id']);
+
+            if (! $producto->activo || $producto->trashed()) {
+                return response()->json([
+                    'message' => 'El producto seleccionado se encuentra inactivo.',
+                    'errors' => [
+                        'producto_id' => ['El producto seleccionado no está activo.'],
+                    ],
+                ], 422);
+            }
+
             $precioUnitario = $producto->precio;
             $subtotal = $precioUnitario * $validated['cantidad'];
 
@@ -186,6 +193,7 @@ class PedidoItemController extends Controller
         path: '/api/pedido-items/{pedidoItem}',
         summary: 'Ver el detalle de un ítem por ID',
         tags: ['PedidoItems'],
+        security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'pedidoItem',
@@ -198,6 +206,7 @@ class PedidoItemController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Ítem obtenido correctamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Ítem no encontrado.'),
             new OA\Response(response: 500, description: 'Error interno al obtener el ítem.'),
         ]
@@ -226,6 +235,7 @@ class PedidoItemController extends Controller
         path: '/api/pedido-items/{pedidoItem}',
         summary: 'Modificar la cantidad de un ítem existente',
         tags: ['PedidoItems'],
+        security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'pedidoItem',
@@ -241,22 +251,24 @@ class PedidoItemController extends Controller
                 required: ['cantidad'],
                 properties: [
                     new OA\Property(property: 'cantidad', type: 'integer', example: 3),
+                    new OA\Property(property: 'producto_id', type: 'integer', nullable: true, example: 5),
                 ]
             )
         ),
         responses: [
             new OA\Response(response: 200, description: 'Ítem actualizado correctamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 400, description: 'El pedido no está en un estado editable.'),
             new OA\Response(response: 404, description: 'Ítem no encontrado.'),
-            new OA\Response(response: 422, description: 'Datos de entrada no válidos.'),
+            new OA\Response(response: 422, description: 'Datos de entrada no válidos o producto inactivo.'),
             new OA\Response(response: 500, description: 'Error interno al actualizar el ítem.'),
         ]
     )]
-    public function update(Request $request, $pedidoItem)
+    public function update(UpdatePedidoItemRequest $request, $pedidoItem)
     {
         try {
-            $item = PedidoItem::with('pedido')->findOrFail($pedidoItem);
+            $item = PedidoItem::with(['pedido', 'producto'])->findOrFail($pedidoItem);
             $pedido = $item->pedido;
 
             if (! $this->esPedidoEditable($pedido)) {
@@ -265,13 +277,16 @@ class PedidoItemController extends Controller
                 ], 400);
             }
 
-            $validated = $request->validate([
-                'cantidad' => 'required|integer|min:1',
-            ], [
-                'cantidad.required' => 'La cantidad es obligatoria.',
-                'cantidad.integer' => 'La cantidad debe ser un entero.',
-                'cantidad.min' => 'La cantidad debe ser mayor a 0.',
-            ]);
+            $validated = $request->validated();
+
+            if (! $item->producto || ! $item->producto->activo || $item->producto->trashed()) {
+                return response()->json([
+                    'message' => 'No se puede modificar un ítem cuyo producto se encuentra inactivo.',
+                    'errors' => [
+                        'producto_id' => ['El producto asociado al ítem se encuentra inactivo.'],
+                    ],
+                ], 422);
+            }
 
             DB::transaction(function () use ($item, $pedido, $validated) {
                 $item->cantidad = $validated['cantidad'];
@@ -306,6 +321,7 @@ class PedidoItemController extends Controller
         path: '/api/pedido-items/{pedidoItem}',
         summary: 'Quitar un ítem del pedido',
         tags: ['PedidoItems'],
+        security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'pedidoItem',
@@ -318,6 +334,7 @@ class PedidoItemController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Ítem eliminado correctamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 400, description: 'Estado del pedido no editable o el pedido no puede quedar sin ítems.'),
             new OA\Response(response: 404, description: 'Ítem no encontrado.'),
             new OA\Response(response: 422, description: 'ID no válido.'),
@@ -376,35 +393,34 @@ class PedidoItemController extends Controller
         path: '/api/pedido-items-desactivados',
         summary: 'Listar todos los items de pedido desactivados',
         tags: ['PedidoItems'],
+        security: [['sanctum' => []]],
         responses: [
             new OA\Response(response: 200, description: 'Items de pedido desactivados obtenidos correctamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'No hay items de pedido desactivados para mostrar.'),
             new OA\Response(response: 500, description: 'Error interno del servidor al obtener items de pedido desactivados.'),
         ]
     )]
-    public function indexDesactivados() {
+    public function indexDesactivados()
+    {
         try {
-            // llamamos lo inhabilitado
             $pedidoItemsDesacivados = PedidoItem::onlyTrashed()->get();
 
-            // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
             if ($pedidoItemsDesacivados->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay items de pedido desactivados para mostrar.'
+                    'message' => 'No hay items de pedido desactivados para mostrar.',
                 ], 404);
             }
 
-            // Caso 200: retornamos lo desactivado
             return response()->json([
                 'message' => 'Items de pedido desactivados obtenidos correctamente',
-                'pedidoItemsDesactivados' => PedidoItemResource::collection($pedidoItemsDesacivados)
+                'pedidoItemsDesactivados' => PedidoItemResource::collection($pedidoItemsDesacivados),
             ], 200);
-        } catch (\Exception $e){
-            // Caso 500: Falla en el servidor -> retornamos mensaje.
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno del servidor al obtener items de pedido desactivados',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

@@ -2587,6 +2587,9 @@
                     "401": {
                         "description": "No autenticado."
                     },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "422": {
                         "description": "Parámetro pedido_id requerido o no válido."
                     },
@@ -2596,7 +2599,12 @@
                     "500": {
                         "description": "Error interno del servidor."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pedidos/{pedido}/items": {
@@ -2648,6 +2656,9 @@
                     "401": {
                         "description": "No autenticado."
                     },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "400": {
                         "description": "El pedido no está en un estado editable."
                     },
@@ -2655,12 +2666,17 @@
                         "description": "Pedido o producto no encontrado."
                     },
                     "422": {
-                        "description": "Datos de entrada no válidos."
+                        "description": "Datos de entrada no válidos o producto inactivo."
                     },
                     "500": {
                         "description": "Error interno al agregar el ítem."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pedido-items/{pedidoItem}": {
@@ -2688,13 +2704,21 @@
                     "401": {
                         "description": "No autenticado."
                     },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "404": {
                         "description": "Ítem no encontrado."
                     },
                     "500": {
                         "description": "Error interno al obtener el ítem."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "put": {
                 "tags": [
@@ -2725,6 +2749,11 @@
                                     "cantidad": {
                                         "type": "integer",
                                         "example": 3
+                                    },
+                                    "producto_id": {
+                                        "type": "integer",
+                                        "example": 5,
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -2739,6 +2768,9 @@
                     "401": {
                         "description": "No autenticado."
                     },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "400": {
                         "description": "El pedido no está en un estado editable."
                     },
@@ -2746,12 +2778,17 @@
                         "description": "Ítem no encontrado."
                     },
                     "422": {
-                        "description": "Datos de entrada no válidos."
+                        "description": "Datos de entrada no válidos o producto inactivo."
                     },
                     "500": {
                         "description": "Error interno al actualizar el ítem."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
@@ -2777,6 +2814,9 @@
                     "401": {
                         "description": "No autenticado."
                     },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "400": {
                         "description": "Estado del pedido no editable o el pedido no puede quedar sin ítems."
                     },
@@ -2789,7 +2829,12 @@
                     "500": {
                         "description": "Error interno al eliminar el ítem."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pedido-items-desactivados": {
@@ -2806,13 +2851,21 @@
                     "401": {
                         "description": "No autenticado."
                     },
+                    "403": {
+                        "description": "No autorizado."
+                    },
                     "404": {
                         "description": "No hay items de pedido desactivados para mostrar."
                     },
                     "500": {
                         "description": "Error interno del servidor al obtener items de pedido desactivados."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/productos": {
