@@ -226,3 +226,53 @@ it('permite consultar un item de pedido exponiendo id y resolviendo relacion adi
         ->assertJsonPath('item.adicionales.0.nombre', 'Cheddar Extra');
 });
 
+it('rechaza agregar, modificar o eliminar items si el pedido no esta en estado pendiente (SD-316)', function (string $estado) {
+    $ctx = createTestContext($estado);
+
+    $item1 = PedidoItem::create([
+        'pedido_id' => $ctx['pedido']->id,
+        'producto_id' => $ctx['productoActivo']->id,
+        'cantidad' => 1,
+        'precio_unitario' => 2000.00,
+        'subtotal' => 2000.00,
+    ]);
+
+    $item2 = PedidoItem::create([
+        'pedido_id' => $ctx['pedido']->id,
+        'producto_id' => $ctx['productoActivo']->id,
+        'cantidad' => 2,
+        'precio_unitario' => 2000.00,
+        'subtotal' => 4000.00,
+    ]);
+
+    // 1. Agregar item (store)
+    $this->actingAs($ctx['user'], 'sanctum')
+        ->postJson("/api/pedidos/{$ctx['pedido']->id}/items", [
+            'producto_id' => $ctx['productoActivo']->id,
+            'cantidad' => 1,
+        ])
+        ->assertStatus(400)
+        ->assertJsonPath('message', 'No se pueden agregar ítems a un pedido que ya no está en estado editable.');
+
+    // 2. Modificar item (update)
+    $this->actingAs($ctx['user'], 'sanctum')
+        ->putJson("/api/pedido-items/{$item1->id}", [
+            'cantidad' => 3,
+        ])
+        ->assertStatus(400)
+        ->assertJsonPath('message', 'No se puede modificar un ítem de un pedido que no está en estado editable.');
+
+    // 3. Eliminar item (destroy)
+    $this->actingAs($ctx['user'], 'sanctum')
+        ->deleteJson("/api/pedido-items/{$item1->id}")
+        ->assertStatus(400)
+        ->assertJsonPath('message', 'No se puede eliminar un ítem de un pedido que no está en estado editable.');
+})->with([
+    'En preparación',
+    'En preparacion',
+    'Listo',
+    'En camino',
+    'Cancelado',
+    'Entregado',
+]);
+

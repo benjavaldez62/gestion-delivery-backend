@@ -18,13 +18,15 @@ class PedidoItemController extends Controller
 {
     /**
      * Helper privado para verificar si el pedido está en un estado editable.
+     * Regla de dominio: Únicamente los pedidos en estado 'Pendiente' pueden ser modificados o alterados.
+     * Una vez iniciada la preparación en cocina, no se admiten cambios.
      */
     private function esPedidoEditable(Pedido $pedido): bool
     {
-        $estadosNoEditables = ['entregado', 'cancelado', 'en_camino'];
-        $estadoNombre = $pedido->estadoPedido?->nombre ?? '';
+        $estadoNombre = strtolower(trim($pedido->estadoPedido?->nombre ?? ''));
+        $estadoNombre = str_replace(['_', '-'], ' ', $estadoNombre);
 
-        return ! in_array(strtolower($estadoNombre), $estadosNoEditables);
+        return $estadoNombre === 'pendiente';
     }
 
     /**
