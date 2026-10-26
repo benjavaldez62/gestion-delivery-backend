@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Adicional;
 use App\Models\Categoria;
 use App\Models\Cliente;
 use App\Models\EstadoPedido;
@@ -188,3 +189,40 @@ it('requiere autenticacion sanctum para agregar items a un pedido con codigo 401
 
     $response->assertUnauthorized();
 });
+
+it('permite consultar un item de pedido exponiendo id y resolviendo relacion adicionales', function () {
+    $ctx = createTestContext();
+
+    $item = PedidoItem::create([
+        'pedido_id' => $ctx['pedido']->id,
+        'producto_id' => $ctx['productoActivo']->id,
+        'cantidad' => 2,
+        'precio_unitario' => 2000.00,
+        'subtotal' => 4000.00,
+    ]);
+
+    $adicional = Adicional::create([
+        'nombre' => 'Cheddar Extra',
+        'descripcion' => 'Queso cheddar adicional',
+        'precio' => 350.00,
+        'activo' => true,
+    ]);
+
+    $item->adicionales()->attach($adicional->id, [
+        'precio_adicional' => 350.00,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $response = $this->actingAs($ctx['user'], 'sanctum')
+        ->getJson("/api/pedido-items/{$item->id}");
+
+    $response->assertOk()
+        ->assertJsonPath('item.id', $item->id)
+        ->assertJsonPath('item.cantidad', 2)
+        ->assertJsonPath('item.producto.id', $ctx['productoActivo']->id)
+        ->assertJsonCount(1, 'item.adicionales')
+        ->assertJsonPath('item.adicionales.0.id', $adicional->id)
+        ->assertJsonPath('item.adicionales.0.nombre', 'Cheddar Extra');
+});
+
