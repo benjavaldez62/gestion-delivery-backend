@@ -331,15 +331,8 @@ class UserController extends Controller
                 ]
             );
 
-            // Actualizamos el usuario
-            $user->name = $validated['name'];
-            $user->email = $validated['email'];
-            $user->password = $validated['password'];
-            $user->role_id = $validated['role_id'];
-            $user->telefono = $validated['telefono'];
-            $user->direccion = $validated['direccion'];
-            $user->activo = $validated['activo'];
-
+            // Actualizamos el usuario de forma segura únicamente con los campos validados presentes
+            $user->fill($validated);
             $user->save();
 
             // Retornamos respuesta exitosa
@@ -361,7 +354,7 @@ class UserController extends Controller
             return response()->json([
                 'message' => 'Error al intentar actualizar el usuario',
                 'error' => $e->getMessage()
-            ]);
+            ], 500);
         }
     }
 
@@ -426,12 +419,12 @@ class UserController extends Controller
             return response()->json([
                 'message' => 'No se puede eliminar el usuario porque está siendo utilizado en otros registros.',
                 'error' => $e->getMessage()
-            ]);
+            ], 409);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al intentar eliminar al usuario.',
                 'error' => $e->getMessage()
-            ]);
+            ], 500);
         }
     }
 
