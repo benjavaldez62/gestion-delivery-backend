@@ -19,6 +19,7 @@ class PagoResource extends JsonResource
             'pedido_id' => $this->pedido_id,
             'monto' => (float) $this->monto,
             'fecha_pago' => $this->fecha_pago,
+            'referencia' => $this->referencia,
             'metodo_pago' => $this->whenLoaded('metodoPago', function () {
                 return [
                     'id' => $this->metodoPago->id,
@@ -31,7 +32,7 @@ class PagoResource extends JsonResource
                     'nombre' => $this->estadoPago->nombre,
                 ];
             }),
-            'comprobante' => new ComprobanteResource($this->whenLoaded('comprobante')),
+            'comprobantes' => ComprobanteResource::collection($this->whenLoaded('comprobantes')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
