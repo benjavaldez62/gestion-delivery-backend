@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreEstadoPedidoRequest;
+use App\Http\Requests\UpdateEstadoPedidoRequest;
 use App\Http\Resources\EstadoPedidoResource;
 use App\Models\EstadoPedido;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
 class EstadoPedidoController extends Controller
@@ -16,7 +15,8 @@ class EstadoPedidoController extends Controller
     #[OA\Get(
         path: '/api/estado-pedidos',
         summary: 'Listar todos los estados de pedidos',
-        tags: ["Estados de Pedido"],
+        tags: ['Estados de Pedido'],
+        security: [['sanctum' => []]],
         responses: [
             new OA\Response(response: 200, description: 'Estados de pedidos obtenidos exitosamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
@@ -26,43 +26,58 @@ class EstadoPedidoController extends Controller
     )]
     public function index()
     {
-        //
+        try {
+            $estados = EstadoPedido::all();
+
+            if ($estados->isEmpty()) {
+                return response()->json([
+                    'message' => 'No se encontraron estados de pedidos para mostrar.',
+                ], 404);
+            }
+
+            return response()->json([
+                'message' => 'Estados de pedidos obtenidos exitosamente.',
+                'estadoPedidos' => EstadoPedidoResource::collection($estados),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno del servidor al obtener estados de pedidos.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     #[OA\Get(
         path: '/api/estado-pedidos-desactivados',
         summary: 'Listar todos los estados de pedidos desactivados',
-        tags: ["Estados de Pedido"],
+        tags: ['Estados de Pedido'],
+        security: [['sanctum' => []]],
         responses: [
-            new OA\Response(response: 200, description: 'Estados de pedidos obtenidos exitosamente.'),
+            new OA\Response(response: 200, description: 'Estados de pedidos desactivados obtenidos exitosamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
-            new OA\Response(response: 404, description: 'No se encontraron estados de pedidos para mostrar.'),
-            new OA\Response(response: 500, description: 'Error interno del servidor al obtener estados de pedidos.'),
+            new OA\Response(response: 404, description: 'No se encontraron estados de pedido desactivados.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor al obtener estados de pedido desactivados.'),
         ]
     )]
     public function indexDesactivados()
     {
         try {
-            // llamamos lo inhabilitado
             $estadoPedidoDesactivados = EstadoPedido::onlyTrashed()->get();
 
-            // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
             if ($estadoPedidoDesactivados->isEmpty()) {
                 return response()->json([
-                    'message' => 'No se encontraron estados de pedido desactivados.'
+                    'message' => 'No se encontraron estados de pedido desactivados.',
                 ], 404);
             }
 
-            // Caso 200: retornamos lo desactivado
             return response()->json([
                 'message' => 'Estados de pedido desactivados obtenidos exitosamente.',
-                'estadoPedidosDesactivados' => EstadoPedidoResource::collection($estadoPedidoDesactivados)
+                'estadoPedidosDesactivados' => EstadoPedidoResource::collection($estadoPedidoDesactivados),
             ], 200);
         } catch (\Exception $e) {
-            // Caso 500: Falla en el servidor -> retornamos mensaje.
             return response()->json([
                 'message' => 'Error interno del servidor al obtener estados de pedido desactivados.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -76,6 +91,7 @@ class EstadoPedidoController extends Controller
         path: '/api/estado-pedidos',
         summary: 'Crear un nuevo estado de pedido',
         tags: ['Estados de Pedido'],
+        security: [['sanctum' => []]],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -87,21 +103,39 @@ class EstadoPedidoController extends Controller
             )
         ),
         responses: [
-            new OA\Response(response: 201, description: 'Estados de pedido creado correctamente.'),
+            new OA\Response(response: 201, description: 'Estado de pedido creado correctamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 422, description: 'Datos inválidos o error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear el estado de pedido.'),
         ]
     )]
-    public function store(Request $request)
+    public function store(StoreEstadoPedidoRequest $request)
     {
-        //
+        try {
+            $validated = $request->validated();
+
+            $estadoPedido = new EstadoPedido;
+            $estadoPedido->nombre = $validated['nombre'];
+            $estadoPedido->descripcion = $validated['descripcion'] ?? null;
+            $estadoPedido->save();
+
+            return response()->json([
+                'message' => 'Estado de pedido creado correctamente.',
+                'estadoPedido' => new EstadoPedidoResource($estadoPedido),
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al crear el estado de pedido.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     #[OA\Get(
         path: '/api/estado-pedidos/{id}',
         summary: 'Obtener un estado de pedido por ID',
         tags: ['Estados de Pedido'],
+        security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -118,11 +152,26 @@ class EstadoPedidoController extends Controller
             new OA\Response(response: 500, description: 'Error interno al obtener el estado de pedido.'),
         ]
     )]
-    public function show(EstadoPedido $estadoPedido)
+    public function show($id)
     {
-        //
-    }
+        try {
+            $estadoPedido = EstadoPedido::findOrFail($id);
 
+            return response()->json([
+                'message' => 'Estado de pedido obtenido exitosamente.',
+                'estadoPedido' => new EstadoPedidoResource($estadoPedido),
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Estado de pedido no encontrado.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al obtener el estado de pedido.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
     public function edit(EstadoPedido $estadoPedido)
     {
@@ -133,6 +182,7 @@ class EstadoPedidoController extends Controller
         path: '/api/estado-pedidos/{id}',
         summary: 'Actualizar un estado de pedido por ID',
         tags: ['Estados de Pedido'],
+        security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -160,15 +210,41 @@ class EstadoPedidoController extends Controller
             new OA\Response(response: 500, description: 'Error interno al actualizar el estado de pedido.'),
         ]
     )]
-    public function update(Request $request, EstadoPedido $estadoPedido)
+    public function update(UpdateEstadoPedidoRequest $request, $id)
     {
-        //
+        try {
+            $estadoPedido = EstadoPedido::findOrFail($id);
+            $validated = $request->validated();
+
+            if (array_key_exists('nombre', $validated)) {
+                $estadoPedido->nombre = $validated['nombre'];
+            }
+            if (array_key_exists('descripcion', $validated)) {
+                $estadoPedido->descripcion = $validated['descripcion'] ?? null;
+            }
+            $estadoPedido->save();
+
+            return response()->json([
+                'message' => 'Estado de pedido actualizado correctamente.',
+                'estadoPedido' => new EstadoPedidoResource($estadoPedido),
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Estado de pedido no encontrado.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al actualizar el estado de pedido.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     #[OA\Delete(
         path: '/api/estado-pedidos/{id}',
         summary: 'Eliminar un estado de pedido por ID',
         tags: ['Estados de Pedido'],
+        security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -187,15 +263,45 @@ class EstadoPedidoController extends Controller
             new OA\Response(response: 500, description: 'Error interno al eliminar el estado de pedido.'),
         ]
     )]
-    public function destroy(EstadoPedido $estadoPedido)
+    public function destroy($id)
     {
-        //
+        try {
+            $estadoPedido = EstadoPedido::findOrFail($id);
+
+            // Verificar si existen pedidos asociados a este estado
+            if ($estadoPedido->pedidos()->exists()) {
+                return response()->json([
+                    'message' => 'No se puede eliminar el estado de pedido porque está siendo utilizado por otros registros.',
+                ], 409);
+            }
+
+            $estadoPedido->delete();
+
+            return response()->json([
+                'message' => 'Estado de pedido eliminado correctamente.',
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Estado de pedido no encontrado.',
+            ], 404);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'No se puede eliminar el estado de pedido porque está siendo utilizado por otros registros.',
+                'error' => $e->getMessage(),
+            ], 409);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al eliminar el estado de pedido.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     #[OA\Put(
         path: '/api/estado-pedidos/{id}/restore',
         summary: 'Restaurar un estado de pedido eliminado',
         tags: ['Estados de Pedido'],
+        security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -217,9 +323,29 @@ class EstadoPedidoController extends Controller
     public function restore($id)
     {
         try {
+            $estadoPedido = EstadoPedido::onlyTrashed()->findOrFail($id);
+            $estadoPedido->restore();
 
-        } catch(\Exception $e) {
-            
+            return response()->json([
+                'message' => 'Estado de pedido restaurado correctamente.',
+                'estadoPedido' => new EstadoPedidoResource($estadoPedido),
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            // Verificar si existe activo (sin eliminar) para devolver 409
+            if (EstadoPedido::where('id', $id)->exists()) {
+                return response()->json([
+                    'message' => 'El estado de pedido no está eliminado.',
+                ], 409);
+            }
+
+            return response()->json([
+                'message' => 'Estado de pedido no encontrado.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al restaurar el estado de pedido.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }
