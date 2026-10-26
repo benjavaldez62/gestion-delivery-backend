@@ -32,8 +32,7 @@ El sistema centraliza las operaciones del restaurante "La Posta", proporcionando
 | **Autenticación** | Laravel Sanctum | `^4.0` | Emisión y validación de Bearer Tokens para API |
 | **Documentación** | L5-Swagger / OpenAPI | `^11.1` | Documentación interactiva y especificación OpenAPI 3.0 |
 | **Base de Datos** | MySQL / MariaDB | `8.x+ / 10.x+` | Motor relacional con integridad referencial |
-| **Testing Backend** | Pest PHP | `^3.8` | Suite de pruebas unitarias y de integración |
-| **Testing E2E** | Playwright (Node.js) | `^1.57` | Pruebas de navegador extremo a extremo sobre Swagger UI |
+| **Testing** | Pest PHP | `^3.8` | Suite de pruebas unitarias y de integración |
 | **Dependencias** | Composer | `2.x` | Gestor de paquetes PHP |
 
 ---
@@ -252,21 +251,15 @@ El artefacto JSON compilado se ubica en `storage/api-docs/api-docs.json`.
 
 ---
 
-## 7. Pruebas Automatizadas (Testing)
+## 7. Pruebas Automatizadas (Pest PHP)
 
-El proyecto cuenta con una cobertura integral de pruebas que valida contratos, seguridad, lógica de negocio y compatibilidad de navegador.
-
-### 7.1. Suite de Pruebas con Pest PHP
-
-Para ejecutar todas las pruebas funcionales y unitarias:
+El proyecto cuenta con una cobertura integral de pruebas unitarias y de integración desarrolladas con **Pest PHP** para validar contratos de API, reglas de negocio e integridad referencial:
 
 ```bash
 php artisan test
 ```
 
-*Estado actual de la suite:* **55 tests aprobados al 100% (221 aserciones)**.
-
-#### Desglose de Pruebas Principales
+### Desglose de Pruebas Principales
 - `tests/Feature/AuthLoginTest.php`: Login, hash de contraseñas, validación de credenciales erróneas y tokens Sanctum.
 - `tests/Feature/AuthLogoutTest.php`: Revocación del Bearer Token y rechazo de logout anónimo.
 - `tests/Feature/PedidoItemValidationTest.php`: Validación de producto inactivo (422) y regla de inmutabilidad en cocina para estados no pendientes (400).
@@ -276,22 +269,6 @@ php artisan test
 - `tests/Feature/UserRolePartialUpdateTest.php`: Actualizaciones parciales seguras en usuarios y control null-safe en roles.
 - `tests/Feature/SecurityRoutesTest.php`: Restricción de rutas protegidas (401), control RBAC por rol (403) y bypass de SuperAdmin.
 - `tests/Feature/CorsTest.php`: Verificación de preflight OPTIONS (204) con credenciales y rechazo a orígenes no autorizados.
-
-### 7.2. Pruebas E2E de Navegador con Playwright
-
-Se dispone de un runner automatizado con **Playwright** en `e2e_swagger/` que valida la consola de Swagger UI en vivo contra el servidor local:
-
-```bash
-cd e2e_swagger
-npm test
-```
-
-Valida automáticamente:
-- Inyección del Bearer Token en el modal de autorización de Swagger.
-- Ejecución en vivo de `GET /api/pedido-items/{pedidoItem}` verificando el contrato de adicionales.
-- Ejecución de `GET /api/pagos/{id}` verificando el campo `referencia`.
-- Ejecución de `GET /api/pedidos` verificando la respuesta estructurada de pedidos.
-- Generación de capturas de pantalla de evidencia en `e2e_swagger/screenshots/`.
 
 ---
 
