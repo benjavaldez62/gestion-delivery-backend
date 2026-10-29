@@ -155,7 +155,7 @@ class PagoController extends Controller
     public function show($id)
     {
         try {
-            $pago = Pago::findOrFail($id);
+            $pago = Pago::with(['comprobantes', 'metodoPago', 'estadoPago'])->findOrFail($id);
 
             return response()->json([
                 'pago' => new PagoResource($pago),
@@ -195,6 +195,7 @@ class PagoController extends Controller
                     new OA\Property(property: 'metodo_pago_id', type: 'integer', example: 1),
                     new OA\Property(property: 'estado_pago_id', type: 'integer', example: 1),
                     new OA\Property(property: 'fecha_pago', type: 'string', format: 'date', example: '2026-03-30'),
+                    new OA\Property(property: 'referencia', type: 'string', maxLength: 255, nullable: true, example: 'TRX-987654'),
                 ]
             )
         ),

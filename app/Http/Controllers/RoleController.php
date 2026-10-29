@@ -133,7 +133,7 @@ class RoleController extends Controller
             // Crear Rol
             $role = new Role;
             $role->nombre = $validated['nombre'];
-            $role->descripcion = $validated['descripcion'];
+            $role->descripcion = $validated['descripcion'] ?? null;
             $role->save();
 
             return response()->json([
@@ -245,12 +245,11 @@ class RoleController extends Controller
             // Validar los datos
             $validated = $request->validate([
                 'nombre' => [
+                    'sometimes',
                     'required',
                     'string',
                     'max:30',
-                    'unique:roles,nombre,'.$role->id,
-                    Rule::unique('roles', 'nombre')
-                        ->ignore($role->id),
+                    Rule::unique('roles', 'nombre')->ignore($role->id),
                 ],
                 'descripcion' => 'nullable|string|max:255',
             ], [
@@ -263,8 +262,12 @@ class RoleController extends Controller
             ]);
 
             // Actualizar el rol
-            $role->nombre = $validated['nombre'];
-            $role->descripcion = $validated['descripcion'];
+            if (array_key_exists('nombre', $validated)) {
+                $role->nombre = $validated['nombre'];
+            }
+            if (array_key_exists('descripcion', $validated)) {
+                $role->descripcion = $validated['descripcion'] ?? null;
+            }
 
             $role->save();
 

@@ -15,11 +15,12 @@ class PedidoItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-           
-            'producto' => $this->whenLoaded('producto', fn () => ['id' =>$this->producto->id,'nombre' =>$this->producto->nombre]),
+            'id' => $this->id,
+            'producto' => $this->whenLoaded('producto', fn () => ['id' => $this->producto->id, 'nombre' => $this->producto->nombre]),
             'cantidad' => $this->cantidad,
             'precio_unitario' => (float) $this->precio_unitario,
             'subtotal' => (float) $this->subtotal,
+            'adicionales' => AdicionalResource::collection($this->whenLoaded('adicionales')),
         ];
     }
 }

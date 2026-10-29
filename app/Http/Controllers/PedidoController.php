@@ -46,6 +46,7 @@ class PedidoController extends Controller
                 'estadoPedido',
                 'metodoPago',
                 'items.producto',
+                'items.adicionales',
                 'pagos',
             ])->orderBy('created_at', 'desc')->get();
 
@@ -184,6 +185,7 @@ class PedidoController extends Controller
                 'estadoPedido',
                 'metodoPago',
                 'items.producto',
+                'items.adicionales',
                 'pagos',
             ])->findOrFail($id);
 
@@ -276,7 +278,7 @@ class PedidoController extends Controller
             ]);
 
             $pedido->update($validated);
-            $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago', 'items.producto', 'pagos']);
+            $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago', 'items.producto', 'items.adicionales', 'pagos']);
 
             return response()->json([
                 'message' => 'Pedido actualizado correctamente.',
