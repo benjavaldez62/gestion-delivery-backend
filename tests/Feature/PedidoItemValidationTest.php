@@ -276,3 +276,110 @@ it('rechaza agregar, modificar o eliminar items si el pedido no esta en estado p
     'Entregado',
 ]);
 
+it('permite agregar un item con adicionales y calcula subtotal y monto_total con snapshot historico (SD-321)', function () {
+    $ctx = createTestContext();
+
+    $adic1 = Adicional::create([
+        'nombre' => 'Cheddar Extra',
+        'precio' => 500.00,
+        'activo' => true,
+    ]);
+
+    $adic2 = Adicional::create([
+        'nombre' => 'Panceta Crocante',
+        'precio' => 700.00,
+        'activo' => true,
+    ]);
+
+    // Producto base: 2000.00, adicionales: 500 + 700 = 1200.00. Total unitario: 3200.00. Cantidad: 2 -> Subtotal: 6400.00
+    $response = $this->actingAs($ctx['user'], 'sanctum')
+        ->postJson("/api/pedidos/{$ctx['pedido']->id}/items", [
+            'producto_id' => $ctx['productoActivo']->id,
+            'cantidad' => 2,
+            'adicionales' => [$adic1->id, $adic2->id],
+        ]);
+
+    $response->assertStatus(201)
+        ->assertJsonCount(2, 'item.adicionales');
+
+    expect((float) $response->json('item.subtotal'))->toBe(6400.00);
+    expect((float) $response->json('item.precio_unitario'))->toBe(2000.00);
+
+    // Verificar snapshot en tabla pivote
+    $item = PedidoItem::with('adicionales')->latest('id')->first();
+    expect($item->adicionales)->toHaveCount(2);
+    expect((float) $item->adicionales->firstWhere('id', $adic1->id)->pivot->precio_adicional)->toBe(500.00);
+    expect((float) $item->adicionales->firstWhere('id', $adic2->id)->pivot->precio_adicional)->toBe(700.00);
+
+    // Verificar recálculo de montos en Pedido padre
+    $pedidoActualizado = $ctx['pedido']->fresh();
+    expect((float) $pedidoActualizado->subtotal)->toBe(6400.00);
+    expect((float) $pedidoActualizado->monto_total)->toBe(6400.00);
+});
+
+it('rechaza agregar un item si incluye un adicional inactivo o inexistente (SD-321)', function () {
+    $ctx = createTestContext();
+
+    $adicInactivo = Adicional::create([
+        'nombre' => 'Cebolla Caramelizada Inactiva',
+        'precio' => 400.00,
+        'activo' => false,
+    ]);
+
+    $response = $this->actingAs($ctx['user'], 'sanctum')
+        ->postJson("/api/pedidos/{$ctx['pedido']->id}/items", [
+            'producto_id' => $ctx['productoActivo']->id,
+            'cantidad' => 1,
+            'adicionales' => [$adicInactivo->id],
+        ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['adicionales.0']);
+
+    // Inexistente
+    $responseInexistente = $this->actingAs($ctx['user'], 'sanctum')
+        ->postJson("/api/pedidos/{$ctx['pedido']->id}/items", [
+            'producto_id' => $ctx['productoActivo']->id,
+            'cantidad' => 1,
+            'adicionales' => [99999],
+        ]);
+
+    $responseInexistente->assertStatus(422)
+        ->assertJsonValidationErrors(['adicionales.0']);
+});
+
+it('actualiza la cantidad de un item con adicionales recalculando subtotal con el snapshot de precio (SD-321)', function () {
+    $ctx = createTestContext();
+
+    $adic = Adicional::create([
+        'nombre' => 'Salsa BBQ',
+        'precio' => 300.00,
+        'activo' => true,
+    ]);
+
+    $response = $this->actingAs($ctx['user'], 'sanctum')
+        ->postJson("/api/pedidos/{$ctx['pedido']->id}/items", [
+            'producto_id' => $ctx['productoActivo']->id,
+            'cantidad' => 1,
+            'adicionales' => [$adic->id],
+        ]);
+
+    $itemId = $response->json('item.id');
+    expect((float) $response->json('item.subtotal'))->toBe(2300.00); // 2000 + 300
+
+    // Ahora supongamos que el admin cambia el precio en catálogo de la salsa a 800
+    $adic->precio = 800.00;
+    $adic->save();
+
+    // Actualizamos cantidad de 1 a 3 sin pasar adicionales (debe mantener el snapshot inmutable de 300)
+    $responseUpdate = $this->actingAs($ctx['user'], 'sanctum')
+        ->putJson("/api/pedido-items/{$itemId}", [
+            'cantidad' => 3,
+        ]);
+
+    $responseUpdate->assertStatus(200);
+    // (2000 + 300) * 3 = 6900
+    expect((float) $responseUpdate->json('item.subtotal'))->toBe(6900.00);
+    expect((float) $ctx['pedido']->fresh()->monto_total)->toBe(6900.00);
+});
+

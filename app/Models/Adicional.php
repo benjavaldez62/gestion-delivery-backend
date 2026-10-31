@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -14,6 +15,7 @@ class Adicional extends Model
     protected $table = 'adicionals';
 
     protected $fillable = [
+        'categoria_id',
         'nombre',
         'descripcion',
         'precio',
@@ -21,9 +23,15 @@ class Adicional extends Model
     ];
 
     protected $casts = [
+        'categoria_id' => 'integer',
         'precio' => 'decimal:2',
         'activo' => 'boolean',
     ];
+
+    public function categoria(): BelongsTo
+    {
+        return $this->belongsTo(Categoria::class);
+    }
 
     public function pedidoItems(): BelongsToMany
     {

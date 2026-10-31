@@ -17,16 +17,36 @@ class AdicionalController extends Controller
         summary: 'Listar todos los adicionales',
         tags: ['Adicionales'],
         security: [],
+        parameters: [
+            new OA\Parameter(
+                name: 'categoria_id',
+                in: 'query',
+                required: false,
+                description: 'Filtrar adicionales por ID de categoría (incluye adicionales globales)',
+                schema: new OA\Schema(type: 'integer', example: 1)
+            ),
+        ],
         responses: [
             new OA\Response(response: 200, description: 'Adicionales obtenidos correctamente.'),
             new OA\Response(response: 404, description: 'No hay adicionales disponibles.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
     )]
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $adicionales = Adicional::all();
+            $categoriaId = $request->query('categoria_id');
+
+            $query = Adicional::where('activo', true);
+
+            if ($categoriaId) {
+                $query->where(function ($q) use ($categoriaId) {
+                    $q->where('categoria_id', $categoriaId)
+                        ->orWhereNull('categoria_id');
+                });
+            }
+
+            $adicionales = $query->get();
 
             if ($adicionales->isEmpty()) {
                 return response()->json([
@@ -41,6 +61,61 @@ class AdicionalController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al obtener los adicionales.',
+            ], 500);
+        }
+    }
+
+    #[OA\Get(
+        path: '/api/categorias/{categoria}/adicionales',
+        summary: 'Listar adicionales disponibles para una categoría específica',
+        tags: ['Adicionales'],
+        security: [],
+        parameters: [
+            new OA\Parameter(
+                name: 'categoria',
+                in: 'path',
+                required: true,
+                description: 'ID de la categoría de la cual listar los adicionales',
+                schema: new OA\Schema(type: 'integer', example: 1)
+            ),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Adicionales de la categoría obtenidos correctamente.'),
+            new OA\Response(response: 404, description: 'Categoría no encontrada.'),
+            new OA\Response(response: 500, description: 'Error interno del servidor.'),
+        ]
+    )]
+    public function porCategoria($categoriaId)
+    {
+        try {
+            $categoria = \App\Models\Categoria::find($categoriaId);
+
+            if (! $categoria) {
+                return response()->json([
+                    'message' => 'Categoría no encontrada.',
+                ], 404);
+            }
+
+            $adicionales = Adicional::where('activo', true)
+                ->where(function ($query) use ($categoriaId) {
+                    $query->where('categoria_id', $categoriaId)
+                        ->orWhereNull('categoria_id');
+                })
+                ->orderBy('nombre', 'asc')
+                ->get();
+
+            return response()->json([
+                'message' => 'Adicionales de la categoría obtenidos correctamente.',
+                'categoria' => [
+                    'id' => $categoria->id,
+                    'nombre' => $categoria->nombre,
+                ],
+                'adicionales' => AdicionalResource::collection($adicionales),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al obtener adicionales por categoría.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -92,6 +167,7 @@ class AdicionalController extends Controller
             content: new OA\JsonContent(
                 required: ['nombre', 'precio'],
                 properties: [
+                    new OA\Property(property: 'categoria_id', type: 'integer', nullable: true, example: 1),
                     new OA\Property(property: 'nombre', type: 'string', maxLength: 50, example: 'Salsa Extra'),
                     new OA\Property(property: 'descripcion', type: 'string', nullable: true, example: 'Porción extra de salsa cheddar'),
                     new OA\Property(property: 'precio', type: 'number', format: 'float', example: 500.00),
@@ -111,11 +187,14 @@ class AdicionalController extends Controller
         try {
             // Validación
             $validated = $request->validate([
+                'categoria_id' => 'nullable|integer|exists:categorias,id',
                 'nombre' => 'required|string|max:50',
                 'descripcion' => 'nullable|string',
                 'precio' => 'required|numeric|gt:0',
                 'activo' => 'boolean',
             ], [
+                'categoria_id.integer' => 'El ID de la categoría debe ser un número entero.',
+                'categoria_id.exists' => 'La categoría seleccionada no existe.',
                 'nombre.required' => 'El nombre es obligatorio.',
                 'nombre.max' => 'El nombre no debe exceder los 50 caracteres.',
 
@@ -128,6 +207,7 @@ class AdicionalController extends Controller
 
             // Crear adicional
             $adicional = new Adicional;
+            $adicional->categoria_id = $validated['categoria_id'] ?? null;
             $adicional->nombre = $validated['nombre'];
             $adicional->descripcion = $validated['descripcion'] ?? null;
             $adicional->precio = $validated['precio'];
@@ -211,6 +291,7 @@ class AdicionalController extends Controller
             content: new OA\JsonContent(
                 required: ['nombre', 'precio'],
                 properties: [
+                    new OA\Property(property: 'categoria_id', type: 'integer', nullable: true, example: 1),
                     new OA\Property(property: 'nombre', type: 'string', maxLength: 50, example: 'Salsa Extra'),
                     new OA\Property(property: 'descripcion', type: 'string', nullable: true, example: 'Porción extra de salsa cheddar'),
                     new OA\Property(property: 'precio', type: 'number', format: 'float', example: 600.00),
@@ -235,11 +316,14 @@ class AdicionalController extends Controller
 
             // Validar datos
             $validated = $request->validate([
+                'categoria_id' => 'nullable|integer|exists:categorias,id',
                 'nombre' => 'required|string|max:50',
                 'descripcion' => 'nullable|string',
                 'precio' => 'required|numeric|gt:0',
                 'activo' => 'boolean',
             ], [
+                'categoria_id.integer' => 'El ID de la categoría debe ser un número entero.',
+                'categoria_id.exists' => 'La categoría seleccionada no existe.',
                 'nombre.required' => 'El nombre es obligatorio.',
                 'nombre.max' => 'El nombre no debe exceder los 50 caracteres.',
 
@@ -251,6 +335,9 @@ class AdicionalController extends Controller
             ]);
 
             // Actualizar adicional
+            if (array_key_exists('categoria_id', $validated)) {
+                $adicional->categoria_id = $validated['categoria_id'];
+            }
             $adicional->nombre = $validated['nombre'];
             $adicional->descripcion = $validated['descripcion'] ?? null;
             $adicional->precio = $validated['precio'];

@@ -33,6 +33,7 @@ Route::get('/productos/{id}', [ProductoController::class, 'show']);
 
 Route::get('/categorias', [CategoriaController::class, 'index']);
 Route::get('/categorias/{id}', [CategoriaController::class, 'show']);
+Route::get('/categorias/{categoria}/adicionales', [AdicionalController::class, 'porCategoria']);
 
 Route::get('/adicionales', [AdicionalController::class, 'index']);
 Route::get('/adicionales/{id}', [AdicionalController::class, 'show']);
