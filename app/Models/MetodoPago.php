@@ -27,4 +27,9 @@ class MetodoPago extends Model
     {
         return $this->hasMany(Pago::class);
     }
+
+    public function pedidos(): HasMany
+    {
+        return $this->hasMany(Pedido::class, 'metodo_pago_id');
+    }
 }
