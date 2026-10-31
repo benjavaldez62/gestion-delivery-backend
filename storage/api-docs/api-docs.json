@@ -2914,8 +2914,28 @@
                 "tags": [
                     "Productos"
                 ],
-                "summary": "Listar todos los productos",
+                "summary": "Listar todos los productos con filtros opcionales",
                 "operationId": "496dc08306524d77f18d124d1d6838aa",
+                "parameters": [
+                    {
+                        "name": "categoria_id",
+                        "in": "query",
+                        "description": "Filtrar productos por ID de categoría",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "description": "Término de búsqueda insensible por nombre o descripción",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Productos obtenidos correctamente."

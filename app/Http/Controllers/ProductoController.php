@@ -16,21 +16,45 @@ class ProductoController extends Controller
 {
     #[OA\Get(
         path: '/api/productos',
-        summary: 'Listar todos los productos',
+        summary: 'Listar todos los productos con filtros opcionales',
         tags: ['Productos'],
         security: [],
+        parameters: [
+            new OA\Parameter(
+                name: 'categoria_id',
+                in: 'query',
+                required: false,
+                description: 'Filtrar productos por ID de categoría',
+                schema: new OA\Schema(type: 'integer')
+            ),
+            new OA\Parameter(
+                name: 'q',
+                in: 'query',
+                required: false,
+                description: 'Término de búsqueda insensible por nombre o descripción',
+                schema: new OA\Schema(type: 'string')
+            ),
+        ],
         responses: [
             new OA\Response(response: 200, description: 'Productos obtenidos correctamente.'),
             new OA\Response(response: 404, description: 'No hay productos disponibles para mostrar.'),
             new OA\Response(response: 500, description: 'Error al obtener los productos.'),
         ]
     )]
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $productos = Producto::with('categoria')->get();
+            $query = Producto::with('categoria');
 
-            if ($productos->isEmpty()) {
+            $filters = $request->only(['categoria_id', 'q']);
+
+            if (!empty($filters['categoria_id']) || !empty($filters['q'])) {
+                $query->filtrar($filters);
+            }
+
+            $productos = $query->get();
+
+            if ($productos->isEmpty() && empty($filters['categoria_id']) && empty($filters['q'])) {
                 return response()->json([
                     'message' => 'No hay productos disponibles para mostrar.',
                 ], 404);
