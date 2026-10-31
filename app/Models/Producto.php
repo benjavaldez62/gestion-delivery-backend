@@ -35,4 +35,28 @@ class Producto extends Model
     {
         return $this->hasMany(PedidoItem::class);
     }
+
+    /**
+     * Scope para filtrar productos por categoria_id y termino de busqueda 'q'.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  array  $filters
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeFiltrar($query, array $filters)
+    {
+        if (!empty($filters['categoria_id'])) {
+            $query->where('categoria_id', $filters['categoria_id']);
+        }
+
+        if (!empty($filters['q'])) {
+            $termino = trim($filters['q']);
+            $query->where(function ($q) use ($termino) {
+                $q->whereRaw('LOWER(nombre) LIKE ?', ['%' . mb_strtolower($termino) . '%'])
+                  ->orWhereRaw('LOWER(descripcion) LIKE ?', ['%' . mb_strtolower($termino) . '%']);
+            });
+        }
+
+        return $query;
+    }
 }
