@@ -19,6 +19,18 @@
                 ],
                 "summary": "Listar todos los adicionales",
                 "operationId": "df94808b217af5734c29f0d75ae80c18",
+                "parameters": [
+                    {
+                        "name": "categoria_id",
+                        "in": "query",
+                        "description": "Filtrar adicionales por ID de categoría (incluye adicionales globales)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Adicionales obtenidos correctamente."
@@ -48,6 +60,11 @@
                                     "precio"
                                 ],
                                 "properties": {
+                                    "categoria_id": {
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
                                     "nombre": {
                                         "type": "string",
                                         "example": "Salsa Extra",
@@ -87,6 +104,39 @@
                         "description": "Error interno al crear el adicional."
                     }
                 }
+            }
+        },
+        "/api/categorias/{categoria}/adicionales": {
+            "get": {
+                "tags": [
+                    "Adicionales"
+                ],
+                "summary": "Listar adicionales disponibles para una categoría específica",
+                "operationId": "5cf6b11eb8904ae6405c6379593d0cbb",
+                "parameters": [
+                    {
+                        "name": "categoria",
+                        "in": "path",
+                        "description": "ID de la categoría de la cual listar los adicionales",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Adicionales de la categoría obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "Categoría no encontrada."
+                    },
+                    "500": {
+                        "description": "Error interno del servidor."
+                    }
+                },
+                "security": []
             }
         },
         "/api/adicionales-desactivados": {
@@ -170,6 +220,11 @@
                                     "precio"
                                 ],
                                 "properties": {
+                                    "categoria_id": {
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
                                     "nombre": {
                                         "type": "string",
                                         "example": "Salsa Extra",
