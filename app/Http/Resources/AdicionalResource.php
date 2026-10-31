@@ -16,6 +16,7 @@ class AdicionalResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'categoria_id' => $this->categoria_id,
             'nombre' => $this->nombre,
             'descripcion' => $this->descripcion,
             'precio' => (float) $this->precio,
