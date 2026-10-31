@@ -38,6 +38,18 @@ class UpdatePedidoItemRequest extends FormRequest
                         ->whereNull('deleted_at');
                 }),
             ],
+            'adicionales' => [
+                'nullable',
+                'array',
+            ],
+            'adicionales.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('adicionals', 'id')->where(function ($query) {
+                    $query->where('activo', true)
+                        ->whereNull('deleted_at');
+                }),
+            ],
         ];
     }
 
@@ -54,6 +66,10 @@ class UpdatePedidoItemRequest extends FormRequest
             'cantidad.min' => 'La cantidad debe ser mayor a 0.',
             'producto_id.integer' => 'El ID del producto debe ser un número entero.',
             'producto_id.exists' => 'El producto seleccionado no existe o no se encuentra activo.',
+            'adicionales.array' => 'Los adicionales deben ser proporcionados en una lista.',
+            'adicionales.*.integer' => 'Cada adicional debe ser un identificador numérico.',
+            'adicionales.*.distinct' => 'No se pueden repetir adicionales en el mismo ítem.',
+            'adicionales.*.exists' => 'Uno o más adicionales seleccionados no existen o se encuentran inactivos.',
         ];
     }
 

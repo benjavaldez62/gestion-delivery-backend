@@ -36,6 +36,18 @@ class StorePedidoItemRequest extends FormRequest
                 'integer',
                 'min:1',
             ],
+            'adicionales' => [
+                'nullable',
+                'array',
+            ],
+            'adicionales.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('adicionals', 'id')->where(function ($query) {
+                    $query->where('activo', true)
+                        ->whereNull('deleted_at');
+                }),
+            ],
         ];
     }
 
@@ -53,6 +65,10 @@ class StorePedidoItemRequest extends FormRequest
             'cantidad.required' => 'La cantidad es obligatoria.',
             'cantidad.integer' => 'La cantidad debe ser un número entero.',
             'cantidad.min' => 'La cantidad debe ser mayor a 0.',
+            'adicionales.array' => 'Los adicionales deben ser proporcionados en una lista.',
+            'adicionales.*.integer' => 'Cada adicional debe ser un identificador numérico.',
+            'adicionales.*.distinct' => 'No se pueden repetir adicionales en el mismo ítem.',
+            'adicionales.*.exists' => 'Uno o más adicionales seleccionados no existen o se encuentran inactivos.',
         ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePedidoItemRequest;
 use App\Http\Requests\UpdatePedidoItemRequest;
 use App\Http\Resources\PedidoItemResource;
+use App\Models\Adicional;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
 use App\Models\Producto;
@@ -30,11 +31,12 @@ class PedidoItemController extends Controller
     }
 
     /**
-     * Helper privado para recalcular el monto_total del pedido padre.
+     * Helper privado para recalcular el subtotal y monto_total del pedido padre.
      */
     private function recalcularMontoTotalPedido(Pedido $pedido): void
     {
         $nuevoTotal = $pedido->items()->sum('subtotal');
+        $pedido->subtotal = $nuevoTotal;
         $pedido->monto_total = $nuevoTotal;
         $pedido->save();
     }
@@ -116,6 +118,7 @@ class PedidoItemController extends Controller
                 properties: [
                     new OA\Property(property: 'producto_id', type: 'integer', example: 5),
                     new OA\Property(property: 'cantidad', type: 'integer', example: 2),
+                    new OA\Property(property: 'adicionales', type: 'array', items: new OA\Items(type: 'integer'), nullable: true, example: [1, 2]),
                 ]
             )
         ),
@@ -154,9 +157,23 @@ class PedidoItemController extends Controller
             }
 
             $precioUnitario = $producto->precio;
-            $subtotal = $precioUnitario * $validated['cantidad'];
 
-            $pedidoItem = DB::transaction(function () use ($pedidoModel, $validated, $precioUnitario, $subtotal) {
+            $pedidoItem = DB::transaction(function () use ($pedidoModel, $validated, $precioUnitario) {
+                $costoAdicionalesUnitario = 0;
+                $attachData = [];
+
+                if (! empty($validated['adicionales'])) {
+                    $adicionales = Adicional::whereIn('id', $validated['adicionales'])->get();
+                    foreach ($adicionales as $adicional) {
+                        $costoAdicionalesUnitario += (float) $adicional->precio;
+                        $attachData[$adicional->id] = [
+                            'precio_adicional' => $adicional->precio,
+                        ];
+                    }
+                }
+
+                $subtotal = ($precioUnitario + $costoAdicionalesUnitario) * $validated['cantidad'];
+
                 $item = new PedidoItem;
                 $item->pedido_id = $pedidoModel->id;
                 $item->producto_id = $validated['producto_id'];
@@ -165,6 +182,10 @@ class PedidoItemController extends Controller
                 $item->subtotal = $subtotal;
                 $item->save();
 
+                if (! empty($attachData)) {
+                    $item->adicionales()->attach($attachData);
+                }
+
                 $this->recalcularMontoTotalPedido($pedidoModel);
 
                 return $item;
@@ -172,7 +193,7 @@ class PedidoItemController extends Controller
 
             return response()->json([
                 'message' => 'Ítem agregado al pedido correctamente.',
-                'item' => new PedidoItemResource($pedidoItem->load('producto')),
+                'item' => new PedidoItemResource($pedidoItem->load(['producto', 'adicionales'])),
             ], 201);
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -254,6 +275,7 @@ class PedidoItemController extends Controller
                 properties: [
                     new OA\Property(property: 'cantidad', type: 'integer', example: 3),
                     new OA\Property(property: 'producto_id', type: 'integer', nullable: true, example: 5),
+                    new OA\Property(property: 'adicionales', type: 'array', items: new OA\Items(type: 'integer'), nullable: true, example: [1, 2]),
                 ]
             )
         ),
@@ -270,7 +292,7 @@ class PedidoItemController extends Controller
     public function update(UpdatePedidoItemRequest $request, $pedidoItem)
     {
         try {
-            $item = PedidoItem::with(['pedido', 'producto'])->findOrFail($pedidoItem);
+            $item = PedidoItem::with(['pedido', 'producto', 'adicionales'])->findOrFail($pedidoItem);
             $pedido = $item->pedido;
 
             if (! $this->esPedidoEditable($pedido)) {
@@ -292,7 +314,25 @@ class PedidoItemController extends Controller
 
             DB::transaction(function () use ($item, $pedido, $validated) {
                 $item->cantidad = $validated['cantidad'];
-                $item->subtotal = $item->precio_unitario * $validated['cantidad'];
+
+                if (array_key_exists('adicionales', $validated)) {
+                    $syncData = [];
+                    $costoAdicionalesUnitario = 0;
+                    if (! empty($validated['adicionales'])) {
+                        $adicionales = Adicional::whereIn('id', $validated['adicionales'])->get();
+                        foreach ($adicionales as $adicional) {
+                            $costoAdicionalesUnitario += (float) $adicional->precio;
+                            $syncData[$adicional->id] = [
+                                'precio_adicional' => $adicional->precio,
+                            ];
+                        }
+                    }
+                    $item->adicionales()->sync($syncData);
+                } else {
+                    $costoAdicionalesUnitario = (float) $item->adicionales()->sum('precio_adicional');
+                }
+
+                $item->subtotal = ($item->precio_unitario + $costoAdicionalesUnitario) * $validated['cantidad'];
                 $item->save();
 
                 $this->recalcularMontoTotalPedido($pedido);
@@ -300,7 +340,7 @@ class PedidoItemController extends Controller
 
             return response()->json([
                 'message' => 'Ítem actualizado correctamente.',
-                'item' => new PedidoItemResource($item->fresh('producto')),
+                'item' => new PedidoItemResource($item->fresh(['producto', 'adicionales'])),
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([

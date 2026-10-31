@@ -2738,6 +2738,17 @@
                                     "cantidad": {
                                         "type": "integer",
                                         "example": 2
+                                    },
+                                    "adicionales": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2
+                                        ],
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -2849,6 +2860,17 @@
                                     "producto_id": {
                                         "type": "integer",
                                         "example": 5,
+                                        "nullable": true
+                                    },
+                                    "adicionales": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2
+                                        ],
                                         "nullable": true
                                     }
                                 },
