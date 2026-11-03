@@ -123,7 +123,7 @@ backend/
 
 | Método | Ruta | Acceso | Descripción |
 |:---:|:---|:---:|:---|
-| `GET` | `/api/productos` | Público | Listar productos activos (con categoría vinculada). |
+| `GET` | `/api/productos` | Público | Listar productos activos con categoría vinculada. Admite filtros opcionales por query params: `?categoria_id={id}` y búsqueda textual por nombre con `?q={termino}`. |
 | `GET` | `/api/productos/{id}` | Público | Detalle de un producto puntual. |
 | `POST` | `/api/productos` | `auth:sanctum` | Crear producto. Valida duplicados y asigna estado activo. |
 | `PUT` | `/api/productos/{id}` | `auth:sanctum` | Actualizar atributos de un producto. |
@@ -132,14 +132,15 @@ backend/
 | `GET` | `/api/productos-desactivados` | `auth:sanctum` | Listar productos desactivados/eliminados lógicamente. |
 | `GET` | `/api/categorias` | Público | Listar categorías activas. |
 | `GET` | `/api/categorias/{id}` | Público | Detalle de una categoría puntual. |
+| `GET` | `/api/categorias/{categoria}/adicionales` | Público | Listar adicionales disponibles asociados a una categoría gastronómica específica. |
 | `POST` | `/api/categorias` | `auth:sanctum` | Crear nueva categoría. |
 | `PUT` | `/api/categorias/{id}` | `auth:sanctum` | Actualizar categoría. |
 | `DELETE` | `/api/categorias/{id}` | `auth:sanctum` | Baja lógica de categoría. |
 | `PUT` | `/api/categorias/{id}/restore` | `auth:sanctum` | Restaurar categoría eliminada. |
 | `GET` | `/api/categorias-desactivadas` | `auth:sanctum` | Listar categorías desactivadas. |
-| `GET` | `/api/adicionales` | Público | Listar adicionales disponibles (toppings, guarniciones, etc.). |
-| `GET` | `/api/adicionales/{id}` | Público | Detalle de un adicional puntual. |
-| `POST` | `/api/adicionales` | `auth:sanctum` | Crear nuevo adicional. |
+| `GET` | `/api/adicionales` | Público | Listar adicionales disponibles (toppings, guarniciones, etc.). Admite filtro opcional por categoría `?categoria_id={id}`. |
+| `GET` | `/api/adicionales/{id}` | Público | Detalle de un adicional puntual exponiendo `categoria_id`. |
+| `POST` | `/api/adicionales` | `auth:sanctum` | Crear nuevo adicional asociando opcionalmente `categoria_id`. |
 | `PUT` | `/api/adicionales/{id}` | `auth:sanctum` | Actualizar un adicional. |
 | `DELETE` | `/api/adicionales/{id}` | `auth:sanctum` | Baja lógica de adicional. |
 | `PUT` | `/api/adicionales/{id}/restore` | `auth:sanctum` | Restaurar adicional eliminado. |
@@ -157,9 +158,9 @@ backend/
 | `PUT` | `/api/pedidos/{id}/restore` | `auth:sanctum` | Restaurar pedido cancelado. |
 | `GET` | `/api/pedidos-desactivados` | `auth:sanctum` | Listar pedidos cancelados/desactivados. |
 | `GET` | `/api/pedido-items` | `auth:sanctum` | Listar items filtrando por `pedido_id`. |
-| `POST` | `/api/pedidos/{pedido}/items` | `auth:sanctum` | Agregar ítem al pedido. Rechaza con 400 si el pedido no está en estado `Pendiente`. Rechaza con 422 si el producto está inactivo. |
-| `GET` | `/api/pedido-items/{pedidoItem}` | `auth:sanctum` | Detalle de un ítem exponiendo `id`, producto, cantidad, subtotal y array de adicionales. |
-| `PUT` | `/api/pedido-items/{pedidoItem}` | `auth:sanctum` | Modificar cantidad de un ítem. Rechaza con 400 si ya se inició la cocción. |
+| `POST` | `/api/pedidos/{pedido}/items` | `auth:sanctum` | Agregar ítem al pedido. Admite array opcional `adicionales` (`[{"id": 1, "cantidad": 1}]`), calcula el subtotal `(precio + sum(adicionales)) * cantidad`, persiste el snapshot histórico de precios en la tabla pivote y actualiza el total del pedido. Rechaza con 400 si el pedido no está en estado `Pendiente`. Rechaza con 422 si el producto o adicional está inactivo. |
+| `GET` | `/api/pedido-items/{pedidoItem}` | `auth:sanctum` | Detalle de un ítem exponiendo `id`, producto (con `categoria_id`), cantidad, subtotal y array de adicionales. |
+| `PUT` | `/api/pedido-items/{pedidoItem}` | `auth:sanctum` | Modificar cantidad o adicionales de un ítem recalculando subtotales y total del pedido. Rechaza con 400 si ya se inició la cocción. |
 | `DELETE` | `/api/pedido-items/{pedidoItem}` | `auth:sanctum` | Quitar ítem del pedido. Rechaza con 400 si el pedido no es editable o si es el único ítem. |
 
 ### 4.4. Estados de Pedido (`/api/estado-pedidos`)
@@ -184,7 +185,7 @@ backend/
 | `PUT` | `/api/pagos/{id}` | `auth:sanctum` | Modificar datos de pago (ej. actualizar referencia). |
 | `DELETE` | `/api/pagos/{id}` | `auth:sanctum` | Baja lógica de pago. |
 | `PUT` | `/api/pagos/{id}/restore` | `auth:sanctum` | Restaurar pago eliminado. |
-| `GET` | `/api/metodos-pago` | `auth:sanctum` | Listar métodos de pago (Efectivo, Transferencia, MercadoPago, etc.). |
+| `GET` | `/api/metodos-pago` | `auth:sanctum` | Listar métodos de pago (Efectivo, Transferencia, MercadoPago, etc.) con soporte para relación inversa hacia pedidos (`pedidos(): HasMany`). |
 | `POST` | `/api/metodos-pago` | `auth:sanctum` | Crear método de pago. |
 | `GET` | `/api/metodos-pago/{id}` | `auth:sanctum` | Detalle de método de pago. |
 | `PUT` | `/api/metodos-pago/{id}` | `auth:sanctum` | Actualizar método de pago. |
@@ -253,7 +254,7 @@ El artefacto JSON compilado se ubica en `storage/api-docs/api-docs.json`.
 
 ## 7. Pruebas Automatizadas (Pest PHP)
 
-El proyecto cuenta con una cobertura integral de pruebas unitarias y de integración desarrolladas con **Pest PHP** para validar contratos de API, reglas de negocio e integridad referencial:
+El proyecto cuenta con una cobertura integral de pruebas unitarias y de integración desarrolladas con **Pest PHP** para validar contratos de API, reglas de negocio e integridad referencial (76 pruebas pasando, 322 aserciones):
 
 ```bash
 php artisan test
@@ -262,7 +263,10 @@ php artisan test
 ### Desglose de Pruebas Principales
 - `tests/Feature/AuthLoginTest.php`: Login, hash de contraseñas, validación de credenciales erróneas y tokens Sanctum.
 - `tests/Feature/AuthLogoutTest.php`: Revocación del Bearer Token y rechazo de logout anónimo.
-- `tests/Feature/PedidoItemValidationTest.php`: Validación de producto inactivo (422) y regla de inmutabilidad en cocina para estados no pendientes (400).
+- `tests/Feature/AdicionalPorCategoriaTest.php`: Relación de adicionales con categorías gastronómicas, endpoint `GET /api/categorias/{categoria}/adicionales`, filtro `?categoria_id` y exposición de `categoria_id` en resources.
+- `tests/Feature/ProductoFilterTest.php`: Filtros en listado de productos activos por categoría (`?categoria_id`) y búsqueda por texto (`?q`).
+- `tests/Feature/MetodoPagoRelationTest.php`: Relación inversa `pedidos(): HasMany` en el modelo `MetodoPago`.
+- `tests/Feature/PedidoItemValidationTest.php`: Validación de producto inactivo (422), inmutabilidad en cocina para estados no pendientes (400), persistencia de modificadores adicionales con snapshot de precios y recálculo automático de subtotales y total del pedido.
 - `tests/Feature/PedidoListTest.php`: Listado de pedidos y serialización del array `items.adicionales` en `index` y `show`.
 - `tests/Feature/EstadoPedidoTest.php`: CRUD completo, validación de unicidad, soft deletes y restauración de estados.
 - `tests/Feature/PagoTest.php`: Persistencia de columna `referencia` y serialización de la colección `comprobantes`.
