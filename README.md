@@ -233,6 +233,8 @@ La API cuenta con documentación OpenAPI 3.0 auto-generada. Con el servidor en e
 http://127.0.0.1:8000/api/documentation
 ```
 
+> **Nota importante de origen (Same-Origin Policy):** Se debe acceder a Swagger UI utilizando estrictamente la dirección IP `http://127.0.0.1:8000/api/documentation` y **no** `http://localhost:8000/api/documentation`. Debido a que el servidor en la especificación OpenAPI está definido bajo `http://127.0.0.1:8000`, abrir la interfaz desde `localhost` provoca que el navegador trate las peticiones de prueba (*Try it out*) como solicitudes de origen cruzado (CORS) e interrumpa la conexión con `TypeError: NetworkError when attempting to fetch resource`.
+
 ### Autenticación en Swagger
 1. Realizar una petición a `POST /api/login` con credenciales de prueba.
 2. Copiar el valor del token devuelto.
@@ -298,7 +300,7 @@ cp .env.example .env
 ```
 Editar el archivo `.env` configurando la base de datos y la URL del frontend:
 ```env
-APP_URL=http://localhost:8000
+APP_URL=http://127.0.0.1:8000
 FRONTEND_URL=http://localhost:4200
 
 DB_CONNECTION=mysql
