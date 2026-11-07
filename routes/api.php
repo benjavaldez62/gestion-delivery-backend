@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdicionalController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BorradorCheckoutController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComprobanteController;
@@ -26,6 +27,7 @@ use Illuminate\Support\Facades\Route;
 
 // Autenticación
 Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/checkout/borradores', [BorradorCheckoutController::class, 'store'])->middleware('throttle:10,1');
 
 // Catálogo (Lectura pública para armar pedidos)
 Route::get('/productos', [ProductoController::class, 'index']);
