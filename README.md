@@ -111,6 +111,22 @@ backend/
 
 ## 4. Catálogo Completo de Endpoints
 
+### Checkout público
+
+`POST /api/checkout/borradores` guarda un borrador para un cliente sin login.
+Recibe `direccion`, `telefono`, `notas` opcionales, `metodo_pago` (`efectivo` o
+`tarjeta`) e `items`, cada uno con `producto_id`, `cantidad` y una lista de IDs
+`adicionales`. Valida disponibilidad y calcula precios y un costo de envío fijo
+de $1500 en el servidor. Devuelve `201` con el identificador del borrador y los
+totales, o `422` si los datos no son válidos. La ruta está limitada a 10
+solicitudes por minuto.
+
+El borrador no crea un registro en `pedidos` ni identifica aún al cliente de
+Telegram. La asociación con el bot, la conversión a pedido y una política de
+caducidad y eliminación de borradores quedan pendientes. Los endpoints
+administrativos de pedidos siguen protegidos por Sanctum. Aplicar las migraciones
+con `php artisan migrate` antes de usar el endpoint.
+
 ### 4.1. Autenticación (`/api`)
 
 | Método | Ruta | Acceso | Descripción |
