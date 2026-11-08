@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             ClienteSeeder::class,
             CategoriaSeeder::class,
             ProductoSeeder::class,
+            AdicionalSeeder::class,
             MetodoPagoSeeder::class,
             EstadoPedidoSeeder::class,
             PedidoSeeder::class,
