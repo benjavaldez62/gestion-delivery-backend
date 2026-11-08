@@ -17,6 +17,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\GoogleAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -160,4 +161,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/users/{id}/restore', [UserController::class, 'restore']);
         Route::get('/users-desactivados', [UserController::class, 'indexDesactivados']);
     });
+
+    Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:10,1');
 });
