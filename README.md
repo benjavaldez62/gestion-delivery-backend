@@ -1,6 +1,6 @@
 # Sistema de Gestión de Delivery — La Posta (Backend API)
 
-API REST desarrollada con **Laravel** (PHP 8.2+) para la gestión integral de pedidos, catálogo gastronómico, control de cocina, asignación de repartos y liquidación de pagos en establecimientos gastronómicos. Este repositorio conforma la capa de backend desacoplada del cliente Single Page Application (Angular 19).
+API REST desarrollada con **Laravel** (PHP 8.2+) para la gestión integral de pedidos, catálogo gastronómico, control de cocina, asignación de repartos y liquidación de pagos en establecimientos gastronómicos. Este repositorio conforma la capa de backend desacoplada del cliente Single Page Application (Angular 22).
 
 ---
 
