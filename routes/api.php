@@ -28,6 +28,7 @@ use App\Http\Controllers\GoogleAuthController;
 
 // Autenticación
 Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:10,1');
 Route::post('/checkout/borradores', [BorradorCheckoutController::class, 'store'])->middleware('throttle:10,1');
 
 // Catálogo (Lectura pública para armar pedidos)
@@ -161,6 +162,4 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/users/{id}/restore', [UserController::class, 'restore']);
         Route::get('/users-desactivados', [UserController::class, 'indexDesactivados']);
     });
-
-    Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:10,1');
 });
