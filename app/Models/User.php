@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\RecuperarContrasena;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,6 +30,11 @@ class User extends Authenticatable
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new RecuperarContrasena($token));
     }
 
     public function pedidosComoCocinero(): HasMany
