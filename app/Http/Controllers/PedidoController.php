@@ -2,16 +2,78 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AsignarPersonalPedidoRequest;
 use App\Http\Resources\PedidoResource;
 use App\Models\Pedido;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
 class PedidoController extends Controller
 {
+    #[OA\Put(
+        path: '/api/pedidos/{id}/asignaciones',
+        summary: 'Asignar cocinero o repartidor a un pedido',
+        tags: ['Pedidos'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del pedido',
+                schema: new OA\Schema(type: 'integer')
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'cocinero_id', type: 'integer', nullable: true),
+                    new OA\Property(property: 'repartidor_id', type: 'integer', nullable: true),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Personal asignado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
+            new OA\Response(response: 404, description: 'Pedido no encontrado.'),
+            new OA\Response(response: 422, description: 'El personal debe estar activo y tener el rol correspondiente.'),
+        ]
+    )]
+    public function asignarPersonal(AsignarPersonalPedidoRequest $request, string $id): JsonResponse
+    {
+        try {
+            if (! is_numeric($id) || (int) $id <= 0) {
+                return response()->json([
+                    'message' => 'El ID del pedido no es válido.',
+                ], 422);
+            }
+
+            $pedido = Pedido::findOrFail($id);
+            $pedido->update($request->validated());
+            $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido']);
+
+            return response()->json([
+                'message' => 'Personal asignado correctamente.',
+                'pedido' => new PedidoResource($pedido),
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Pedido no encontrado.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al asignar personal al pedido.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     #[OA\Get(
         path: '/api/pedidos',
         summary: 'Listar todos los pedidos',
