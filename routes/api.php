@@ -8,6 +8,7 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComprobanteController;
 use App\Http\Controllers\EstadoPagosController;
 use App\Http\Controllers\EstadoPedidoController;
+use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\PedidoController;
@@ -17,7 +18,6 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\GoogleAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -144,6 +144,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Administración General (Restringido a Administrador / SuperAdmin)
     Route::middleware('role:Administrador')->group(function () {
+        Route::put('/pedidos/{id}/asignaciones', [PedidoController::class, 'asignarPersonal']);
+
         // Roles
         Route::get('/roles', [RoleController::class, 'index']);
         Route::post('/roles', [RoleController::class, 'store']);
