@@ -114,11 +114,12 @@ backend/
 ### Checkout público
 
 `POST /api/checkout/borradores` guarda un borrador para un cliente sin login.
-Recibe `direccion`, `telefono`, `notas` opcionales, `metodo_pago` (`efectivo` o
-`tarjeta`) e `items`, cada uno con `producto_id`, `cantidad` y una lista de IDs
+Recibe `direccion`, `telefono`, `notas` opcionales, `metodo_pago` (`efectivo`,
+`tarjeta` o `transferencia`), `monto_recibido` opcional para efectivo e `items`, cada uno con `producto_id`, `cantidad` y una lista de IDs
 `adicionales`. Valida disponibilidad y calcula precios y un costo de envío fijo
-de $1500 en el servidor. Devuelve `201` con el identificador del borrador y los
-totales, o `422` si los datos no son válidos. La ruta está limitada a 10
+de $1500 en el servidor. Si se indica un monto recibido, debe cubrir el total
+actualizado. Devuelve `201` con el identificador, los ítems y los totales
+calculados, o `422` si los datos no son válidos. La ruta está limitada a 10
 solicitudes por minuto.
 
 El borrador no crea un registro en `pedidos` ni identifica aún al cliente de

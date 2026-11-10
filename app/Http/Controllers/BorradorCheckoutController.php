@@ -70,12 +70,20 @@ class BorradorCheckoutController extends Controller
             }
 
             $costoEnvio = 1500;
+            $montoTotalCentavos = $subtotalCentavos + ($costoEnvio * 100);
+            $montoRecibido = $validated['monto_recibido'] ?? null;
+            if ($montoRecibido !== null && (int) round((float) $montoRecibido * 100) < $montoTotalCentavos) {
+                throw ValidationException::withMessages([
+                    'monto_recibido' => 'El monto recibido no alcanza para cubrir el total actualizado.',
+                ]);
+            }
 
             return BorradorCheckout::create(['datos' => [
                 'direccion' => trim($validated['direccion']),
                 'telefono' => trim($validated['telefono']),
                 'notas' => trim($validated['notas'] ?? ''),
                 'metodo_pago' => $validated['metodo_pago'],
+                'monto_recibido' => $montoRecibido === null ? null : (float) $montoRecibido,
                 'items' => $items,
                 'subtotal' => $subtotalCentavos / 100,
                 'costo_envio' => $costoEnvio,
@@ -89,6 +97,7 @@ class BorradorCheckoutController extends Controller
             'subtotal' => $borrador->datos['subtotal'],
             'costo_envio' => $borrador->datos['costo_envio'],
             'monto_total' => $borrador->datos['monto_total'],
+            'items' => $borrador->datos['items'],
         ], 201);
     }
 }
