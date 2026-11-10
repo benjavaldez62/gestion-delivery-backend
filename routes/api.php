@@ -11,6 +11,7 @@ use App\Http\Controllers\EstadoPedidoController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\PagoController;
+use App\Http\Controllers\PasswordRecoveryController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\PedidoItemController;
 use App\Http\Controllers\ProductoController;
@@ -28,6 +29,8 @@ use Illuminate\Support\Facades\Route;
 
 // Autenticación
 Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/forgot-password', [PasswordRecoveryController::class, 'solicitar'])->middleware('throttle:password-request');
+Route::post('/reset-password', [PasswordRecoveryController::class, 'restablecer'])->middleware('throttle:password-reset');
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:10,1');
 Route::post('/checkout/borradores', [BorradorCheckoutController::class, 'store'])->middleware('throttle:10,1');
 
