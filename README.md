@@ -130,6 +130,24 @@ con `php artisan migrate` antes de usar el endpoint.
 
 ### 4.1. Autenticación (`/api`)
 
+#### Recuperación de contraseña
+
+- `POST /api/forgot-password` recibe `email` y devuelve el mismo mensaje para cuentas existentes e inexistentes.
+- `POST /api/reset-password` recibe `email`, `token`, `password` y `password_confirmation`; cambia la contraseña cuando el enlace es válido.
+
+Configurar `FRONTEND_URL` con la URL pública del frontend y un transporte de correo
+real mediante las variables `MAIL_*`. En producción usar HTTPS y no guardar
+credenciales en el repositorio. `MAIL_MAILER=log` solo registra el correo: no lo
+envía y el registro contiene un enlace sensible; no debe usarse para envíos reales.
+
+El enlace apunta a `/restablecer-contrasena` en el frontend y coloca el token y
+correo en el fragmento de la URL. El token se almacena con hash, vence según
+`auth.passwords.users.expire` (60 minutos por defecto) y se invalida al usarlo.
+Al restablecer se revocan los tokens Sanctum existentes. La contraseña debe tener
+al menos 8 caracteres, como máximo 72 bytes y no contener caracteres nulos. Cada
+endpoint limita a 5 solicitudes por minuto por IP. Los fallos de envío se registran
+sin exponer la existencia de una cuenta en la respuesta pública.
+
 | Método | Ruta | Acceso | Descripción |
 |:---:|:---|:---:|:---|
 | `POST` | `/api/login` | Público | Inicia sesión con email y contraseña. Retorna un Bearer Token Sanctum. |
