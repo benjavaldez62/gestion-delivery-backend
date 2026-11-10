@@ -92,6 +92,33 @@ it('requiere al menos seis digitos en el telefono', function () {
     expect(BorradorCheckout::count())->toBe(0);
 });
 
+it('guarda transferencia como metodo distinto de tarjeta', function () {
+    $datos = datosCheckout();
+    $datos['metodo_pago'] = 'transferencia';
+
+    $response = $this->postJson('/api/checkout/borradores', $datos)->assertCreated();
+    expect(BorradorCheckout::findOrFail($response->json('id'))->datos['metodo_pago'])->toBe('transferencia');
+    $response->assertJsonPath('items.0.nombre', 'Hamburguesa')
+        ->assertJsonPath('items.0.subtotal', 2400);
+});
+
+it('valida el monto recibido contra el total calculado por el servidor', function () {
+    $datos = datosCheckout();
+    $datos['monto_recibido'] = 3899;
+    $this->postJson('/api/checkout/borradores', $datos)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['monto_recibido']);
+
+    $datos['monto_recibido'] = 4000;
+    $response = $this->postJson('/api/checkout/borradores', $datos)->assertCreated();
+    expect(BorradorCheckout::findOrFail($response->json('id'))->datos['monto_recibido'])->toBe(4000);
+
+    $datos['metodo_pago'] = 'tarjeta';
+    $this->postJson('/api/checkout/borradores', $datos)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['monto_recibido']);
+});
+
 it('permite el mismo adicional en distintos items y rechaza uno de otra categoria', function () {
     $datos = datosCheckout();
     $datos['items'][] = $datos['items'][0];
