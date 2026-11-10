@@ -11,8 +11,13 @@ class EstadoPedidoSeeder extends Seeder
     public function run(): void
     {
         EstadoPedido::create([
+            'nombre' => 'Sin Asignar',
+            'descripcion' => 'El pedido fue creado y está pendiente de asignación de un recurso',
+        ]);
+
+        EstadoPedido::create([
             'nombre' => 'Pendiente',
-            'descripcion' => 'El pedido fue creado y está pendiente de confirmación',
+            'descripcion' => 'El pedido fue creado y asignado y está pendiente de confirmación',
         ]);
 
         EstadoPedido::create([
