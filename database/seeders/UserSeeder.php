@@ -35,5 +35,33 @@ class UserSeeder extends Seeder
             'role_id' => 3, // Repartidor
             'activo' => true,
         ]);
+        User::create([
+            'name' => 'Florencia Berra',
+            'email' => 'florenciaberra.fb@gmail.com',
+            'password' => bcrypt('12345678'),
+            'role_id' => 1, // Administrador
+            'activo' => true,
+        ]);
+        User::create([
+            'name' => 'Aguistina Berra',
+            'email' => 'agustinaberra.ab@gmail.com',
+            'password' => bcrypt('12345678'),
+            'role_id' => 1, // Administrador
+            'activo' => true,
+        ]);
+        User::create([
+            'name' => 'Benjamin Valdez',
+            'email' => 'benjavaldez62@gmail.com',
+            'password' => bcrypt('12345678'),
+            'role_id' => 2, // Cocinero
+            'activo' => true,
+        ]);
+        User::create([
+            'name' => 'Fabricio Alanis',
+            'email' => 'studyfabri.a@gmail.com',
+            'password' => bcrypt('12345678'),
+            'role_id' => 3, // Repartidor
+            'activo' => true,
+        ]);
     }
 }
