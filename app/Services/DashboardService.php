@@ -140,7 +140,7 @@ class DashboardService
             ->get()
             ->keyBy('metodo_pago_id');
 
-        $porMetodoPago = $metodosPago->map(function (MetodoPago $metodo) use ($agrupadosPorMetodo, $pedidosValidos) {
+        $porMetodoPago = $metodosPago->map(function (MetodoPago $metodo) use ($agrupadosPorMetodo, $ingresosTotales) {
             $fila = $agrupadosPorMetodo->get($metodo->id);
             $cantidad = $fila ? (int) $fila->cantidad : 0;
             $montoTotal = $fila ? round((float) $fila->monto_total, 2) : 0.0;
@@ -150,7 +150,7 @@ class DashboardService
                 'nombre' => $metodo->nombre,
                 'cantidad' => $cantidad,
                 'monto_total' => $montoTotal,
-                'porcentaje' => $pedidosValidos > 0 ? round(($cantidad / $pedidosValidos) * 100, 1) : 0.0,
+                'porcentaje' => $ingresosTotales > 0 ? round(($montoTotal / $ingresosTotales) * 100, 1) : 0.0,
             ];
         })->values()->all();
 

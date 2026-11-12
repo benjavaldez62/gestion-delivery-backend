@@ -193,8 +193,11 @@ it('retorna 200 al Administrador con KPIs, distribuciones, disponibilidad de sta
     $porMetodo = collect($response->json('dashboard.por_metodo_pago'))->keyBy('nombre');
     expect($porMetodo['Efectivo']['cantidad'])->toBe(2)
         ->and((float) $porMetodo['Efectivo']['monto_total'])->toBe(25000.0)
+        ->and((float) $porMetodo['Efectivo']['porcentaje'])->toBe(55.6)
         ->and($porMetodo['Transferencia']['cantidad'])->toBe(1)
-        ->and((float) $porMetodo['Transferencia']['monto_total'])->toBe(20000.0);
+        ->and((float) $porMetodo['Transferencia']['monto_total'])->toBe(20000.0)
+        ->and((float) $porMetodo['Transferencia']['porcentaje'])->toBe(44.4)
+        ->and($response->json('dashboard.admin_nombre'))->toBe('Admin Test');
 
     // Verificar disponibilidad de cocineros
     $cocineros = collect($response->json('dashboard.staff.cocineros'))->keyBy('email');

@@ -51,6 +51,7 @@ class DashboardController extends Controller
 
             $periodo = $validated['periodo'] ?? 'historico';
             $resumen = $dashboardService->obtenerResumen($periodo);
+            $resumen['admin_nombre'] = $request->user()?->name;
 
             return response()->json([
                 'message' => 'Resumen del dashboard obtenido correctamente.',
