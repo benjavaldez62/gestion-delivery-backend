@@ -17,7 +17,8 @@ class PedidoItemSeeder extends Seeder
         $pedidos = [
             [
                 'cliente' => 'juan-martin96',
-                'estado' => 'Pendiente',
+                'estado' => 'Sin Asignar',
+                'estado_alternativo' => 'Pendiente',
                 'subtotal' => 14500,
                 'items' => [
                     ['producto' => 'Pizza Margherita', 'cantidad' => 1],
@@ -66,6 +67,10 @@ class PedidoItemSeeder extends Seeder
             $cliente = Cliente::where('username', $datos['cliente'])->first();
             $estado = EstadoPedido::where('nombre', $datos['estado'])->first();
 
+            if (! $estado && isset($datos['estado_alternativo'])) {
+                $estado = EstadoPedido::where('nombre', $datos['estado_alternativo'])->first();
+            }
+
             if (! $cliente || ! $estado) {
                 continue;
             }
@@ -74,6 +79,16 @@ class PedidoItemSeeder extends Seeder
                 ->where('estado_pedidos_id', $estado->id)
                 ->where('subtotal', $datos['subtotal'])
                 ->first();
+
+            if (! $pedido && isset($datos['estado_alternativo'])) {
+                $estadoAlternativo = EstadoPedido::where('nombre', $datos['estado_alternativo'])->first();
+                if ($estadoAlternativo) {
+                    $pedido = Pedido::where('cliente_id', $cliente->id)
+                        ->where('estado_pedidos_id', $estadoAlternativo->id)
+                        ->where('subtotal', $datos['subtotal'])
+                        ->first();
+                }
+            }
 
             if (! $pedido) {
                 continue;

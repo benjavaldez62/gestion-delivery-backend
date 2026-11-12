@@ -27,10 +27,11 @@ use Illuminate\Support\Facades\Route;
 | Consumidas por el cliente frontend (menú) y personal para iniciar sesión.
 */
 
-// Autenticación
+// Autenticación y Checkout / Bot
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:10,1');
 Route::post('/checkout/borradores', [BorradorCheckoutController::class, 'store'])->middleware('throttle:10,1');
+Route::post('/pedidos/{id}/confirmar-telegram', [PedidoController::class, 'confirmarTelegram'])->middleware('throttle:30,1');
 
 // Catálogo (Lectura pública para armar pedidos)
 Route::get('/productos', [ProductoController::class, 'index']);

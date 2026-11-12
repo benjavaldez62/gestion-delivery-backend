@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AsignarPersonalPedidoRequest;
+use App\Http\Requests\ConfirmarPedidoTelegramRequest;
 use App\Http\Resources\PedidoResource;
+use App\Models\Cliente;
+use App\Models\EstadoPedido;
 use App\Models\Pedido;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
@@ -76,9 +79,18 @@ class PedidoController extends Controller
 
     #[OA\Get(
         path: '/api/pedidos',
-        summary: 'Listar todos los pedidos',
+        summary: 'Listar todos los pedidos operativos',
         tags: ['Pedidos'],
         security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'incluir_pre_pedidos',
+                in: 'query',
+                required: false,
+                description: 'Indica si se deben incluir los pedidos en estado Pre-pedido en el listado',
+                schema: new OA\Schema(type: 'boolean', default: false)
+            ),
+        ],
         responses: [
             new OA\Response(response: 200, description: 'Pedidos obtenidos correctamente.'),
             new OA\Response(response: 401, description: 'No autenticado'),
@@ -101,7 +113,7 @@ class PedidoController extends Controller
                 ], 403);
             }
 
-            $pedidos = Pedido::with([
+            $query = Pedido::with([
                 'cliente',
                 'cocinero',
                 'repartidor',
@@ -110,7 +122,13 @@ class PedidoController extends Controller
                 'items.producto',
                 'items.adicionales',
                 'pagos.estadoPago',
-            ])->orderBy('created_at', 'desc')->get();
+            ]);
+
+            if (! $request->boolean('incluir_pre_pedidos')) {
+                $query->whereHas('estadoPedido', fn ($q) => $q->whereRaw("LOWER(TRIM(nombre)) != 'pre-pedido'"));
+            }
+
+            $pedidos = $query->orderBy('created_at', 'desc')->get();
 
             if ($pedidos->isEmpty()) {
                 return response()->json([
@@ -177,9 +195,10 @@ class PedidoController extends Controller
                 $validated['monto_total'] = $validated['subtotal'] ?? 0;
             }
 
-            // Crear pedido
+            // Crear pedido con estado inicial 'Sin Asignar' (o primer estado disponible como respaldo)
             $pedido = new Pedido;
-            $pedido->estado_pedidos_id = 1;
+            $pedido->estado_pedidos_id = EstadoPedido::whereRaw("LOWER(TRIM(nombre)) = 'sin asignar'")->value('id')
+                ?? EstadoPedido::orderBy('id')->value('id');
             $pedido->cliente_id = $validated['cliente_id'] ?? null;
             $pedido->subtotal = $validated['subtotal'] ?? null;
             $pedido->monto_total = $validated['monto_total'];
@@ -506,6 +525,127 @@ class PedidoController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al restaurar el pedido.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    #[OA\Post(
+        path: '/api/pedidos/{id}/confirmar-telegram',
+        summary: 'Confirmar un pre-pedido desde el bot de Telegram y pasarlo a Sin Asignar',
+        tags: ['Pedidos'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID del pedido en estado Pre-pedido a confirmar',
+                schema: new OA\Schema(type: 'integer')
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            required: false,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'nombre', type: 'string', maxLength: 255, nullable: true, example: 'Juan Pérez'),
+                    new OA\Property(property: 'username_telegram', type: 'string', maxLength: 255, nullable: true, example: 'juan_perez'),
+                    new OA\Property(property: 'telefono', type: 'string', maxLength: 30, nullable: true, example: '+5493454123456'),
+                    new OA\Property(property: 'direccion', type: 'string', maxLength: 255, nullable: true, example: 'Av. Eva Perón 1234'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Pedido confirmado correctamente. Estado actualizado a Sin Asignar.'),
+            new OA\Response(response: 404, description: 'Pedido no encontrado.'),
+            new OA\Response(response: 422, description: 'El pedido no se encuentra en estado Pre-pedido o error de validación.'),
+            new OA\Response(response: 500, description: 'Error interno al confirmar el pedido.'),
+        ]
+    )]
+    public function confirmarTelegram(ConfirmarPedidoTelegramRequest $request, $id): JsonResponse
+    {
+        try {
+            if (! is_numeric($id) || (int) $id <= 0) {
+                return response()->json([
+                    'message' => 'Pedido no encontrado.',
+                ], 404);
+            }
+
+            $pedido = Pedido::with(['cliente', 'estadoPedido'])->findOrFail($id);
+
+            $estadoActual = mb_strtolower(trim($pedido->estadoPedido?->nombre ?? ''));
+            if ($estadoActual !== 'pre-pedido') {
+                return response()->json([
+                    'message' => 'El pedido no se encuentra en estado Pre-pedido o ya fue confirmado.',
+                ], 422);
+            }
+
+            $validated = $request->validated();
+
+            if ($pedido->cliente) {
+                $cliente = $pedido->cliente;
+                $huboCambiosCliente = false;
+
+                $nuevoUsername = trim((string) ($validated['username_telegram'] ?? $validated['nombre'] ?? ''));
+                $nuevoUsername = ltrim($nuevoUsername, '@');
+                if ($nuevoUsername !== '') {
+                    $usernameTruncado = mb_substr($nuevoUsername, 0, 30);
+                    $existeOtro = Cliente::withTrashed()
+                        ->where('username', $usernameTruncado)
+                        ->where('id', '!=', $cliente->id)
+                        ->exists();
+
+                    if (! $existeOtro) {
+                        $cliente->username = $usernameTruncado;
+                        $huboCambiosCliente = true;
+                    }
+                }
+
+                if (isset($validated['telefono']) && trim((string) $validated['telefono']) !== '') {
+                    $cliente->telefono = trim((string) $validated['telefono']);
+                    $huboCambiosCliente = true;
+                }
+
+                if (isset($validated['direccion']) && trim((string) $validated['direccion']) !== '') {
+                    $cliente->direccion = trim((string) $validated['direccion']);
+                    $huboCambiosCliente = true;
+                }
+
+                if ($huboCambiosCliente) {
+                    $cliente->save();
+                }
+            }
+
+            $estadoSinAsignar = EstadoPedido::whereRaw("LOWER(TRIM(nombre)) = 'sin asignar'")->first()
+                ?? EstadoPedido::firstOrCreate(
+                    ['nombre' => 'Sin Asignar'],
+                    ['descripcion' => 'El pedido fue creado y está pendiente de asignación de un recurso']
+                );
+
+            $pedido->estado_pedidos_id = $estadoSinAsignar->id;
+            $pedido->save();
+
+            $pedido->load([
+                'cliente',
+                'cocinero',
+                'repartidor',
+                'estadoPedido',
+                'metodoPago',
+                'items.producto',
+                'items.adicionales',
+                'pagos.estadoPago',
+            ]);
+
+            return response()->json([
+                'message' => 'Pedido confirmado correctamente. Estado actualizado a Sin Asignar.',
+                'pedido' => new PedidoResource($pedido),
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Pedido no encontrado.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error interno al confirmar el pedido.',
                 'error' => $e->getMessage(),
             ], 500);
         }
