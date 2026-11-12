@@ -2335,6 +2335,68 @@
                 }
             }
         },
+        "/api/pedidos/{id}/asignaciones": {
+            "put": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Asignar cocinero o repartidor a un pedido",
+                "operationId": "efdc8d8318fa6de31b7b8b594b0f1e19",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pedido",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "cocinero_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "repartidor_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Personal asignado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "422": {
+                        "description": "El personal debe estar activo y tener el rol correspondiente."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/pedidos": {
             "get": {
                 "tags": [
@@ -2377,15 +2439,10 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "cliente_id",
-                                    "estado_pedidos_id"
+                                    "cliente_id"
                                 ],
                                 "properties": {
                                     "cliente_id": {
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "estado_pedidos_id": {
                                         "type": "integer",
                                         "example": 1
                                     },
@@ -2404,16 +2461,6 @@
                                     "metodo_pago_id": {
                                         "type": "integer",
                                         "example": 1,
-                                        "nullable": true
-                                    },
-                                    "cocinero_id": {
-                                        "type": "integer",
-                                        "example": 2,
-                                        "nullable": true
-                                    },
-                                    "repartidor_id": {
-                                        "type": "integer",
-                                        "example": 3,
                                         "nullable": true
                                     }
                                 },
