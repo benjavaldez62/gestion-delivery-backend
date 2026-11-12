@@ -140,6 +140,7 @@ class DashboardService
             ->get()
             ->keyBy('metodo_pago_id');
 
+        // Ordenar por monto recaudado descendente para presentar primero el medio de pago principal
         $porMetodoPago = $metodosPago->map(function (MetodoPago $metodo) use ($agrupadosPorMetodo, $ingresosTotales) {
             $fila = $agrupadosPorMetodo->get($metodo->id);
             $cantidad = $fila ? (int) $fila->cantidad : 0;
@@ -152,7 +153,7 @@ class DashboardService
                 'monto_total' => $montoTotal,
                 'porcentaje' => $ingresosTotales > 0 ? round(($montoTotal / $ingresosTotales) * 100, 1) : 0.0,
             ];
-        })->values()->all();
+        })->sortByDesc('monto_total')->values()->all();
 
         // Estado operativo del personal activo (Cocineros y Repartidores)
         $cocineros = User::with('role')
@@ -269,7 +270,11 @@ class DashboardService
         $activosQuery = Pedido::with(['estadoPedido', 'cliente'])
             ->where($columnaAsignacion, $user->id);
 
-        if (! empty($idsFinalizados)) {
+        if ($columnaAsignacion === 'cocinero_id') {
+            $activosQuery->whereHas('estadoPedido', function (Builder $query) {
+                $query->whereIn(DB::raw('LOWER(TRIM(nombre))'), ['sin asignar', 'pendiente', 'en preparación', 'en preparacion']);
+            });
+        } elseif (! empty($idsFinalizados)) {
             $activosQuery->whereNotIn('estado_pedidos_id', $idsFinalizados);
         }
 
