@@ -126,6 +126,29 @@ backend/
 
 ### 4.1. Autenticación (`/api`)
 
+#### Recuperación de contraseña
+
+- `POST /api/forgot-password` recibe `email`. Para el dominio exacto `test.com` (sin distinguir mayúsculas), responde con `action: contactar_administrador` sin enviar correo ni notificación. Para otras cuentas, responde 404 si no existe, 403 si está inactiva, 429 ante limitación y 503 si falla el correo; responde `action: enlace_enviado` solo cuando SMTP acepta el mensaje.
+- `POST /api/reset-password` recibe `email`, `token`, `password` y `password_confirmation`; cambia la contraseña local de una cuenta activa cuando el enlace es válido. Las cuentas `test.com` no pueden usar este mecanismo, incluso con un token anterior. La contraseña de Google no cambia.
+
+Configurar `FRONTEND_URL` con la URL pública del frontend y un transporte de correo
+real mediante las variables `MAIL_*`. En producción usar HTTPS y no guardar
+credenciales en el repositorio. Configurar `MAIL_MAILER=smtp`, `MAIL_HOST`,
+`MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SCHEME` y
+`MAIL_FROM_ADDRESS` según el proveedor. `MAIL_URL`, si se usa, prevalece sobre
+los parámetros del transporte. `MAIL_MAILER=log` y `array` no envían correo y
+la recuperación los rechaza. La aceptación de SMTP no garantiza entrega en la bandeja.
+
+El enlace apunta a `/restablecer-contrasena` en el frontend y coloca el token y
+correo en el fragmento de la URL. El token se almacena con hash, vence según
+`auth.passwords.users.expire` (60 minutos por defecto) y se invalida al usarlo.
+Al restablecer se revocan los tokens Sanctum existentes. La contraseña debe tener
+al menos 8 caracteres, como máximo 72 bytes y no contener caracteres nulos. Cada
+endpoint limita a 5 solicitudes por minuto por IP, además del límite del broker.
+Los fallos de envío se registran sin contraseñas, tokens ni detalles del proveedor.
+Las respuestas diferenciadas permiten enumerar cuentas y difieren del criterio
+actual de privacidad de SD-150; coordinar este cambio con el equipo.
+
 | Método | Ruta | Acceso | Descripción |
 |:---:|:---|:---:|:---|
 | `POST` | `/api/login` | Público | Inicia sesión con email y contraseña. Retorna un Bearer Token Sanctum. |

@@ -2484,6 +2484,117 @@
                 }
             }
         },
+        "/api/forgot-password": {
+            "post": {
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Solicitar recuperación de contraseña local",
+                "description": "Las direcciones del dominio exacto test.com deben contactar al administrador. Las respuestas distinguen cuentas inexistentes e inactivas.",
+                "operationId": "81fb5ebb68e18c422a9177619fc75588",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Correo aceptado por SMTP (action: enlace_enviado) o cuenta de prueba (action: contactar_administrador)."
+                    },
+                    "403": {
+                        "description": "Cuenta inactiva."
+                    },
+                    "404": {
+                        "description": "Correo no registrado."
+                    },
+                    "422": {
+                        "description": "Datos inválidos o solicitud no procesada."
+                    },
+                    "429": {
+                        "description": "Límite de solicitudes alcanzado."
+                    },
+                    "503": {
+                        "description": "Envío de correo no disponible o fallido."
+                    }
+                },
+                "security": []
+            }
+        },
+        "/api/reset-password": {
+            "post": {
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Restablecer contraseña local",
+                "description": "Requiere cuenta activa y token vigente de un solo uso. Revoca los tokens Sanctum; no modifica la contraseña de Google.",
+                "operationId": "afa031cb1a74122f2f834f7f8a8c43f0",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "token",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "maxLength": 255
+                                    },
+                                    "token": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Contraseña actualizada."
+                    },
+                    "403": {
+                        "description": "Cuenta de prueba: contactar al administrador."
+                    },
+                    "422": {
+                        "description": "Datos inválidos o enlace inválido, vencido o usado."
+                    },
+                    "429": {
+                        "description": "Límite de solicitudes alcanzado."
+                    }
+                },
+                "security": []
+            }
+        },
         "/api/pedidos/{id}/asignaciones": {
             "put": {
                 "tags": [
