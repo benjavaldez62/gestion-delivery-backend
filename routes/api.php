@@ -6,6 +6,7 @@ use App\Http\Controllers\BorradorCheckoutController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComprobanteController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EstadoPagosController;
 use App\Http\Controllers\EstadoPedidoController;
 use App\Http\Controllers\GoogleAuthController;
@@ -144,6 +145,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Administración General (Restringido a Administrador / SuperAdmin)
     Route::middleware('role:Administrador')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'resumen']);
         Route::put('/pedidos/{id}/asignaciones', [PedidoController::class, 'asignarPersonal']);
 
         // Roles
