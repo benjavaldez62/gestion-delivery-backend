@@ -24,6 +24,7 @@ class ConfirmarPedidoTelegramRequest extends FormRequest
         return [
             'nombre' => ['nullable', 'string', 'max:255'],
             'username_telegram' => ['nullable', 'string', 'max:255'],
+            'chat_id' => ['nullable', 'integer'],
             'telefono' => ['nullable', 'string', 'max:30'],
             'direccion' => ['nullable', 'string', 'max:255'],
         ];

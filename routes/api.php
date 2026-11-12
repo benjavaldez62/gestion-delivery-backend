@@ -16,6 +16,7 @@ use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\PedidoItemController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,7 @@ Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:10,1');
 Route::post('/checkout/borradores', [BorradorCheckoutController::class, 'store'])->middleware('throttle:10,1');
 Route::post('/pedidos/{id}/confirmar-telegram', [PedidoController::class, 'confirmarTelegram'])->middleware('throttle:30,1');
+Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])->middleware('throttle:60,1');
 
 // Catálogo (Lectura pública para armar pedidos)
 Route::get('/productos', [ProductoController::class, 'index']);

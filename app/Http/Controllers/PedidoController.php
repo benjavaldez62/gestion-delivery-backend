@@ -570,6 +570,7 @@ class PedidoController extends Controller
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', maxLength: 255, nullable: true, example: 'Juan Pérez'),
                     new OA\Property(property: 'username_telegram', type: 'string', maxLength: 255, nullable: true, example: 'juan_perez'),
+                    new OA\Property(property: 'chat_id', type: 'integer', nullable: true, example: 987654321),
                     new OA\Property(property: 'telefono', type: 'string', maxLength: 30, nullable: true, example: '+5493454123456'),
                     new OA\Property(property: 'direccion', type: 'string', maxLength: 255, nullable: true, example: 'Av. Eva Perón 1234'),
                 ]
@@ -641,6 +642,13 @@ class PedidoController extends Controller
                     ['nombre' => 'Sin Asignar'],
                     ['descripcion' => 'El pedido fue creado y está pendiente de asignación de un recurso']
                 );
+
+            if (isset($validated['chat_id'])) {
+                $pedido->telegram_chat_id = (int) $validated['chat_id'];
+            }
+            if (isset($validated['username_telegram'])) {
+                $pedido->telegram_username = ltrim(trim((string) $validated['username_telegram']), '@');
+            }
 
             $pedido->estado_pedidos_id = $estadoSinAsignar->id;
             $pedido->save();
