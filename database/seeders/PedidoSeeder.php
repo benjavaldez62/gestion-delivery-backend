@@ -20,7 +20,7 @@ class PedidoSeeder extends Seeder
         $pedidos = [
             [
                 'cliente' => 'juan-martin96',
-                'estado' => 'Pendiente',
+                'estado' => 'Sin Asignar',
                 'cocinero' => null,
                 'repartidor' => null,
                 'subtotal' => 14500,
@@ -29,13 +29,13 @@ class PedidoSeeder extends Seeder
                 'cliente' => 'gusmachax779',
                 'estado' => 'En preparación',
                 'cocinero' => 'felipemartinez@test.com',
-                'repartidor' => null,
+                'repartidor' => 'studyfabri.a@gmail.com',
                 'subtotal' => 11500,
             ],
             [
                 'cliente' => 'cata_lopez001',
                 'estado' => 'En camino',
-                'cocinero' => 'felipemartinez@test.com',
+                'cocinero' => 'benjavaldez62@gmail.com',
                 'repartidor' => 'sebastiangomez@test.com',
                 'subtotal' => 24000,
             ],
@@ -49,8 +49,8 @@ class PedidoSeeder extends Seeder
             [
                 'cliente' => 'juan-martin96',
                 'estado' => 'Cancelado',
-                'cocinero' => null,
-                'repartidor' => null,
+                'cocinero' => 'benjavaldez62@gmail.com',
+                'repartidor' => 'studyfabri.a@gmail.com',
                 'subtotal' => 13500,
             ],
         ];
