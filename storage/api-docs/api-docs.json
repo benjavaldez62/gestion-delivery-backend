@@ -2488,15 +2488,10 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "cliente_id",
-                                    "estado_pedidos_id"
+                                    "cliente_id"
                                 ],
                                 "properties": {
                                     "cliente_id": {
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "estado_pedidos_id": {
                                         "type": "integer",
                                         "example": 1
                                     },
@@ -2515,16 +2510,6 @@
                                     "metodo_pago_id": {
                                         "type": "integer",
                                         "example": 1,
-                                        "nullable": true
-                                    },
-                                    "cocinero_id": {
-                                        "type": "integer",
-                                        "example": 2,
-                                        "nullable": true
-                                    },
-                                    "repartidor_id": {
-                                        "type": "integer",
-                                        "example": 3,
                                         "nullable": true
                                     }
                                 },
