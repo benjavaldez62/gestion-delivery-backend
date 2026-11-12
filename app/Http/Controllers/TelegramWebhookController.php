@@ -65,10 +65,10 @@ class TelegramWebhookController extends Controller
             ];
 
             if (preg_match('/men[uú]/i', $text)) {
-                $urlMenu = "{$frontendUrl}/#menu";
+                $urlMenu = "{$frontendUrl}/menu";
                 $this->telegramService->enviarMensaje(
                     (int) $chatId,
-                    "🍕 <b>Menú Online — La Posta Delivery</b>\n\nPodés explorar todos nuestros platos, promociones y hacer tu pedido ingresando a:\n👉 {$urlMenu}"
+                    "🍕 <b>Menú Online — La Posta Delivery</b>\n\nPodés explorar todos nuestros platos, promociones y hacer tu pedido ingresando a:\n👉 <a href=\"{$urlMenu}\">{$urlMenu}</a>"
                 );
 
                 return response()->json(['status' => 'menu_sent'], 200);
