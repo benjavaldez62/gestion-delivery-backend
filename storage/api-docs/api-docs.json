@@ -425,6 +425,106 @@
                 ]
             }
         },
+        "/api/checkout/borradores": {
+            "post": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Registrar un pre-pedido desde el checkout web y persistir el borrador",
+                "operationId": "b01ac004475215d92442379835cb8c31",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "direccion",
+                                    "telefono",
+                                    "metodo_pago",
+                                    "items"
+                                ],
+                                "properties": {
+                                    "direccion": {
+                                        "type": "string",
+                                        "example": "Av. Eva Perón 1234",
+                                        "maxLength": 255
+                                    },
+                                    "telefono": {
+                                        "type": "string",
+                                        "example": "3454123456",
+                                        "maxLength": 30
+                                    },
+                                    "notas": {
+                                        "type": "string",
+                                        "example": "Timbre 2",
+                                        "nullable": true,
+                                        "maxLength": 500
+                                    },
+                                    "metodo_pago": {
+                                        "type": "string",
+                                        "example": "efectivo",
+                                        "enum": [
+                                            "efectivo",
+                                            "tarjeta",
+                                            "transferencia"
+                                        ]
+                                    },
+                                    "monto_recibido": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 5000,
+                                        "nullable": true
+                                    },
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "producto_id",
+                                                "cantidad",
+                                                "adicionales"
+                                            ],
+                                            "properties": {
+                                                "producto_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "cantidad": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "adicionales": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer"
+                                                    },
+                                                    "example": [
+                                                        1,
+                                                        2
+                                                    ]
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pre-pedido y borrador de checkout registrados correctamente."
+                    },
+                    "422": {
+                        "description": "Error de validación en los datos enviados o productos no disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno al procesar el checkout."
+                    }
+                }
+            }
+        },
         "/api/categorias": {
             "get": {
                 "tags": [
@@ -1183,6 +1283,55 @@
                         "description": "Error interno al restaurar el comprobante."
                     }
                 }
+            }
+        },
+        "/api/dashboard": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Obtener resumen y métricas agregadas del dashboard administrativo",
+                "operationId": "eea0d80849eae1a9544bcc5634f34ce3",
+                "parameters": [
+                    {
+                        "name": "periodo",
+                        "in": "query",
+                        "description": "Rango temporal de consulta: hoy, 7d, 30d o historico (por defecto: historico)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "historico",
+                            "enum": [
+                                "hoy",
+                                "7d",
+                                "30d",
+                                "historico"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Resumen del dashboard obtenido correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
+                    "422": {
+                        "description": "El periodo seleccionado no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el resumen del dashboard."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/estado-pagos": {
@@ -2402,8 +2551,20 @@
                 "tags": [
                     "Pedidos"
                 ],
-                "summary": "Listar todos los pedidos",
+                "summary": "Listar todos los pedidos operativos",
                 "operationId": "9368500233e75a120cb606e08d7a06e4",
+                "parameters": [
+                    {
+                        "name": "incluir_pre_pedidos",
+                        "in": "query",
+                        "description": "Indica si se deben incluir los pedidos en estado Pre-pedido en el listado",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Pedidos obtenidos correctamente."
@@ -2701,6 +2862,76 @@
                     },
                     "500": {
                         "description": "Error interno al restaurar el pedido."
+                    }
+                }
+            }
+        },
+        "/api/pedidos/{id}/confirmar-telegram": {
+            "post": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Confirmar un pre-pedido desde el bot de Telegram y pasarlo a Sin Asignar",
+                "operationId": "d9a05751e166e2adfee44a7c03e8979b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pedido en estado Pre-pedido a confirmar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Juan Pérez",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    },
+                                    "username_telegram": {
+                                        "type": "string",
+                                        "example": "juan_perez",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    },
+                                    "telefono": {
+                                        "type": "string",
+                                        "example": "+5493454123456",
+                                        "nullable": true,
+                                        "maxLength": 30
+                                    },
+                                    "direccion": {
+                                        "type": "string",
+                                        "example": "Av. Eva Perón 1234",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pedido confirmado correctamente. Estado actualizado a Sin Asignar."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "422": {
+                        "description": "El pedido no se encuentra en estado Pre-pedido o error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al confirmar el pedido."
                     }
                 }
             }
@@ -4011,6 +4242,10 @@
             "description": "Autenticación"
         },
         {
+            "name": "Checkout",
+            "description": "Checkout"
+        },
+        {
             "name": "Categorías",
             "description": "Categorías"
         },
@@ -4021,6 +4256,10 @@
         {
             "name": "Comprobantes",
             "description": "Comprobantes"
+        },
+        {
+            "name": "Dashboard",
+            "description": "Dashboard"
         },
         {
             "name": "Estados de Pago",
