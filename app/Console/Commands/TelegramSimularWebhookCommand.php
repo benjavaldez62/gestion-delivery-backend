@@ -74,3 +74,4 @@ class TelegramSimularWebhookCommand extends Command
         return Command::FAILURE;
     }
 }
+

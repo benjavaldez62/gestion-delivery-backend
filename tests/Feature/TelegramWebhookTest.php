@@ -37,7 +37,7 @@ function crearPrePedidoParaTelegram(): int
     return (int) $checkoutResponse->json('pedido_id');
 }
 
-it('procesa webhook de Telegram con comando /start <id> y confirma el pedido', function () {
+it('procesa webhook de Telegram con comando /start <id> y confirma el pedido con botones inline', function () {
     Http::fake();
 
     $pedidoId = crearPrePedidoParaTelegram();
@@ -74,31 +74,71 @@ it('procesa webhook de Telegram con comando /start <id> y confirma el pedido', f
     Http::assertSent(function ($request) {
         return str_contains($request->url(), 'sendMessage')
             && $request['chat_id'] === 987654321
-            && str_contains($request['text'], 'confirmado con éxito');
+            && str_contains($request['text'], 'confirmado con éxito')
+            && isset($request['reply_markup']['inline_keyboard']);
     });
 });
 
-it('procesa webhook de Telegram con texto que contiene Pedido #<id>', function () {
+it('aplica anti-spam en saludo inicial cuando el usuario no envia numero de orden', function () {
+    Http::fake();
+
+    $payload = [
+        'message' => [
+            'chat' => ['id' => 777888],
+            'text' => 'Hola bot!',
+        ],
+    ];
+
+    // Primer mensaje: recibe bienvenida completa y teclado rápido
+    $this->postJson('/api/telegram/webhook', $payload)
+        ->assertOk()
+        ->assertJsonPath('status', 'info_sent');
+
+    Http::assertSent(function ($request) {
+        return $request['chat_id'] === 777888
+            && str_contains($request['text'], 'Bienvenido a <b>La Posta Delivery</b>');
+    });
+
+    // Segundo mensaje consecutivo: recibe recordatorio corto (anti-spam activo)
+    $this->postJson('/api/telegram/webhook', $payload)
+        ->assertOk()
+        ->assertJsonPath('status', 'info_sent');
+
+    Http::assertSent(function ($request) {
+        return $request['chat_id'] === 777888
+            && str_contains($request['text'], 'Para confirmar una orden envianos');
+    });
+});
+
+it('responde estado en tiempo real al enviar comando /estado o boton de consulta', function () {
     Http::fake();
 
     $pedidoId = crearPrePedidoParaTelegram();
 
-    $payload = [
+    // Confirmar orden vinculando el chat
+    $this->postJson('/api/telegram/webhook', [
         'message' => [
-            'chat' => ['id' => 123456],
-            'from' => ['username' => 'mariap'],
-            'text' => "Hola! Acá está mi orden Pedido #{$pedidoId} para entregar en San Martín 456",
+            'chat' => ['id' => 555666],
+            'text' => "Pedido #{$pedidoId}",
         ],
-    ];
+    ])->assertOk();
 
-    $this->postJson('/api/telegram/webhook', $payload)
-        ->assertOk()
-        ->assertJsonPath('status', 'confirmed')
-        ->assertJsonPath('pedido_id', $pedidoId);
+    // Consultar estado con /estado
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => 555666],
+            'text' => '/estado',
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'order_status_sent')
+        ->assertJsonPath('pedido_id', $pedidoId)
+        ->assertJsonPath('estado', 'Sin Asignar');
 
-    $pedido = Pedido::find($pedidoId);
-    expect($pedido->telegram_chat_id)->toBe(123456)
-        ->and($pedido->estadoPedido->nombre)->toBe('Sin Asignar');
+    Http::assertSent(function ($request) {
+        return $request['chat_id'] === 555666
+            && str_contains($request['text'], 'Estado de tu Pedido')
+            && str_contains($request['text'], 'Sin Asignar');
+    });
 });
 
 it('avisa si el pedido ya fue confirmado previamente', function () {

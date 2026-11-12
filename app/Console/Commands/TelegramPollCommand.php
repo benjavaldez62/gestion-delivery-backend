@@ -101,3 +101,4 @@ class TelegramPollCommand extends Command
         return Command::SUCCESS;
     }
 }
+

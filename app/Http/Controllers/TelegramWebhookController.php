@@ -7,7 +7,7 @@ use App\Models\Pedido;
 use App\Services\TelegramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use OpenApi\Attributes as OA;
 
 class TelegramWebhookController extends Controller
@@ -32,10 +32,16 @@ class TelegramWebhookController extends Controller
         $chatId = $message['chat']['id'] ?? $request->input('chat_id');
         $text = trim((string) ($message['text'] ?? $request->input('text', '')));
         $username = $message['from']['username'] ?? $request->input('username');
-        $nombre = trim(($message['from']['first_name'] ?? '').' '.($message['from']['last_name'] ?? '')) ?: $request->input('nombre');
 
         if (! $chatId || empty($text)) {
             return response()->json(['status' => 'ignored', 'message' => 'No chat_id or text provided'], 200);
+        }
+
+        $frontendUrl = rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:4200')), '/');
+
+        // Comando /estado o /mispedidos: consultar último pedido
+        if (preg_match('/^\/?(estado|mispedidos|mis_pedidos)/i', $text)) {
+            return $this->consultarUltimoEstado((int) $chatId, $frontendUrl);
         }
 
         // Buscar si el texto contiene "/start <id>" o "Pedido #<id>" o un número de pedido directo
@@ -49,14 +55,62 @@ class TelegramWebhookController extends Controller
         }
 
         if (! $pedidoId) {
-            $this->telegramService->enviarMensaje((int) $chatId, "👋 ¡Hola! Bienvenido a <b>La Posta Delivery</b>.\nPara confirmar tu pedido, envianos el mensaje con el número de tu orden (por ejemplo: <code>Pedido #12</code> o hacé clic en el enlace desde la web).");
+            // Anti-spam de saludo con Cache (evita enviar mensaje largo repetidas veces al mismo chat)
+            $cacheKey = "tg_welcome_sent_{$chatId}";
+            $tecladoPrincipal = [
+                'keyboard' => [
+                    [['text' => '📦 ¿Cómo viene mi pedido?'], ['text' => '🌐 Ver Menú']],
+                ],
+                'resize_keyboard' => true,
+            ];
+
+            if (preg_match('/men[uú]/i', $text)) {
+                $this->telegramService->enviarMensaje(
+                    (int) $chatId,
+                    "🍕 Podés ver nuestra carta completa y hacer tu pedido en:\n<a href=\"{$frontendUrl}\">{$frontendUrl}</a>",
+                    [
+                        'inline_keyboard' => [
+                            [['text' => '🌐 Abrir Menú Online', 'url' => $frontendUrl]],
+                        ],
+                    ]
+                );
+
+                return response()->json(['status' => 'menu_sent'], 200);
+            }
+
+            if (preg_match('/c[oó]mo viene/i', $text)) {
+                return $this->consultarUltimoEstado((int) $chatId, $frontendUrl);
+            }
+
+            if (! Cache::has($cacheKey)) {
+                Cache::put($cacheKey, true, now()->addHours(2));
+                $this->telegramService->enviarMensaje(
+                    (int) $chatId,
+                    "👋 ¡Hola! Bienvenido a <b>La Posta Delivery</b>.\n\nPara confirmar un pedido nuevo, envianos el mensaje con el número de tu orden (por ejemplo: <code>Pedido #12</code> o abrí el enlace de confirmación desde nuestra web).\n\nTambién podés consultar el estado de tu orden actual cuando quieras.",
+                    $tecladoPrincipal
+                );
+            } else {
+                $this->telegramService->enviarMensaje(
+                    (int) $chatId,
+                    "ℹ️ Para confirmar una orden envianos <code>Pedido #número</code>, o tocá <b>¿Cómo viene mi pedido?</b> para ver el estado actual.",
+                    $tecladoPrincipal
+                );
+            }
 
             return response()->json(['status' => 'info_sent'], 200);
         }
 
         $pedido = Pedido::with(['estadoPedido', 'cliente'])->find($pedidoId);
         if (! $pedido) {
-            $this->telegramService->enviarMensaje((int) $chatId, "⚠️ No pudimos encontrar el <b>Pedido #{$pedidoId}</b>. Por favor verificá el número ingresado.");
+            $this->telegramService->enviarMensaje(
+                (int) $chatId,
+                "⚠️ No pudimos encontrar el <b>Pedido #{$pedidoId}</b>. Por favor verificá el número ingresado.",
+                [
+                    'inline_keyboard' => [
+                        [['text' => '🌐 Ir a La Posta Web', 'url' => $frontendUrl]],
+                    ],
+                ]
+            );
 
             return response()->json(['status' => 'not_found', 'pedido_id' => $pedidoId], 200);
         }
@@ -65,7 +119,15 @@ class TelegramWebhookController extends Controller
 
         // Si ya está confirmado / en preparación / etc
         if ($estadoActual !== 'pre-pedido') {
-            $this->telegramService->enviarMensaje((int) $chatId, "ℹ️ El <b>Pedido #{$pedidoId}</b> ya se encuentra registrado con estado: <b>{$pedido->estadoPedido?->nombre}</b>.");
+            $this->telegramService->enviarMensaje(
+                (int) $chatId,
+                "ℹ️ El <b>Pedido #{$pedidoId}</b> ya se encuentra registrado con estado: <b>{$pedido->estadoPedido?->nombre}</b>.",
+                [
+                    'inline_keyboard' => [
+                        [['text' => '📦 Consultar Estado Actual', 'callback_data' => "estado_{$pedido->id}"], ['text' => '🌐 Abrir Web', 'url' => $frontendUrl]],
+                    ],
+                ]
+            );
 
             return response()->json(['status' => 'already_confirmed', 'estado' => $pedido->estadoPedido?->nombre], 200);
         }
@@ -92,10 +154,19 @@ class TelegramWebhookController extends Controller
             }
         }
 
-        // Responder confirmación amigable
+        // Responder confirmación amigable con Inline Keyboard interactivo
+        $botonesConfirmacion = [
+            'inline_keyboard' => [
+                [
+                    ['text' => '🌐 Ver en la Web', 'url' => "{$frontendUrl}/carrito"],
+                ],
+            ],
+        ];
+
         $this->telegramService->enviarMensaje(
             (int) $chatId,
-            "🎉 <b>¡Tu Pedido #{$pedido->id} fue confirmado con éxito!</b>\n\n💰 Total: <b>$".number_format((float) $pedido->monto_total, 2, ',', '.')."</b>\nTe iremos notificando por acá el avance de tu comida (en cocina, empaque y en viaje con el repartidor)."
+            "🎉 <b>¡Tu Pedido #{$pedido->id} fue confirmado con éxito!</b>\n\n💰 Total: <b>$".number_format((float) $pedido->monto_total, 2, ',', '.')."</b>\n\nTe iremos notificando por acá cada avance (en cocina, empaque y en camino con el repartidor).",
+            $botonesConfirmacion
         );
 
         return response()->json([
@@ -103,5 +174,54 @@ class TelegramWebhookController extends Controller
             'pedido_id' => $pedido->id,
             'estado' => 'Sin Asignar',
         ], 200);
+    }
+
+    /**
+     * Consulta el último pedido vinculado al chat y responde su estado en tiempo real.
+     */
+    protected function consultarUltimoEstado(int $chatId, string $frontendUrl): JsonResponse
+    {
+        $ultimoPedido = Pedido::with('estadoPedido')
+            ->where('telegram_chat_id', $chatId)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if (! $ultimoPedido) {
+            $this->telegramService->enviarMensaje(
+                $chatId,
+                "🔍 No encontramos ningún pedido vinculado a este chat de Telegram.\nSi hiciste un pedido en la web, envianos el mensaje con el número de orden (ej: <code>Pedido #12</code>) para vincularlo.",
+                [
+                    'inline_keyboard' => [
+                        [['text' => '🌐 Ir al Menú Online', 'url' => $frontendUrl]],
+                    ],
+                ]
+            );
+
+            return response()->json(['status' => 'no_orders_found'], 200);
+        }
+
+        $estadoNombre = $ultimoPedido->estadoPedido?->nombre ?? 'En proceso';
+        $emoji = match (mb_strtolower(trim($estadoNombre))) {
+            'sin asignar' => '⏳',
+            'pendiente' => '👨‍🍳',
+            'en preparación', 'en preparacion' => '🔥',
+            'listo para entregar' => '📦',
+            'en camino' => '🛵',
+            'entregado' => '🎉',
+            'cancelado' => '❌',
+            default => 'ℹ️',
+        };
+
+        $this->telegramService->enviarMensaje(
+            $chatId,
+            "📦 <b>Estado de tu Pedido #{$ultimoPedido->id}:</b>\n\n{$emoji} Estado actual: <b>{$estadoNombre}</b>\n💰 Total: <b>$".number_format((float) $ultimoPedido->monto_total, 2, ',', '.')."</b>",
+            [
+                'inline_keyboard' => [
+                    [['text' => '🌐 Abrir La Posta Web', 'url' => $frontendUrl]],
+                ],
+            ]
+        );
+
+        return response()->json(['status' => 'order_status_sent', 'pedido_id' => $ultimoPedido->id, 'estado' => $estadoNombre], 200);
     }
 }

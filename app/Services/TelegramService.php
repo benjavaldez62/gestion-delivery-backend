@@ -16,9 +16,9 @@ class TelegramService
     }
 
     /**
-     * Enviar mensaje de texto a un chat específico de Telegram.
+     * Enviar mensaje de texto a un chat específico de Telegram, con soporte para botones inline o reply markup.
      */
-    public function enviarMensaje(int $chatId, string $texto): bool
+    public function enviarMensaje(int $chatId, string $texto, ?array $replyMarkup = null): bool
     {
         if (empty($this->botToken)) {
             Log::warning('[TelegramService] No se configuró TELEGRAM_BOT_TOKEN en el entorno.');
@@ -27,11 +27,17 @@ class TelegramService
         }
 
         try {
-            $response = Http::post("https://api.telegram.org/bot{$this->botToken}/sendMessage", [
+            $payload = [
                 'chat_id' => $chatId,
                 'text' => $texto,
                 'parse_mode' => 'HTML',
-            ]);
+            ];
+
+            if ($replyMarkup) {
+                $payload['reply_markup'] = $replyMarkup;
+            }
+
+            $response = Http::post("https://api.telegram.org/bot{$this->botToken}/sendMessage", $payload);
 
             return $response->successful();
         } catch (\Throwable $e) {
