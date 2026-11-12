@@ -3,7 +3,11 @@
 use App\Models\User;
 use App\Notifications\RecuperarContrasena;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Mail\SentMessage;
+use Illuminate\Notifications\Channels\MailChannel;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -11,31 +15,39 @@ use Illuminate\Support\Facades\Password;
 
 uses(RefreshDatabase::class);
 
-it('responde igual para correos existentes e inexistentes y envía un enlace seguro', function () {
-    Notification::fake();
-    config(['app.frontend_url' => 'https://frontend.example.test']);
+it('envía un enlace seguro a una cuenta activa', function () {
+    config(['app.frontend_url' => 'https://frontend.example.test', 'mail.default' => 'smtp']);
     $user = User::factory()->create(['email' => 'persona@example.test']);
+    $notification = null;
+    $channel = Mockery::mock(MailChannel::class);
+    $channel->shouldReceive('send')->once()->andReturnUsing(function ($recipient, $message) use (&$notification, $user) {
+        expect($recipient->is($user))->toBeTrue();
+        $notification = $message;
+
+        return Mockery::mock(SentMessage::class);
+    });
+    $this->app->instance(MailChannel::class, $channel);
 
     $existente = $this->postJson('/api/forgot-password', ['email' => $user->email])->assertOk();
-    $inexistente = $this->postJson('/api/forgot-password', ['email' => 'ausente@example.test'])->assertOk();
-    expect($existente->json())->toBe($inexistente->json());
+    $existente->assertJson(['action' => 'enlace_enviado']);
     $existente->assertHeader('Cache-Control', 'no-store, private');
     $existente->assertJsonMissingPath('token');
 
-    Notification::assertSentTo($user, RecuperarContrasena::class, function ($notification) use ($user) {
+    expect($notification)->toBeInstanceOf(RecuperarContrasena::class);
+    (function ($notification) use ($user) {
         $url = $notification->toMail($user)->actionUrl;
         $parts = parse_url($url);
         $params = json_decode(base64_decode(strtr($parts['fragment'], '-_', '+/')), true, 512, JSON_THROW_ON_ERROR);
         $stored = DB::table('password_reset_tokens')->where('email', $user->email)->value('token');
 
-        return $parts['scheme'] === 'https'
+        expect($parts['scheme'] === 'https'
             && $parts['host'] === 'frontend.example.test'
             && $parts['path'] === '/restablecer-contrasena'
             && ! isset($parts['query'])
             && $params['email'] === $user->email
             && $stored !== $params['token']
-            && Hash::check($params['token'], $stored);
-    });
+            && Hash::check($params['token'], $stored))->toBeTrue();
+    })($notification);
 });
 
 it('rechaza un correo inválido sin crear un token', function () {
@@ -45,18 +57,103 @@ it('rechaza un correo inválido sin crear un token', function () {
     expect(DB::table('password_reset_tokens')->count())->toBe(0);
 });
 
-it('registra errores de correo sin revelar si la cuenta existe', function () {
-    config(['mail.default' => 'mailer-inexistente']);
+it('informa correos inexistentes e inactivos sin enviar correos', function () {
+    Notification::fake();
+    $channel = Mockery::mock(MailChannel::class);
+    $channel->shouldNotReceive('send');
+    $this->app->instance(MailChannel::class, $channel);
+    $user = User::factory()->create(['activo' => false, 'email' => 'inactivo@example.test']);
+    $this->postJson('/api/forgot-password', ['email' => 'ausente@example.test'])
+        ->assertNotFound()->assertJson(['message' => 'Email no ingresado al sistema.']);
+    $this->postJson('/api/forgot-password', ['email' => $user->email])
+        ->assertForbidden()->assertJson(['message' => 'El email ingresado pertenece a un usuario inactivo.']);
+    Notification::assertNothingSent();
+    expect(DB::table('password_reset_tokens')->count())->toBe(0);
+});
+
+it('indica contactar al administrador para cualquier dirección del dominio exacto de prueba', function () {
+    Notification::fake();
+    $channel = Mockery::mock(MailChannel::class);
+    $channel->shouldNotReceive('send');
+    $this->app->instance(MailChannel::class, $channel);
+    User::factory()->create(['email' => 'persona@test.com']);
+    foreach (['persona@test.com', 'ausente@TEST.COM'] as $email) {
+        $this->postJson('/api/forgot-password', ['email' => $email])
+            ->assertOk()->assertJson(['action' => 'contactar_administrador']);
+    }
+    $this->postJson('/api/forgot-password', ['email' => 'ausente@not-test.com'])->assertNotFound();
+    Notification::assertNothingSent();
+    expect(DB::table('password_reset_tokens')->count())->toBe(0);
+});
+
+it('rechaza una URL que sustituye SMTP por un transporte de registro', function () {
+    config(['mail.default' => 'smtp', 'mail.mailers.smtp.url' => 'log://localhost']);
+    $user = User::factory()->create(['email' => 'persona@example.test']);
+    $this->postJson('/api/forgot-password', ['email' => $user->email])->assertStatus(503);
+    expect(DB::table('password_reset_tokens')->count())->toBe(0);
+});
+
+it('no confirma el envío si el mensaje fue cancelado', function () {
+    config(['mail.default' => 'smtp']);
+    Event::listen(MessageSending::class, fn () => false);
+    $user = User::factory()->create(['email' => 'persona@example.test']);
+    $this->postJson('/api/forgot-password', ['email' => $user->email])->assertStatus(503);
+    expect(DB::table('password_reset_tokens')->count())->toBe(0);
+});
+
+it('rechaza transportes no SMTP sin generar token ni registrar el enlace', function () {
+    config(['mail.default' => 'log']);
+    $user = User::factory()->create(['email' => 'persona@example.test']);
+    $this->postJson('/api/forgot-password', ['email' => $user->email])->assertStatus(503);
+    expect(DB::table('password_reset_tokens')->count())->toBe(0);
+});
+
+it('informa fallos de envío y registra solamente el tipo de error', function () {
+    config(['mail.default' => 'smtp']);
+    $channel = Mockery::mock(MailChannel::class);
+    $channel->shouldReceive('send')->once()->andThrow(new RuntimeException('detalle sensible'));
+    $this->app->instance(MailChannel::class, $channel);
     Log::spy();
-    $user = User::factory()->create();
-    $existente = $this->postJson('/api/forgot-password', ['email' => $user->email])->assertOk();
-    $inexistente = $this->postJson('/api/forgot-password', ['email' => 'ausente@example.test'])->assertOk();
-    expect($existente->json())->toBe($inexistente->json());
+    $user = User::factory()->create(['email' => 'persona@example.test']);
+    $this->postJson('/api/forgot-password', ['email' => $user->email])->assertStatus(503);
+    expect(DB::table('password_reset_tokens')->count())->toBe(0);
     Log::shouldHaveReceived('error')->once()->withArgs(function ($message, $context) {
         return $message === 'No se pudo procesar el correo de recuperación.'
             && isset($context['exception_type'])
             && count($context) === 1;
     });
+});
+
+it('limita solicitudes repetidas por cuenta mediante el broker', function () {
+    config(['mail.default' => 'smtp']);
+    $channel = Mockery::mock(MailChannel::class);
+    $channel->shouldReceive('send')->once()->andReturn(Mockery::mock(SentMessage::class));
+    $this->app->instance(MailChannel::class, $channel);
+    $user = User::factory()->create(['email' => 'persona@example.test']);
+    $this->postJson('/api/forgot-password', ['email' => $user->email])->assertOk();
+    $this->postJson('/api/forgot-password', ['email' => $user->email])->assertStatus(429);
+});
+
+it('rechaza tokens previos para cuentas inactivas, eliminadas o de prueba', function () {
+    foreach (['inactiva', 'eliminada', 'prueba'] as $estado) {
+        $user = User::factory()->create(['email' => $estado.'@example.test', 'password' => 'anterior123']);
+        $token = Password::broker('users')->createToken($user);
+        if ($estado === 'inactiva') {
+            $user->update(['activo' => false]);
+        } elseif ($estado === 'eliminada') {
+            $user->delete();
+        } else {
+            $user->update(['email' => 'persona@test.com']);
+            DB::table('password_reset_tokens')->where('email', $estado.'@example.test')->update(['email' => $user->email]);
+        }
+        $this->postJson('/api/reset-password', [
+            'email' => $user->email,
+            'token' => $token,
+            'password' => 'nueva12345',
+            'password_confirmation' => 'nueva12345',
+        ])->assertStatus($estado === 'prueba' ? 403 : 422);
+        expect(Hash::check('anterior123', $user->fresh()->password))->toBeTrue();
+    }
 });
 
 it('restablece la contraseña una sola vez e invalida las sesiones existentes', function () {
@@ -123,10 +220,17 @@ it('rechaza contraseñas que bcrypt truncaría o que contienen caracteres nulos'
 });
 
 it('permite completar el flujo desde la notificación y acceder con la nueva contraseña', function () {
-    Notification::fake();
+    config(['mail.default' => 'smtp']);
     $user = User::factory()->create(['email' => 'persona+test@example.test', 'password' => 'anterior123']);
+    $notification = null;
+    $channel = Mockery::mock(MailChannel::class);
+    $channel->shouldReceive('send')->once()->andReturnUsing(function ($recipient, $message) use (&$notification) {
+        $notification = $message;
+
+        return Mockery::mock(SentMessage::class);
+    });
+    $this->app->instance(MailChannel::class, $channel);
     $this->postJson('/api/forgot-password', ['email' => $user->email])->assertOk();
-    $notification = Notification::sent($user, RecuperarContrasena::class)->first();
     $url = $notification->toMail($user)->actionUrl;
     $fragment = parse_url($url, PHP_URL_FRAGMENT);
     $params = json_decode(base64_decode(strtr($fragment, '-_', '+/')), true, 512, JSON_THROW_ON_ERROR);
@@ -143,7 +247,7 @@ it('permite completar el flujo desde la notificación y acceder con la nueva con
 
 it('limita solicitudes por IP sin afectar el límite de restablecimiento', function () {
     for ($i = 0; $i < 5; $i++) {
-        $this->postJson('/api/forgot-password', ['email' => 'ausente@example.test'])->assertOk();
+        $this->postJson('/api/forgot-password', ['email' => 'ausente@example.test'])->assertNotFound();
     }
     $this->postJson('/api/forgot-password', ['email' => 'ausente@example.test'])->assertStatus(429);
     $this->postJson('/api/reset-password', [])->assertUnprocessable();
