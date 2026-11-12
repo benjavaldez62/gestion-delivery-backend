@@ -82,6 +82,10 @@ class PedidoController extends Controller
                 return $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido']);
             });
 
+            if ($pedido->wasChanged('estado_pedidos_id')) {
+                app(\App\Services\TelegramService::class)->notificarCambioEstado($pedido);
+            }
+
             return response()->json([
                 'message' => 'Personal asignado correctamente.',
                 'pedido' => new PedidoResource($pedido),
@@ -376,8 +380,14 @@ class PedidoController extends Controller
                 'repartidor_id.exists' => 'El repartidor seleccionado no existe.',
             ]);
 
+            $cambioEstado = isset($validated['estado_pedidos_id']) && (int) $validated['estado_pedidos_id'] !== (int) $pedido->estado_pedidos_id;
+
             $pedido->update($validated);
             $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago', 'items.producto', 'items.adicionales', 'pagos.estadoPago']);
+
+            if ($cambioEstado) {
+                app(\App\Services\TelegramService::class)->notificarCambioEstado($pedido);
+            }
 
             return response()->json([
                 'message' => 'Pedido actualizado correctamente.',

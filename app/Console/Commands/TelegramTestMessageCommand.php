@@ -45,3 +45,4 @@ class TelegramTestMessageCommand extends Command
         return Command::FAILURE;
     }
 }
+
