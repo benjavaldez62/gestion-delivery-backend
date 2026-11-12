@@ -11,6 +11,11 @@ class EstadoPedidoSeeder extends Seeder
     public function run(): void
     {
         EstadoPedido::create([
+            'nombre' => 'Pre-pedido',
+            'descripcion' => 'El pedido fue tomado desde la web y aguarda confirmación del cliente en Telegram',
+        ]);
+
+        EstadoPedido::create([
             'nombre' => 'Sin Asignar',
             'descripcion' => 'El pedido fue creado y está pendiente de asignación de un recurso',
         ]);

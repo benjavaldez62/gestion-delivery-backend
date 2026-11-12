@@ -296,3 +296,55 @@ it('filtra correctamente por periodo (hoy, 7d, 30d, historico) y rechaza periodo
         ->assertStatus(422)
         ->assertJsonValidationErrors(['periodo']);
 });
+
+it('excluye los pedidos en estado Pre-pedido de las metricas, distribucion de estados y cola de asignacion del dashboard (SD-338)', function () {
+    $roles = crearRolesBaseDashboard();
+
+    $admin = User::factory()->create([
+        'role_id' => $roles['admin']->id,
+        'activo' => true,
+    ]);
+
+    $estadoPrePedido = EstadoPedido::create(['nombre' => 'Pre-pedido', 'descripcion' => 'Pre-pedido web']);
+    $estadoSinAsignar = EstadoPedido::create(['nombre' => 'Sin Asignar', 'descripcion' => 'Sin asignar']);
+    $metodoEfectivo = MetodoPago::create(['nombre' => 'Efectivo', 'descripcion' => 'Efectivo', 'activo' => true]);
+
+    $cliente = Cliente::create([
+        'username' => 'cliente_prepedido',
+        'telefono' => '3454112233',
+        'direccion' => 'Urquiza 100',
+    ]);
+
+    // Pedido en Pre-pedido (no debe contabilizarse en el dashboard)
+    Pedido::create([
+        'cliente_id' => $cliente->id,
+        'estado_pedidos_id' => $estadoPrePedido->id,
+        'metodo_pago_id' => $metodoEfectivo->id,
+        'subtotal' => 5000,
+        'monto_total' => 6500,
+    ]);
+
+    // Pedido confirmado en Sin Asignar (sí debe contabilizarse)
+    $pedidoConfirmado = Pedido::create([
+        'cliente_id' => $cliente->id,
+        'estado_pedidos_id' => $estadoSinAsignar->id,
+        'metodo_pago_id' => $metodoEfectivo->id,
+        'subtotal' => 10000,
+        'monto_total' => 11500,
+    ]);
+
+    $response = $this->actingAs($admin, 'sanctum')->getJson('/api/dashboard');
+
+    $response->assertOk()
+        ->assertJsonPath('dashboard.kpis.total_pedidos', 1)
+        ->assertJsonPath('dashboard.kpis.pedidos_validos', 1)
+        ->assertJsonPath('dashboard.kpis.pedidos_sin_asignar', 1)
+        ->assertJsonCount(1, 'dashboard.pedidos_para_asignar')
+        ->assertJsonPath('dashboard.pedidos_para_asignar.0.id', $pedidoConfirmado->id);
+
+    expect((float) $response->json('dashboard.kpis.ingresos_totales'))->toBe(11500.0);
+
+    $nombresEstados = collect($response->json('dashboard.por_estado'))->pluck('nombre')->all();
+    expect($nombresEstados)->not->toContain('Pre-pedido')
+        ->and($nombresEstados)->toContain('Sin Asignar');
+});

@@ -25,19 +25,29 @@ class DashboardService
     {
         $estados = EstadoPedido::all();
 
-        $idsCancelado = $estados
+        $idsPrePedido = $estados
+            ->filter(fn (EstadoPedido $e) => in_array(mb_strtolower(trim($e->nombre)), ['pre-pedido', 'pre pedido', 'pre_pedido'], true))
+            ->pluck('id')
+            ->values()
+            ->all();
+
+        $estadosOperativos = $estados
+            ->reject(fn (EstadoPedido $e) => in_array($e->id, $idsPrePedido, true))
+            ->values();
+
+        $idsCancelado = $estadosOperativos
             ->filter(fn (EstadoPedido $e) => mb_strtolower(trim($e->nombre)) === 'cancelado')
             ->pluck('id')
             ->values()
             ->all();
 
-        $idsEntregado = $estados
+        $idsEntregado = $estadosOperativos
             ->filter(fn (EstadoPedido $e) => mb_strtolower(trim($e->nombre)) === 'entregado')
             ->pluck('id')
             ->values()
             ->all();
 
-        $idsSinAsignar = $estados
+        $idsSinAsignar = $estadosOperativos
             ->filter(fn (EstadoPedido $e) => mb_strtolower(trim($e->nombre)) === 'sin asignar')
             ->pluck('id')
             ->values()
@@ -45,8 +55,8 @@ class DashboardService
 
         $idsFinalizados = array_values(array_unique(array_merge($idsCancelado, $idsEntregado)));
 
-        // Consultas base dentro del periodo seleccionado
-        $basePeriodo = $this->aplicarFiltroPeriodo(Pedido::query(), $periodo);
+        // Consultas base dentro del periodo seleccionado (excluyendo pre-pedidos sin confirmar)
+        $basePeriodo = $this->aplicarFiltroPeriodo($this->excluirPrePedidos(Pedido::query(), $idsPrePedido), $periodo);
 
         $totalPedidos = (int) (clone $basePeriodo)->count();
 
@@ -73,8 +83,8 @@ class DashboardService
             ? round(($pedidosEntregados / $pedidosValidos) * 100, 1)
             : 0.0;
 
-        // Consultas operativas sobre pedidos actualmente activos (no entregados ni cancelados)
-        $pedidosActivosBase = Pedido::query();
+        // Consultas operativas sobre pedidos actualmente activos (no entregados, ni cancelados, ni pre-pedidos)
+        $pedidosActivosBase = $this->excluirPrePedidos(Pedido::query(), $idsPrePedido);
         if (! empty($idsFinalizados)) {
             $pedidosActivosBase->whereNotIn('estado_pedidos_id', $idsFinalizados);
         }
@@ -96,8 +106,8 @@ class DashboardService
 
         $pedidosSinAsignar = $pedidosParaAsignarModels->count();
 
-        // Distribución por estado de pedido en el periodo
-        $agrupadosPorEstado = $this->aplicarFiltroPeriodo(Pedido::query(), $periodo)
+        // Distribución por estado de pedido en el periodo (excluyendo el estado Pre-pedido)
+        $agrupadosPorEstado = $this->aplicarFiltroPeriodo($this->excluirPrePedidos(Pedido::query(), $idsPrePedido), $periodo)
             ->select(
                 'estado_pedidos_id',
                 DB::raw('COUNT(*) as cantidad'),
@@ -107,7 +117,7 @@ class DashboardService
             ->get()
             ->keyBy('estado_pedidos_id');
 
-        $porEstado = $estados->map(function (EstadoPedido $estado) use ($agrupadosPorEstado, $totalPedidos) {
+        $porEstado = $estadosOperativos->map(function (EstadoPedido $estado) use ($agrupadosPorEstado, $totalPedidos) {
             $fila = $agrupadosPorEstado->get($estado->id);
             $cantidad = $fila ? (int) $fila->cantidad : 0;
             $montoTotal = $fila ? round((float) $fila->monto_total, 2) : 0.0;
@@ -121,10 +131,10 @@ class DashboardService
             ];
         })->values()->all();
 
-        // Distribución por método de pago (solo pedidos válidos no cancelados en el periodo)
+        // Distribución por método de pago (solo pedidos válidos no cancelados ni pre-pedidos en el periodo)
         $metodosPago = MetodoPago::where('activo', true)->get();
 
-        $agrupadosPorMetodoQuery = $this->aplicarFiltroPeriodo(Pedido::query(), $periodo);
+        $agrupadosPorMetodoQuery = $this->aplicarFiltroPeriodo($this->excluirPrePedidos(Pedido::query(), $idsPrePedido), $periodo);
         if (! empty($idsCancelado)) {
             $agrupadosPorMetodoQuery->whereNotIn('estado_pedidos_id', $idsCancelado);
         }
@@ -170,12 +180,12 @@ class DashboardService
             })
             ->get();
 
-        $staffCocineros = $cocineros->map(function (User $user) use ($idsFinalizados, $idsEntregado, $periodo) {
-            return $this->construirResumenStaff($user, 'cocinero_id', $idsFinalizados, $idsEntregado, $periodo);
+        $staffCocineros = $cocineros->map(function (User $user) use ($idsFinalizados, $idsEntregado, $idsPrePedido, $periodo) {
+            return $this->construirResumenStaff($user, 'cocinero_id', $idsFinalizados, $idsEntregado, $idsPrePedido, $periodo);
         })->values()->all();
 
-        $staffRepartidores = $repartidores->map(function (User $user) use ($idsFinalizados, $idsEntregado, $periodo) {
-            return $this->construirResumenStaff($user, 'repartidor_id', $idsFinalizados, $idsEntregado, $periodo);
+        $staffRepartidores = $repartidores->map(function (User $user) use ($idsFinalizados, $idsEntregado, $idsPrePedido, $periodo) {
+            return $this->construirResumenStaff($user, 'repartidor_id', $idsFinalizados, $idsEntregado, $idsPrePedido, $periodo);
         })->values()->all();
 
         // Lista detallada de pedidos pendientes de asignación
@@ -254,10 +264,29 @@ class DashboardService
     }
 
     /**
+     * Excluye los pedidos en estado 'Pre-pedido' de las consultas operativas del dashboard.
+     *
+     * @param  Builder<Pedido>  $query
+     * @param  array<int, int>  $idsPrePedido
+     * @return Builder<Pedido>
+     */
+    private function excluirPrePedidos(Builder $query, array $idsPrePedido): Builder
+    {
+        if (! empty($idsPrePedido)) {
+            $query->whereNotIn('estado_pedidos_id', $idsPrePedido);
+        }
+
+        return $query->whereHas('estadoPedido', function (Builder $q) {
+            $q->whereRaw("LOWER(TRIM(nombre)) != 'pre-pedido'");
+        });
+    }
+
+    /**
      * Construye el resumen de carga operativa y desempeño para un miembro del personal.
      *
      * @param  array<int, int>  $idsFinalizados
      * @param  array<int, int>  $idsEntregado
+     * @param  array<int, int>  $idsPrePedido
      * @return array<string, mixed>
      */
     private function construirResumenStaff(
@@ -265,10 +294,13 @@ class DashboardService
         string $columnaAsignacion,
         array $idsFinalizados,
         array $idsEntregado,
+        array $idsPrePedido,
         string $periodo
     ): array {
-        $activosQuery = Pedido::with(['estadoPedido', 'cliente'])
-            ->where($columnaAsignacion, $user->id);
+        $activosQuery = $this->excluirPrePedidos(
+            Pedido::with(['estadoPedido', 'cliente'])->where($columnaAsignacion, $user->id),
+            $idsPrePedido
+        );
 
         if ($columnaAsignacion === 'cocinero_id') {
             $activosQuery->whereHas('estadoPedido', function (Builder $query) {
@@ -292,7 +324,7 @@ class DashboardService
 
         $completadosCount = 0;
         if (! empty($idsEntregado)) {
-            $completadosCount = $this->aplicarFiltroPeriodo(Pedido::query(), $periodo)
+            $completadosCount = $this->aplicarFiltroPeriodo($this->excluirPrePedidos(Pedido::query(), $idsPrePedido), $periodo)
                 ->where($columnaAsignacion, $user->id)
                 ->whereIn('estado_pedidos_id', $idsEntregado)
                 ->count();
