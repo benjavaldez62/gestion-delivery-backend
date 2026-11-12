@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AsignarPersonalPedidoRequest;
 use App\Http\Resources\PedidoResource;
+use App\Models\EstadoPedido;
 use App\Models\Pedido;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
@@ -54,9 +56,29 @@ class PedidoController extends Controller
                 ], 422);
             }
 
-            $pedido = Pedido::findOrFail($id);
-            $pedido->update($request->validated());
-            $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido']);
+            $datosAsignacion = $request->validated();
+            $pedido = DB::transaction(function () use ($id, $datosAsignacion): Pedido {
+                $pedido = Pedido::query()
+                    ->with('estadoPedido')
+                    ->lockForUpdate()
+                    ->findOrFail($id);
+
+                $pedido->update($datosAsignacion);
+
+                if ($pedido->estadoPedido?->nombre === 'Sin Asignar') {
+                    $estadoPendiente = EstadoPedido::query()
+                        ->where('nombre', 'Pendiente')
+                        ->first();
+
+                    if (! $estadoPendiente) {
+                        throw new \RuntimeException('No se encontró el estado Pendiente para actualizar el pedido.');
+                    }
+
+                    $pedido->update(['estado_pedidos_id' => $estadoPendiente->id]);
+                }
+
+                return $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido']);
+            });
 
             return response()->json([
                 'message' => 'Personal asignado correctamente.',
@@ -187,7 +209,7 @@ class PedidoController extends Controller
             $pedido->cocinero_id = null; // por defecto, S/A
             $pedido->repartidor_id = null; // por defecto, S/A
             $pedido->save();
-            
+
             $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago']);
 
             return response()->json([
