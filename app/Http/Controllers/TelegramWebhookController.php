@@ -38,6 +38,8 @@ class TelegramWebhookController extends Controller
         }
 
         $frontendUrl = rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:4200')), '/');
+        // Si la URL es localhost o 127.0.0.1, usamos lvh.me (resuelve automáticamente a 127.0.0.1) para que Telegram lo active como enlace web clickeable
+        $frontendTelegramUrl = preg_replace('/(localhost|127\.0\.0\.1)/i', 'lvh.me', $frontendUrl);
 
         // Comando /estado o /mispedidos: consultar último pedido
         if (preg_match('/^\/?(estado|mispedidos|mis_pedidos)/i', $text)) {
@@ -65,10 +67,15 @@ class TelegramWebhookController extends Controller
             ];
 
             if (preg_match('/men[uú]/i', $text)) {
-                $urlMenu = "{$frontendUrl}/menu";
+                $urlMenu = "{$frontendTelegramUrl}/menu";
                 $this->telegramService->enviarMensaje(
                     (int) $chatId,
-                    "🍕 <b>Menú Online — La Posta Delivery</b>\n\nPodés explorar todos nuestros platos, promociones y hacer tu pedido ingresando a:\n👉 <a href=\"{$urlMenu}\">{$urlMenu}</a>"
+                    "🍕 <b>Menú Online — La Posta Delivery</b>\n\nPodés explorar todos nuestros platos, promociones y hacer tu pedido ingresando a:\n👉 <a href=\"{$urlMenu}\">{$urlMenu}</a>",
+                    [
+                        'inline_keyboard' => [
+                            [['text' => '🌐 Abrir Menú Online', 'url' => $urlMenu]],
+                        ],
+                    ]
                 );
 
                 return response()->json(['status' => 'menu_sent'], 200);
@@ -154,7 +161,7 @@ class TelegramWebhookController extends Controller
         $botonesConfirmacion = [
             'inline_keyboard' => [
                 [
-                    ['text' => '🌐 Ver en la Web', 'url' => "{$frontendUrl}/carrito"],
+                    ['text' => '🌐 Ver en la Web', 'url' => "{$frontendTelegramUrl}/carrito"],
                 ],
             ],
         ];
