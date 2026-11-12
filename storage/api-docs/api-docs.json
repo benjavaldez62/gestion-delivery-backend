@@ -3013,6 +3013,11 @@
                                         "nullable": true,
                                         "maxLength": 255
                                     },
+                                    "chat_id": {
+                                        "type": "integer",
+                                        "example": 987654321,
+                                        "nullable": true
+                                    },
                                     "telefono": {
                                         "type": "string",
                                         "example": "+5493454123456",
@@ -3971,6 +3976,23 @@
                 }
             }
         },
+        "/api/telegram/webhook": {
+            "post": {
+                "tags": [
+                    "Telegram"
+                ],
+                "summary": "Webhook receptor de actualizaciones de Telegram Bot o n8n",
+                "operationId": "43153ed9037f884b9187a032d9db7277",
+                "responses": {
+                    "200": {
+                        "description": "Mensaje procesado correctamente."
+                    },
+                    "422": {
+                        "description": "No se pudo vincular o pedido no válido."
+                    }
+                }
+            }
+        },
         "/api/users": {
             "get": {
                 "tags": [
@@ -4403,6 +4425,10 @@
         {
             "name": "Roles",
             "description": "Roles"
+        },
+        {
+            "name": "Telegram",
+            "description": "Telegram"
         },
         {
             "name": "Usuarios",

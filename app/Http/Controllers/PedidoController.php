@@ -82,6 +82,10 @@ class PedidoController extends Controller
                 return $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido']);
             });
 
+            if ($pedido->wasChanged('estado_pedidos_id')) {
+                app(\App\Services\TelegramService::class)->notificarCambioEstado($pedido);
+            }
+
             return response()->json([
                 'message' => 'Personal asignado correctamente.',
                 'pedido' => new PedidoResource($pedido),
@@ -376,8 +380,14 @@ class PedidoController extends Controller
                 'repartidor_id.exists' => 'El repartidor seleccionado no existe.',
             ]);
 
+            $cambioEstado = isset($validated['estado_pedidos_id']) && (int) $validated['estado_pedidos_id'] !== (int) $pedido->estado_pedidos_id;
+
             $pedido->update($validated);
             $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago', 'items.producto', 'items.adicionales', 'pagos.estadoPago']);
+
+            if ($cambioEstado) {
+                app(\App\Services\TelegramService::class)->notificarCambioEstado($pedido);
+            }
 
             return response()->json([
                 'message' => 'Pedido actualizado correctamente.',
@@ -570,6 +580,7 @@ class PedidoController extends Controller
                 properties: [
                     new OA\Property(property: 'nombre', type: 'string', maxLength: 255, nullable: true, example: 'Juan Pérez'),
                     new OA\Property(property: 'username_telegram', type: 'string', maxLength: 255, nullable: true, example: 'juan_perez'),
+                    new OA\Property(property: 'chat_id', type: 'integer', nullable: true, example: 987654321),
                     new OA\Property(property: 'telefono', type: 'string', maxLength: 30, nullable: true, example: '+5493454123456'),
                     new OA\Property(property: 'direccion', type: 'string', maxLength: 255, nullable: true, example: 'Av. Eva Perón 1234'),
                 ]
@@ -641,6 +652,13 @@ class PedidoController extends Controller
                     ['nombre' => 'Sin Asignar'],
                     ['descripcion' => 'El pedido fue creado y está pendiente de asignación de un recurso']
                 );
+
+            if (isset($validated['chat_id'])) {
+                $pedido->telegram_chat_id = (int) $validated['chat_id'];
+            }
+            if (isset($validated['username_telegram'])) {
+                $pedido->telegram_username = ltrim(trim((string) $validated['username_telegram']), '@');
+            }
 
             $pedido->estado_pedidos_id = $estadoSinAsignar->id;
             $pedido->save();
