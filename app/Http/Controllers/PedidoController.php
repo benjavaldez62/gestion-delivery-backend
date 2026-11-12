@@ -137,15 +137,12 @@ class PedidoController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['cliente_id', 'estado_pedidos_id'],
+                required: ['cliente_id'],
                 properties: [
                     new OA\Property(property: 'cliente_id', type: 'integer', example: 1),
-                    new OA\Property(property: 'estado_pedidos_id', type: 'integer', example: 1),
                     new OA\Property(property: 'subtotal', type: 'number', format: 'float', nullable: true, example: 2500.00),
                     new OA\Property(property: 'monto_total', type: 'number', format: 'float', nullable: true, example: 2500.00),
                     new OA\Property(property: 'metodo_pago_id', type: 'integer', nullable: true, example: 1),
-                    new OA\Property(property: 'cocinero_id', type: 'integer', nullable: true, example: 2),
-                    new OA\Property(property: 'repartidor_id', type: 'integer', nullable: true, example: 3),
                 ]
             )
         ),
@@ -161,36 +158,36 @@ class PedidoController extends Controller
         try {
             $validated = $request->validate([
                 'cliente_id' => 'required|integer|exists:clientes,id',
-                'estado_pedidos_id' => 'required|integer|exists:estado_pedidos,id',
                 'subtotal' => 'nullable|numeric|min:0',
                 'monto_total' => 'nullable|numeric|min:0',
                 'metodo_pago_id' => 'nullable|integer|exists:metodos_pago,id',
-                'cocinero_id' => 'nullable|integer|exists:users,id',
-                'repartidor_id' => 'nullable|integer|exists:users,id',
             ], [
                 'cliente_id.required' => 'El cliente es obligatorio.',
                 'cliente_id.integer' => 'El ID del cliente debe ser un número entero.',
                 'cliente_id.exists' => 'El cliente seleccionado no existe.',
-                'estado_pedidos_id.required' => 'El estado del pedido es obligatorio.',
-                'estado_pedidos_id.integer' => 'El ID del estado del pedido debe ser un número entero.',
-                'estado_pedidos_id.exists' => 'El estado de pedido seleccionado no existe.',
                 'subtotal.numeric' => 'El subtotal debe ser un valor numérico.',
                 'subtotal.min' => 'El subtotal no puede ser negativo.',
                 'monto_total.numeric' => 'El monto total debe ser un valor numérico.',
                 'monto_total.min' => 'El monto total no puede ser negativo.',
                 'metodo_pago_id.integer' => 'El ID del método de pago debe ser un número entero.',
                 'metodo_pago_id.exists' => 'El método de pago seleccionado no existe.',
-                'cocinero_id.integer' => 'El ID del cocinero debe ser un número entero.',
-                'cocinero_id.exists' => 'El cocinero seleccionado no existe.',
-                'repartidor_id.integer' => 'El ID del repartidor debe ser un número entero.',
-                'repartidor_id.exists' => 'El repartidor seleccionado no existe.',
             ]);
 
             if (! isset($validated['monto_total'])) {
                 $validated['monto_total'] = $validated['subtotal'] ?? 0;
             }
 
-            $pedido = Pedido::create($validated);
+            // Crear pedido
+            $pedido = new Pedido;
+            $pedido->estado_pedidos_id = 1;
+            $pedido->cliente_id = $validated['cliente_id'] ?? null;
+            $pedido->subtotal = $validated['subtotal'] ?? null;
+            $pedido->monto_total = $validated['monto_total'];
+            $pedido->metodo_pago_id = $validated['metodo_pago_id'];
+            $pedido->cocinero_id = null; // por defecto, S/A
+            $pedido->repartidor_id = null; // por defecto, S/A
+            $pedido->save();
+            
             $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago']);
 
             return response()->json([
