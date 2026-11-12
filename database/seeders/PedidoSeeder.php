@@ -29,7 +29,7 @@ class PedidoSeeder extends Seeder
                 'cliente' => 'gusmachax779',
                 'estado' => 'En preparación',
                 'cocinero' => 'felipemartinez@test.com',
-                'repartidor' => 'benjaminvaldez64@gmail.com',
+                'repartidor' => 'benjavaldez62@gmail.com',
                 'subtotal' => 11500,
             ],
             [
@@ -49,7 +49,7 @@ class PedidoSeeder extends Seeder
             [
                 'cliente' => 'juan-martin96',
                 'estado' => 'Cancelado',
-                'cocinero' => 'benjaminvaldez64@gmail.com',
+                'cocinero' => 'benjavaldez62@gmail.com',
                 'repartidor' => 'studyfabri.a@gmail.com',
                 'subtotal' => 13500,
             ],
