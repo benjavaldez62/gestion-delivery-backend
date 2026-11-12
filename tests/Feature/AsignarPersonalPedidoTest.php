@@ -18,8 +18,8 @@ function crearPedidoParaAsignacion(): Pedido
     ]);
 
     $estado = EstadoPedido::create([
-        'nombre' => 'Pendiente',
-        'descripcion' => 'Pedido pendiente',
+        'nombre' => 'Sin Asignar',
+        'descripcion' => 'Pedido pendiente de asignación',
     ]);
 
     return Pedido::create([
@@ -34,6 +34,10 @@ it('permite al administrador asignar personal activo con el rol correspondiente'
     $adminRole = Role::create(['nombre' => 'Administrador']);
     $cocineroRole = Role::create(['nombre' => 'Cocinero']);
     $repartidorRole = Role::create(['nombre' => 'Repartidor']);
+    $estadoPendiente = EstadoPedido::create([
+        'nombre' => 'Pendiente',
+        'descripcion' => 'Pedido asignado y pendiente de confirmación',
+    ]);
     $admin = User::factory()->create(['role_id' => $adminRole->id, 'activo' => true]);
     $cocinero = User::factory()->create(['role_id' => $cocineroRole->id, 'activo' => true]);
     $repartidor = User::factory()->create(['role_id' => $repartidorRole->id, 'activo' => true]);
@@ -46,9 +50,49 @@ it('permite al administrador asignar personal activo con el rol correspondiente'
         ])
         ->assertOk()
         ->assertJsonPath('pedido.cocinero.id', $cocinero->id)
-        ->assertJsonPath('pedido.repartidor.id', $repartidor->id);
+        ->assertJsonPath('pedido.repartidor.id', $repartidor->id)
+        ->assertJsonPath('pedido.estado.id', $estadoPendiente->id)
+        ->assertJsonPath('pedido.estado.nombre', 'Pendiente');
 
     expect($pedido->fresh()->cocinero_id)->toBe($cocinero->id)
+        ->and($pedido->fresh()->repartidor_id)->toBe($repartidor->id)
+        ->and($pedido->fresh()->estado_pedidos_id)->toBe($estadoPendiente->id);
+});
+
+it('avanza a Pendiente cuando se asigna un solo integrante del personal', function () {
+    $adminRole = Role::create(['nombre' => 'Administrador']);
+    $cocineroRole = Role::create(['nombre' => 'Cocinero']);
+    $repartidorRole = Role::create(['nombre' => 'Repartidor']);
+    $estadoPendiente = EstadoPedido::create([
+        'nombre' => 'Pendiente',
+        'descripcion' => 'Pedido asignado y pendiente de confirmación',
+    ]);
+    $admin = User::factory()->create(['role_id' => $adminRole->id, 'activo' => true]);
+    $cocinero = User::factory()->create(['role_id' => $cocineroRole->id, 'activo' => true]);
+    $repartidor = User::factory()->create(['role_id' => $repartidorRole->id, 'activo' => true]);
+    $pedido = crearPedidoParaAsignacion();
+
+    $this->actingAs($admin, 'sanctum')
+        ->putJson("/api/pedidos/{$pedido->id}/asignaciones", [
+            'cocinero_id' => $cocinero->id,
+        ])
+        ->assertOk()
+        ->assertJsonPath('pedido.cocinero.id', $cocinero->id)
+        ->assertJsonPath('pedido.estado.id', $estadoPendiente->id)
+        ->assertJsonPath('pedido.estado.nombre', 'Pendiente');
+
+    $this->actingAs($admin, 'sanctum')
+        ->putJson("/api/pedidos/{$pedido->id}/asignaciones", [
+            'repartidor_id' => $repartidor->id,
+        ])
+        ->assertOk()
+        ->assertJsonPath('pedido.cocinero.id', $cocinero->id)
+        ->assertJsonPath('pedido.repartidor.id', $repartidor->id)
+        ->assertJsonPath('pedido.estado.id', $estadoPendiente->id)
+        ->assertJsonPath('pedido.estado.nombre', 'Pendiente');
+
+    expect($pedido->fresh()->estado_pedidos_id)->toBe($estadoPendiente->id)
+        ->and($pedido->fresh()->cocinero_id)->toBe($cocinero->id)
         ->and($pedido->fresh()->repartidor_id)->toBe($repartidor->id);
 });
 

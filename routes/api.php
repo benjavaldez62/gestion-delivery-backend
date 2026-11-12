@@ -6,6 +6,7 @@ use App\Http\Controllers\BorradorCheckoutController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComprobanteController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EstadoPagosController;
 use App\Http\Controllers\EstadoPedidoController;
 use App\Http\Controllers\GoogleAuthController;
@@ -27,12 +28,13 @@ use Illuminate\Support\Facades\Route;
 | Consumidas por el cliente frontend (menú) y personal para iniciar sesión.
 */
 
-// Autenticación
+// Autenticación y Checkout / Bot
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/forgot-password', [PasswordRecoveryController::class, 'solicitar'])->middleware('throttle:password-request');
 Route::post('/reset-password', [PasswordRecoveryController::class, 'restablecer'])->middleware('throttle:password-reset');
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:10,1');
 Route::post('/checkout/borradores', [BorradorCheckoutController::class, 'store'])->middleware('throttle:10,1');
+Route::post('/pedidos/{id}/confirmar-telegram', [PedidoController::class, 'confirmarTelegram'])->middleware('throttle:30,1');
 
 // Catálogo (Lectura pública para armar pedidos)
 Route::get('/productos', [ProductoController::class, 'index']);
@@ -147,6 +149,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Administración General (Restringido a Administrador / SuperAdmin)
     Route::middleware('role:Administrador')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'resumen']);
         Route::put('/pedidos/{id}/asignaciones', [PedidoController::class, 'asignarPersonal']);
 
         // Roles
