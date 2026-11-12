@@ -11,8 +11,9 @@ El sistema centraliza las operaciones del restaurante "La Posta", proporcionando
 ### 1.1. Invariantes de Dominio y Reglas Arquitectónicas
 
 1. **Ciclo de Vida del Pedido e Inmutabilidad en Cocina:**
-   - Flujo de estados: `Pendiente` ➔ `En Preparación` ➔ `Listo` ➔ `En Camino` ➔ `Entregado` (o `Cancelado`).
-   - **Regla estricta:** Únicamente los pedidos en estado `Pendiente` admiten agregación, edición o eliminación de ítems (`PedidoItem`). Una vez iniciada la preparación en cocina, cualquier intento de modificación es rechazado con código `400 Bad Request`.
+   - Flujo de estados: `Pre-pedido` ➔ `Sin Asignar` ➔ `Pendiente` ➔ `En Preparación` ➔ `Listo para entregar` ➔ `En Camino` ➔ `Entregado` (o `Cancelado`).
+   - **Pre-pedido y Confirmación por Telegram:** El pedido nace como `Pre-pedido` durante el checkout público. En esta etapa permanece aislado de los paneles operativos y KPIs del dashboard administrativo. Cuando el cliente inicia la interacción con el bot de Telegram (`@Restauransbot`), la orden transiciona a `Sin Asignar`, ingresando formalmente a la cola de pedidos pendientes de cocina y asignación de personal.
+   - **Regla estricta:** Únicamente los pedidos en estado `Pre-pedido` o `Pendiente` admiten agregación, edición o eliminación de ítems (`PedidoItem`). Una vez iniciada la preparación en cocina (`En Preparación` en adelante), cualquier intento de modificación es rechazado con código `400 Bad Request`.
 2. **Integridad de Precios en el Servidor:**
    - El precio unitario de los productos y adicionales, los subtotales de línea y el `monto_total` del pedido se calculan y persisten exclusivamente en el servidor. Nunca se confía en importes calculados por el cliente.
 3. **Baja Lógica / Soft Deletes:**
@@ -42,6 +43,10 @@ El sistema centraliza las operaciones del restaurante "La Posta", proporcionando
 ```
 backend/
 ├── app/
+│   ├── Console/Commands/         # Comandos Artisan personalizados
+│   │   ├── TelegramPollCommand.php           # Long polling worker en tiempo real
+│   │   ├── TelegramTestMessageCommand.php    # Test de credenciales y envío a Telegram
+│   │   └── TelegramSimularWebhookCommand.php # Simulador de webhook para tests locales
 │   ├── Http/
 │   │   ├── Controllers/          # Controladores RESTful con atributos OpenAPI
 │   │   │   ├── AuthController.php
@@ -51,6 +56,9 @@ backend/
 │   │   │   ├── PedidoController.php
 │   │   │   ├── PedidoItemController.php
 │   │   │   ├── EstadoPedidoController.php
+│   │   │   ├── BorradorCheckoutController.php
+│   │   │   ├── TelegramWebhookController.php
+│   │   │   ├── DashboardController.php
 │   │   │   ├── PagoController.php
 │   │   │   ├── ComprobanteController.php
 │   │   │   ├── MetodoPagoController.php
@@ -63,7 +71,9 @@ backend/
 │   │   │   ├── StorePedidoItemRequest.php
 │   │   │   ├── UpdatePedidoItemRequest.php
 │   │   │   ├── StoreEstadoPedidoRequest.php
-│   │   │   └── UpdateEstadoPedidoRequest.php
+│   │   │   ├── UpdateEstadoPedidoRequest.php
+│   │   │   ├── ConfirmarPedidoTelegramRequest.php
+│   │   │   └── BorradorCheckoutRequest.php
 │   │   └── Resources/            # API Resources para transformación de contratos JSON
 │   │       ├── PedidoResource.php
 │   │       ├── PedidoItemResource.php
@@ -90,6 +100,9 @@ backend/
 │   │   ├── Comprobante.php
 │   │   ├── MetodoPago.php
 │   │   └── EstadoPagos.php
+│   ├── Services/                 # Capa de servicios desacoplados
+│   │   ├── TelegramService.php   # Despacho de mensajes y notificaciones push
+│   │   └── DashboardService.php  # Métricas operativas, KPIs y alertas de pedidos
 │   └── Swagger/
 │       └── OpenApi.php           # Información global del servidor y esquema de seguridad
 ├── config/
@@ -110,23 +123,6 @@ backend/
 ---
 
 ## 4. Catálogo Completo de Endpoints
-
-### Checkout público
-
-`POST /api/checkout/borradores` guarda un borrador para un cliente sin login.
-Recibe `direccion`, `telefono`, `notas` opcionales, `metodo_pago` (`efectivo`,
-`tarjeta` o `transferencia`), `monto_recibido` opcional para efectivo e `items`, cada uno con `producto_id`, `cantidad` y una lista de IDs
-`adicionales`. Valida disponibilidad y calcula precios y un costo de envío fijo
-de $1500 en el servidor. Si se indica un monto recibido, debe cubrir el total
-actualizado. Devuelve `201` con el identificador, los ítems y los totales
-calculados, o `422` si los datos no son válidos. La ruta está limitada a 10
-solicitudes por minuto.
-
-El borrador no crea un registro en `pedidos` ni identifica aún al cliente de
-Telegram. La asociación con el bot, la conversión a pedido y una política de
-caducidad y eliminación de borradores quedan pendientes. Los endpoints
-administrativos de pedidos siguen protegidos por Sanctum. Aplicar las migraciones
-con `php artisan migrate` antes de usar el endpoint.
 
 ### 4.1. Autenticación (`/api`)
 
@@ -180,7 +176,22 @@ con `php artisan migrate` antes de usar el endpoint.
 | `PUT` | `/api/pedido-items/{pedidoItem}` | `auth:sanctum` | Modificar cantidad o adicionales de un ítem recalculando subtotales y total del pedido. Rechaza con 400 si ya se inició la cocción. |
 | `DELETE` | `/api/pedido-items/{pedidoItem}` | `auth:sanctum` | Quitar ítem del pedido. Rechaza con 400 si el pedido no es editable o si es el único ítem. |
 
-### 4.4. Estados de Pedido (`/api/estado-pedidos`)
+### 4.4. Checkout Público y Webhook de Telegram (`/api/checkout`, `/api/telegram`)
+
+| Método | Ruta | Acceso | Descripción |
+|:---:|:---|:---:|:---|
+| `POST` | `/api/checkout/borradores` | Público | Registra cliente por teléfono y persiste de forma atómica un `Pedido` en estado inicial `Pre-pedido` junto con sus líneas (`PedidoItem`) y adicionales, calculando precios, subtotales y costo de envío fijo ($1500) en el servidor. Retorna `pedido_id` y `estado: Pre-pedido` para continuar la confirmación en Telegram. Rate limit: 10 req/min. |
+| `POST` | `/api/pedidos/{id}/confirmar-telegram` | Público | Endpoint consumido por la integración de Telegram para confirmar una orden en estado `Pre-pedido`, actualizando nombre, username, chat ID y domicilio del cliente, y transicionando el pedido a `Sin Asignar`. |
+| `POST` | `/api/telegram/webhook` | Público | Webhook oficial para recibir eventos de Telegram Bot API (`Update`). Procesa `/start <id>`, comandos con número de pedido (`Pedido #<id>`), consulta de estado `/estado` y respuestas interactivas con anti-spam (cooldown de 2 horas). |
+
+### 4.5. Dashboard y Métricas Operativas (`/api/dashboard`)
+
+| Método | Ruta | Acceso | Descripción |
+|:---:|:---|:---:|:---|
+| `GET` | `/api/dashboard/general` | `Administrador` | Métricas consolidadas en tiempo real: KPIs de facturación, volumen de pedidos, distribución por método de pago y desglose por estado (excluyendo automáticamente órdenes en estado `Pre-pedido`). |
+| `GET` | `/api/dashboard/pedidos-sin-asignar` | `Administrador` | Alerta operativa de pedidos en estado `Sin Asignar` que requieren intervención y asignación inmediata de personal de cocina o reparto. |
+
+### 4.6. Estados de Pedido (`/api/estado-pedidos`)
 
 | Método | Ruta | Acceso | Descripción |
 |:---:|:---|:---:|:---|
@@ -192,7 +203,7 @@ con `php artisan migrate` antes de usar el endpoint.
 | `PUT` | `/api/estado-pedidos/{id}/restore` | `auth:sanctum` | Restaurar un estado dado de baja. |
 | `GET` | `/api/estado-pedidos-desactivados` | `auth:sanctum` | Listar estados de pedido desactivados. |
 
-### 4.5. Finanzas, Pagos y Comprobantes
+### 4.7. Finanzas, Pagos y Comprobantes
 
 | Método | Ruta | Acceso | Descripción |
 |:---:|:---|:---:|:---|
@@ -211,7 +222,7 @@ con `php artisan migrate` antes de usar el endpoint.
 | `GET` | `/api/comprobantes` | `auth:sanctum` | Listar comprobantes emitidos. |
 | `POST` | `/api/comprobantes` | `auth:sanctum` | Asociar comprobante o factura a un pago. |
 
-### 4.6. Administración General (Exclusivo Rol `Administrador`)
+### 4.8. Administración General (Exclusivo Rol `Administrador`)
 
 | Método | Ruta | Acceso | Descripción |
 |:---:|:---|:---:|:---|
@@ -229,7 +240,76 @@ con `php artisan migrate` antes de usar el endpoint.
 
 ---
 
-## 5. Integración Frontend y Configuración CORS
+## 5. Integración con Telegram Bot (`@Restauransbot`)
+
+El sistema cuenta con una integración bidireccional con Telegram mediante el bot oficial **`@Restauransbot`**. Esta capa actúa como canal conversacional para que el cliente confirme su orden tras el checkout público en la web y reciba notificaciones push en tiempo real a medida que el pedido transiciona en cocina y reparto.
+
+### 5.1. Arquitectura y Desglose de Componentes
+
+| Componente / Capa | Archivo | Responsabilidad Principal |
+| :--- | :--- | :--- |
+| **Configuración y Credenciales** | `.env` / `.env.example` | Variables de entorno `TELEGRAM_BOT_TOKEN` y `TELEGRAM_BOT_USERNAME=Restauransbot`. |
+| **Migración de Base de Datos** | `database/migrations/2026_11_12_155340_add_telegram_fields_to_pedidos_table.php` | Incorpora `telegram_chat_id` (bigInteger nullable) y `telegram_username` (string nullable) en la tabla `pedidos`. |
+| **Modelo Eloquent** | `app/Models/Pedido.php` | Atributos `$fillable` para persistencia de chat ID y username de Telegram. |
+| **API Resource** | `app/Http/Resources/PedidoResource.php` | Exposición de `telegram_chat_id` y `telegram_username` en los contratos JSON de la API. |
+| **Servicio de Salida (Push)** | `app/Services/TelegramService.php` | Despacho de mensajes HTML (`enviarMensaje`), soporte de teclados (`InlineKeyboardMarkup` y `ReplyKeyboardMarkup`) y notificaciones push reactivas ante cambios de estado (`notificarCambioEstado`). |
+| **Controlador Webhook** | `app/Http/Controllers/TelegramWebhookController.php` | Procesamiento de updates de Telegram, comandos `/start <id>`, `Pedido #<id>`, consulta de estado `/estado`, cooldown anti-spam (2 horas en saludos) y botones interactivos. |
+| **Controlador de Pedidos** | `app/Http/Controllers/PedidoController.php` | Endpoint `POST /api/pedidos/{id}/confirmar-telegram` y disparador de notificaciones push en asignación de personal (`asignarPersonal`) y cambio de estado (`update`). |
+| **Checkout Público** | `app/Http/Controllers/BorradorCheckoutController.php` | Creación atómica de cliente, pedido en estado inicial `Pre-pedido` y desglose de ítems para derivación a Telegram. |
+| **Form Request** | `app/Http/Requests/ConfirmarPedidoTelegramRequest.php` | Validación estricta de parámetros para la confirmación de la comanda desde el bot. |
+| **Worker CLI (Long Polling)** | `app/Console/Commands/TelegramPollCommand.php` | `php artisan telegram:poll`: Escucha y procesa eventos de Telegram en tiempo real sin requerir túneles externos (ngrok o Cloudflare). |
+| **Herramienta CLI de Test** | `app/Console/Commands/TelegramTestMessageCommand.php` | `php artisan telegram:test-message <chat_id>`: Verificación rápida de credenciales y envío directo al chat. |
+| **Simulador de Webhook** | `app/Console/Commands/TelegramSimularWebhookCommand.php` | `php artisan telegram:simular-webhook <id>`: Simulación local de confirmación entrante para pruebas unitarias y e2e. |
+| **Pruebas Automatizadas** | `tests/Feature/TelegramWebhookTest.php` | Suite Pest con cobertura de flujos reactivos, transiciones de estado, idempotencia y notificaciones push. |
+
+### 5.2. Catálogo de Disparadores y Respuestas del Bot (Flujo Reactivo)
+
+Gestionado en `TelegramWebhookController@handle` cuando el usuario envía un mensaje a `@Restauransbot`:
+
+| # | Mensaje del Cliente | Condición en el Sistema | Respuesta del Bot |
+| :---: | :--- | :--- | :--- |
+| **1** | Saludo o texto cualquiera sin número de pedido (ej: `Hola`, `/start` solo). | No se detecta `/start <id>` ni `Pedido #<id>` (aplica cooldown anti-spam de 2 horas en saludo largo). | `👋 ¡Hola! Bienvenido a <b>La Posta Delivery</b>.<br>Para confirmar tu pedido, envianos el mensaje con el número de tu orden (por ejemplo: <code>Pedido #12</code> o hacé clic en el enlace desde la web).` |
+| **2** | Número de pedido inexistente (ej: `Pedido #999` o `/start 999`). | No se encuentra registro del pedido en base de datos. | `⚠️ No pudimos encontrar el <b>Pedido #999</b>. Por favor verificá el número ingresado.` |
+| **3** | Pedido ya confirmado o en cocina/camino (ej: reintento `Pedido #12`). | El pedido existe pero su estado es distinto de `Pre-pedido`. | `ℹ️ El <b>Pedido #12</b> ya se encuentra registrado con estado: <b>[NombreEstado]</b>.` |
+| **4** | Mensaje de checkout web válido (ej: `/start 12` o texto con `Pedido #12`). | El pedido existe y su estado es **`Pre-pedido`** (transiciona a `Sin Asignar` y registra chat ID). | `🎉 <b>¡Tu Pedido #12 fue confirmado con éxito!</b><br><br>💰 Total: <b>$[monto_total]</b><br>Te iremos notificando por acá el avance de tu comida (en cocina, empaque y en viaje con el repartidor).` |
+| **5** | Consulta de estado (`/estado` o botón interactivo). | Cliente con chat ID registrado en el sistema. | `📦 <b>Estado de tu último pedido:</b><br>Pedido #12: <b>[NombreEstado]</b>.` |
+
+### 5.3. Catálogo de Notificaciones Push Proactivas (Cambios de Estado)
+
+Disparadas automáticamente por `TelegramService@notificarCambioEstado` al modificarse el estado del pedido:
+
+| # | Evento en el Sistema | Estado Resultante | Notificación Push enviada al Chat de Telegram |
+| :---: | :--- | :--- | :--- |
+| **1** | Admin asigna cocinero y/o repartidor en panel. | `Pendiente` | `👨‍🍳 <b>Pedido #[id]:</b> Personal asignado. En breve comenzará su preparación.` |
+| **2** | Cocinero toma el pedido en el Kanban de Cocina (`/cocina`). | `En preparación` | `🔥 <b>¡Tu Pedido #[id] ya se está cocinando!</b><br>Nuestros cocineros lo están preparando con dedicación.` |
+| **3** | Cocina finaliza y pasa el pedido a empaque. | `Listo para entregar` | `📦 <b>Pedido #[id] listo:</b> Ya está empacado esperando al repartidor.` |
+| **4** | Repartidor retira el paquete e inicia recorrido (`/repartos`). | `En camino` | `🛵 <b>¡Tu Pedido #[id] va en camino!</b><br>El repartidor se dirige a tu domicilio.` |
+| **5** | Repartidor efectúa la entrega al cliente en mano. | `Entregado` | `🎉 <b>¡Pedido #[id] entregado!</b><br>¡Que lo disfrutes mucho! Gracias por elegir La Posta.` |
+| **6** | Cancelación administrativa o de personal. | `Cancelado` | `❌ <b>Pedido #[id] cancelado:</b> Tu pedido fue cancelado. Por favor comunicate con el restaurante si tenés dudas.` |
+| **7** | Actualización de estado genérica. | *Cualquier otro* | `ℹ️ <b>Pedido #[id]:</b> El estado se actualizó a '[NombreEstado]'.` |
+
+### 5.4. Modos de Ejecución y Comandos Artisan
+
+- **Modo Desarrollo (Long Polling sin túneles):**
+  Para desarrollo local sin necesidad de herramientas como ngrok o cloudflared, se ejecuta el worker de polling:
+  ```bash
+  php artisan telegram:poll
+  ```
+  Este comando consulta periódicamente la API de Telegram y despacha las actualizaciones directamente al controlador interno.
+
+- **Comando de prueba de credenciales:**
+  ```bash
+  php artisan telegram:test-message <chat_id>
+  ```
+
+- **Simulador de webhook para pruebas automatizadas:**
+  ```bash
+  php artisan telegram:simular-webhook <id_pedido>
+  ```
+
+---
+
+## 6. Integración Frontend y Configuración CORS
 
 El backend cuenta con soporte nativo para peticiones de origen cruzado (CORS) configurado en `config/cors.php`:
 
@@ -242,7 +322,7 @@ El backend cuenta con soporte nativo para peticiones de origen cruzado (CORS) co
 
 ---
 
-## 6. Documentación Interactiva (Swagger UI)
+## 7. Documentación Interactiva (Swagger UI)
 
 La API cuenta con documentación OpenAPI 3.0 auto-generada. Con el servidor en ejecución, la consola interactiva está disponible en:
 
@@ -271,9 +351,9 @@ El artefacto JSON compilado se ubica en `storage/api-docs/api-docs.json`.
 
 ---
 
-## 7. Pruebas Automatizadas (Pest PHP)
+## 8. Pruebas Automatizadas (Pest PHP)
 
-El proyecto cuenta con una cobertura integral de pruebas unitarias y de integración desarrolladas con **Pest PHP** para validar contratos de API, reglas de negocio e integridad referencial (76 pruebas pasando, 322 aserciones):
+El proyecto cuenta con una cobertura integral de pruebas unitarias y de integración desarrolladas con **Pest PHP** para validar contratos de API, reglas de negocio e integridad referencial (101 pruebas pasando, 546 aserciones):
 
 ```bash
 php artisan test
@@ -282,6 +362,8 @@ php artisan test
 ### Desglose de Pruebas Principales
 - `tests/Feature/AuthLoginTest.php`: Login, hash de contraseñas, validación de credenciales erróneas y tokens Sanctum.
 - `tests/Feature/AuthLogoutTest.php`: Revocación del Bearer Token y rechazo de logout anónimo.
+- `tests/Feature/TelegramWebhookTest.php`: Cobertura del webhook de Telegram, procesamiento de `/start <id>`, comandos `Pedido #<id>`, consulta `/estado`, persistencia de `telegram_chat_id`, transición atómica a `Sin Asignar` y despacho de notificaciones push de estado.
+- `tests/Feature/DashboardTest.php`: Aislamiento de órdenes en `Pre-pedido` fuera de los KPIs de facturación y alertas de pedidos sin asignar en el dashboard.
 - `tests/Feature/AdicionalPorCategoriaTest.php`: Relación de adicionales con categorías gastronómicas, endpoint `GET /api/categorias/{categoria}/adicionales`, filtro `?categoria_id` y exposición de `categoria_id` en resources.
 - `tests/Feature/ProductoFilterTest.php`: Filtros en listado de productos activos por categoría (`?categoria_id`) y búsqueda por texto (`?q`).
 - `tests/Feature/MetodoPagoRelationTest.php`: Relación inversa `pedidos(): HasMany` en el modelo `MetodoPago`.
@@ -295,7 +377,7 @@ php artisan test
 
 ---
 
-## 8. Instalación y Configuración Local
+## 9. Instalación y Configuración Local
 
 Seguir estos pasos para inicializar el backend en un entorno de desarrollo local:
 
@@ -315,7 +397,7 @@ composer install
 ```bash
 cp .env.example .env
 ```
-Editar el archivo `.env` configurando la base de datos y la URL del frontend:
+Editar el archivo `.env` configurando la base de datos, la URL del frontend y las credenciales de Telegram:
 ```env
 APP_URL=http://127.0.0.1:8000
 FRONTEND_URL=http://localhost:4200
@@ -326,6 +408,9 @@ DB_PORT=3306
 DB_DATABASE=delivery_db
 DB_USERNAME=root
 DB_PASSWORD=
+
+TELEGRAM_BOT_TOKEN=tu_token_de_telegram_aqui
+TELEGRAM_BOT_USERNAME=Restauransbot
 ```
 
 ### 4. Generar clave de aplicación
@@ -334,7 +419,7 @@ php artisan key:generate
 ```
 
 ### 5. Ejecutar migraciones y seeders
-Crea el esquema relacional e inserta los datos iniciales de prueba (roles, usuarios, categorías, productos y adicionales):
+Crea el esquema relacional e inserta los datos iniciales de prueba (roles, usuarios, categorías, productos, adicionales y estados de pedido):
 ```bash
 php artisan migrate --seed
 ```
@@ -347,7 +432,7 @@ La API estará disponible en `http://127.0.0.1:8000` y Swagger UI en `http://127
 
 ---
 
-## 9. Convenciones de Ingeniería y Flujo Git
+## 10. Convenciones de Ingeniería y Flujo Git
 
 - **Rama Base:** Todas las ramas de características y fixes parten y apuntan hacia `dev`.
 - **Formato de Commits:** [Conventional Commits](https://www.conventionalcommits.org/) obligatorio (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`).
@@ -357,7 +442,7 @@ La API estará disponible en `http://127.0.0.1:8000` y Swagger UI en `http://127
 
 ---
 
-## 10. Equipo de Desarrollo (Grupo 2)
+## 11. Equipo de Desarrollo (Grupo 2)
 
 Proyecto desarrollado para la cátedra **Programación IV**:
 
