@@ -1185,6 +1185,55 @@
                 }
             }
         },
+        "/api/dashboard": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Obtener resumen y métricas agregadas del dashboard administrativo",
+                "operationId": "eea0d80849eae1a9544bcc5634f34ce3",
+                "parameters": [
+                    {
+                        "name": "periodo",
+                        "in": "query",
+                        "description": "Rango temporal de consulta: hoy, 7d, 30d o historico (por defecto: historico)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "historico",
+                            "enum": [
+                                "hoy",
+                                "7d",
+                                "30d",
+                                "historico"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Resumen del dashboard obtenido correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
+                    "422": {
+                        "description": "El periodo seleccionado no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el resumen del dashboard."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/estado-pagos": {
             "get": {
                 "tags": [
@@ -4021,6 +4070,10 @@
         {
             "name": "Comprobantes",
             "description": "Comprobantes"
+        },
+        {
+            "name": "Dashboard",
+            "description": "Dashboard"
         },
         {
             "name": "Estados de Pago",
