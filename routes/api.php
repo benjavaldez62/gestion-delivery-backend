@@ -6,6 +6,7 @@ use App\Http\Controllers\BorradorCheckoutController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComprobanteController;
+use App\Http\Controllers\ConfiguracionPublicaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EstadoPagosController;
 use App\Http\Controllers\EstadoPedidoController;
@@ -30,6 +31,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Autenticación y Checkout / Bot
+Route::get('/configuracion-publica', ConfiguracionPublicaController::class);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/forgot-password', [PasswordRecoveryController::class, 'solicitar'])->middleware('throttle:password-request');
 Route::post('/reset-password', [PasswordRecoveryController::class, 'restablecer'])->middleware('throttle:password-reset');

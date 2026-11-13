@@ -28,7 +28,7 @@ class TelegramPollCommand extends Command
      */
     public function handle(TelegramWebhookController $webhookController): int
     {
-        $botToken = config('services.telegram.bot_token', env('TELEGRAM_BOT_TOKEN'));
+        $botToken = config('services.telegram.bot_token');
 
         if (empty($botToken)) {
             $this->error('❌ No se encontró TELEGRAM_BOT_TOKEN en el archivo .env.');
@@ -39,9 +39,12 @@ class TelegramPollCommand extends Command
         // Si hubiera un webhook registrado previamente en Telegram, lo eliminamos para permitir getUpdates
         $this->info('Eliminando webhook previo en Telegram para habilitar Long Polling...');
         try {
-            Http::get("https://api.telegram.org/bot{$botToken}/deleteWebhook");
+            $response = Http::get("https://api.telegram.org/bot{$botToken}/deleteWebhook");
+            if (! $response->successful()) {
+                $this->warn('No se pudo eliminar el webhook de Telegram. Estado HTTP: '.$response->status());
+            }
         } catch (\Throwable $e) {
-            // Ignorar error de red puntual
+            $this->warn('No se pudo eliminar el webhook de Telegram: '.$e::class);
         }
 
         $timeout = (int) $this->option('timeout');
@@ -59,7 +62,7 @@ class TelegramPollCommand extends Command
                 ]);
 
                 if (! $response->successful()) {
-                    $this->warn('Error al consultar Telegram: '.$response->body());
+                    $this->warn('Error al consultar Telegram. Estado HTTP: '.$response->status());
                     sleep(2);
 
                     continue;
@@ -80,7 +83,7 @@ class TelegramPollCommand extends Command
                     $text = $msg['text'] ?? '';
                     $from = $msg['from']['username'] ?? ($msg['from']['first_name'] ?? 'Usuario');
 
-                    $this->line("<fg=cyan>[".now()->format('H:i:s')."]</> Mensaje de <fg=yellow>@{$from}</> (chat: {$chatId}): \"{$text}\"");
+                    $this->line('<fg=cyan>['.now()->format('H:i:s')."]</> Mensaje de <fg=yellow>@{$from}</> (chat: {$chatId}): \"{$text}\"");
 
                     // Delegar el procesamiento al mismo controlador que maneja el webhook
                     $request = Request::create('/api/telegram/webhook', 'POST', [], [], [], [
@@ -93,7 +96,7 @@ class TelegramPollCommand extends Command
                     $this->info('   ↳ Resultado: '.($result['status'] ?? 'procesado').' | '.json_encode($result, JSON_UNESCAPED_UNICODE));
                 }
             } catch (\Throwable $e) {
-                $this->error('Excepción en polling: '.$e->getMessage());
+                $this->error('Excepción en polling: '.$e::class);
                 sleep(2);
             }
         }
@@ -101,4 +104,3 @@ class TelegramPollCommand extends Command
         return Command::SUCCESS;
     }
 }
-
