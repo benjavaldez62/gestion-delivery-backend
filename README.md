@@ -12,7 +12,7 @@ El sistema centraliza las operaciones del restaurante "La Posta", proporcionando
 
 1. **Ciclo de Vida del Pedido e Inmutabilidad en Cocina:**
    - Flujo de estados: `Pre-pedido` ➔ `Sin Asignar` ➔ `Pendiente` ➔ `En Preparación` ➔ `Listo para entregar` ➔ `En Camino` ➔ `Entregado` (o `Cancelado`).
-   - **Pre-pedido y Confirmación por Telegram:** El pedido nace como `Pre-pedido` durante el checkout público. En esta etapa permanece aislado de los paneles operativos y KPIs del dashboard administrativo. Cuando el cliente inicia la interacción con el bot de Telegram (`@Restauransbot`), la orden transiciona a `Sin Asignar`, ingresando formalmente a la cola de pedidos pendientes de cocina y asignación de personal.
+   - **Pre-pedido y Confirmación por Telegram:** El pedido nace como `Pre-pedido` durante el checkout público. En esta etapa permanece aislado de los paneles operativos y KPIs del dashboard administrativo. Cuando el cliente envía al bot configurado un mensaje con el número del pedido, la orden transiciona a `Sin Asignar`, ingresando formalmente a la cola de pedidos pendientes de cocina y asignación de personal.
    - **Regla estricta:** Únicamente los pedidos en estado `Pre-pedido` o `Pendiente` admiten agregación, edición o eliminación de ítems (`PedidoItem`). Una vez iniciada la preparación en cocina (`En Preparación` en adelante), cualquier intento de modificación es rechazado con código `400 Bad Request`.
 2. **Integridad de Precios en el Servidor:**
    - El precio unitario de los productos y adicionales, los subtotales de línea y el `monto_total` del pedido se calculan y persisten exclusivamente en el servidor. Nunca se confía en importes calculados por el cliente.
@@ -263,15 +263,19 @@ actual de privacidad de SD-150; coordinar este cambio con el equipo.
 
 ---
 
-## 5. Integración con Telegram Bot (`@Restauransbot`)
+## 5. Integración con Telegram Bot
 
-El sistema cuenta con una integración bidireccional con Telegram mediante el bot oficial **`@Restauransbot`**. Esta capa actúa como canal conversacional para que el cliente confirme su orden tras el checkout público en la web y reciba notificaciones push en tiempo real a medida que el pedido transiciona en cocina y reparto.
+El sistema cuenta con una integración bidireccional con el bot de Telegram configurado en cada entorno. Esta capa actúa como canal conversacional para que el cliente confirme su orden tras el checkout público en la web y reciba notificaciones push a medida que el pedido transiciona en cocina y reparto.
+
+Cada entorno debe configurar `TELEGRAM_BOT_USERNAME` sin `@` y `TELEGRAM_BOT_TOKEN` para el mismo bot. El endpoint público `GET /api/configuracion-publica` devuelve solo `telegram_bot_username`, nunca el token. Si el nombre falta o no es válido devuelve 503 y el frontend permite reintentar sin crear otro pedido. El nombre debe tener entre 5 y 32 caracteres ASCII alfanuméricos o guion bajo.
+
+No guardar tokens en el repositorio ni compartir el `.env`. Al cambiar sus valores, ejecutar `php artisan config:clear` para descartar la caché y reiniciar los procesos de larga duración. La configuración no comprueba que el token pertenezca al nombre ni que el bot esté escuchando.
 
 ### 5.1. Arquitectura y Desglose de Componentes
 
 | Componente / Capa | Archivo | Responsabilidad Principal |
 | :--- | :--- | :--- |
-| **Configuración y Credenciales** | `.env` / `.env.example` | Variables de entorno `TELEGRAM_BOT_TOKEN` y `TELEGRAM_BOT_USERNAME=Restauransbot`. |
+| **Configuración y Credenciales** | `.env` / `.env.example` | Variables de entorno `TELEGRAM_BOT_TOKEN` y `TELEGRAM_BOT_USERNAME`. |
 | **Migración de Base de Datos** | `database/migrations/2026_11_12_155340_add_telegram_fields_to_pedidos_table.php` | Incorpora `telegram_chat_id` (bigInteger nullable) y `telegram_username` (string nullable) en la tabla `pedidos`. |
 | **Modelo Eloquent** | `app/Models/Pedido.php` | Atributos `$fillable` para persistencia de chat ID y username de Telegram. |
 | **API Resource** | `app/Http/Resources/PedidoResource.php` | Exposición de `telegram_chat_id` y `telegram_username` en los contratos JSON de la API. |
@@ -287,7 +291,7 @@ El sistema cuenta con una integración bidireccional con Telegram mediante el bo
 
 ### 5.2. Catálogo de Disparadores y Respuestas del Bot (Flujo Reactivo)
 
-Gestionado en `TelegramWebhookController@handle` cuando el usuario envía un mensaje a `@Restauransbot`:
+Gestionado en `TelegramWebhookController@handle` cuando el usuario envía un mensaje al bot configurado:
 
 | # | Mensaje del Cliente | Condición en el Sistema | Respuesta del Bot |
 | :---: | :--- | :--- | :--- |
@@ -318,7 +322,7 @@ Disparadas automáticamente por `TelegramService@notificarCambioEstado` al modif
   ```bash
   php artisan telegram:poll
   ```
-  Este comando consulta periódicamente la API de Telegram y despacha las actualizaciones directamente al controlador interno.
+  Este comando elimina el webhook configurado en el bot antes de consultar la API de Telegram y despacha las actualizaciones directamente al controlador interno. Usarlo únicamente en un bot de prueba propio cuando no se necesite conservar ese webhook.
 
 - **Comando de prueba de credenciales:**
   ```bash
@@ -432,8 +436,8 @@ DB_DATABASE=delivery_db
 DB_USERNAME=root
 DB_PASSWORD=
 
-TELEGRAM_BOT_TOKEN=tu_token_de_telegram_aqui
-TELEGRAM_BOT_USERNAME=Restauransbot
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_BOT_USERNAME=
 ```
 
 ### 4. Generar clave de aplicación
