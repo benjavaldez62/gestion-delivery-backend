@@ -12,7 +12,7 @@ class TelegramService
 
     public function __construct(?string $botToken = null)
     {
-        $this->botToken = $botToken ?? config('services.telegram.bot_token', env('TELEGRAM_BOT_TOKEN', 'test_bot_token'));
+        $this->botToken = $botToken ?? config('services.telegram.bot_token');
     }
 
     /**
@@ -39,9 +39,15 @@ class TelegramService
 
             $response = Http::post("https://api.telegram.org/bot{$this->botToken}/sendMessage", $payload);
 
-            return $response->successful();
+            if (! $response->successful()) {
+                Log::warning('[TelegramService] Telegram rechazó el envío.', ['status' => $response->status()]);
+
+                return false;
+            }
+
+            return true;
         } catch (\Throwable $e) {
-            Log::error('[TelegramService] Error al enviar mensaje: '.$e->getMessage());
+            Log::error('[TelegramService] Error al enviar mensaje.', ['exception_type' => $e::class]);
 
             return false;
         }

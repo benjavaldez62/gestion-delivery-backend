@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
+beforeEach(function () {
+    config(['services.telegram.bot_token' => 'token-de-prueba']);
+});
+
 function crearPrePedidoParaTelegram(): int
 {
     $cat = Categoria::create(['nombre' => 'Pizzas', 'activo' => true]);

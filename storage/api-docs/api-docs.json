@@ -1285,6 +1285,39 @@
                 }
             }
         },
+        "/api/configuracion-publica": {
+            "get": {
+                "tags": [
+                    "Telegram"
+                ],
+                "summary": "Obtener configuración pública de Telegram",
+                "operationId": "fbc95ad724ae14eea81775ca6a362fac",
+                "responses": {
+                    "200": {
+                        "description": "Nombre público del bot configurado.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "telegram_bot_username"
+                                    ],
+                                    "properties": {
+                                        "telegram_bot_username": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Configuración de Telegram no disponible."
+                    }
+                },
+                "security": []
+            }
+        },
         "/api/dashboard": {
             "get": {
                 "tags": [
@@ -4391,6 +4424,10 @@
             "description": "Comprobantes"
         },
         {
+            "name": "Telegram",
+            "description": "Telegram"
+        },
+        {
             "name": "Dashboard",
             "description": "Dashboard"
         },
@@ -4425,10 +4462,6 @@
         {
             "name": "Roles",
             "description": "Roles"
-        },
-        {
-            "name": "Telegram",
-            "description": "Telegram"
         },
         {
             "name": "Usuarios",
