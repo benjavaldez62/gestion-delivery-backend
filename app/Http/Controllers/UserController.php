@@ -519,7 +519,7 @@ class UserController extends Controller
     public function indexDesactivados() {
         try {
             // llamamos lo inhabilitado
-            $usersDesactivados = User::onlyTrashed()->get();
+            $usersDesactivados = User::with('role')->onlyTrashed()->get();
 
             // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
             if ($usersDesactivados->isEmpty()) {
