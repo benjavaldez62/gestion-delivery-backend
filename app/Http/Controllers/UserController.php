@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\UserResource;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -12,6 +13,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
+use phpDocumentor\Reflection\PseudoTypes\LowercaseString;
 use Symfony\Contracts\Service\Attribute\Required;
 
 class UserController extends Controller
@@ -387,6 +389,7 @@ class UserController extends Controller
     public function destroy($id)
     {
         try {
+
             // Verificar que el ID sea válido
             if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
@@ -395,13 +398,24 @@ class UserController extends Controller
             }
 
             // Buscamos el usuario a eliminar
-            $user = User::findOrFail($id);
-
+            $user = User::with('role')->findOrFail($id);
+            
             // Verificamos si el usuario existe antes de eliminarlo
             if (! $user) {
                 return response()->json([
                     'message' => 'Usuario no encontrado.'
                 ], 404);
+            }
+
+            // convertimos a minusculas el rol
+            $rol = strtolower($user->role?->nombre ?? '');
+            $rol = trim($rol);
+
+            // Validamos que sea alguien que NO tenga rol Admin o SuperAdmin
+            if (in_array($rol, ['admin', 'administrador'])) {
+                return response()->json([
+                    'message' => 'No puede eliminar este usuario, tiene rol de Administrador.'
+                ], 403);
             }
 
             // Cambiamos la disponibilidad a 'false' antes de eliminarlo
