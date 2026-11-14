@@ -7,6 +7,7 @@ use App\Models\EstadoPedido;
 use App\Models\MetodoPago;
 use App\Models\Pago;
 use App\Models\Pedido;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -33,18 +34,21 @@ function createPagoTestContext(): array
     ]);
 
     $metodoPago = MetodoPago::create([
-        'nombre' => 'Transferencia Bancaria',
-        'descripcion' => 'Transferencia por CBU/CVU',
+        'nombre' => 'Efectivo',
+        'descripcion' => 'Pago al recibir',
         'activo' => true,
     ]);
 
     $estadoPago = EstadoPagos::create([
-        'nombre' => 'Aprobado',
-        'descripcion' => 'Pago aprobado exitosamente',
+        'nombre' => 'Pendiente',
+        'descripcion' => 'Pago pendiente',
     ]);
 
+    $pedido->update(['metodo_pago_id' => $metodoPago->id]);
+    $role = Role::create(['nombre' => 'Administrador']);
     $user = User::factory()->create([
         'activo' => true,
+        'role_id' => $role->id,
     ]);
 
     return compact('cliente', 'estadoPedido', 'pedido', 'metodoPago', 'estadoPago', 'user');
@@ -58,8 +62,6 @@ it('permite crear un pago con referencia y persistirla correctamente en base de 
             'pedido_id' => $ctx['pedido']->id,
             'metodo_pago_id' => $ctx['metodoPago']->id,
             'monto' => 5000.00,
-            'fecha_pago' => '2026-10-26',
-            'estado_pago_id' => $ctx['estadoPago']->id,
             'referencia' => 'TRX-ABC-999888',
         ]);
 
@@ -81,9 +83,7 @@ it('permite crear un pago sin referencia opcional quedando en null', function ()
         ->postJson('/api/pagos', [
             'pedido_id' => $ctx['pedido']->id,
             'metodo_pago_id' => $ctx['metodoPago']->id,
-            'monto' => 2500.00,
-            'fecha_pago' => '2026-10-26',
-            'estado_pago_id' => $ctx['estadoPago']->id,
+            'monto' => 5000.00,
         ]);
 
     $response->assertCreated()
@@ -100,7 +100,7 @@ it('permite actualizar un pago modificando el campo referencia', function () {
         'pedido_id' => $ctx['pedido']->id,
         'metodo_pago_id' => $ctx['metodoPago']->id,
         'monto' => 5000.00,
-        'fecha_pago' => '2026-10-26',
+        'fecha_pago' => null,
         'estado_pago_id' => $ctx['estadoPago']->id,
         'referencia' => 'REF-INICIAL',
     ]);
@@ -110,7 +110,7 @@ it('permite actualizar un pago modificando el campo referencia', function () {
             'pedido_id' => $ctx['pedido']->id,
             'metodo_pago_id' => $ctx['metodoPago']->id,
             'monto' => 5000.00,
-            'fecha_pago' => '2026-10-26',
+            'fecha_pago' => null,
             'estado_pago_id' => $ctx['estadoPago']->id,
             'referencia' => 'REF-ACTUALIZADA-123',
         ]);

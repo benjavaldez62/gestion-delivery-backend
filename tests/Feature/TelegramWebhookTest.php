@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Categoria;
+use App\Models\Cliente;
 use App\Models\EstadoPedido;
 use App\Models\Pedido;
 use App\Models\Producto;
@@ -26,6 +27,7 @@ function crearPrePedidoParaTelegram(): int
     ]);
 
     $checkoutResponse = test()->postJson('/api/checkout/borradores', [
+        'nombre_cliente' => 'Nombre Apellido',
         'direccion' => 'Calle Falsa 123',
         'telefono' => '3454123456',
         'metodo_pago' => 'efectivo',
@@ -73,7 +75,10 @@ it('procesa webhook de Telegram con comando /start <id> y confirma el pedido con
     $pedido = Pedido::find($pedidoId);
     expect($pedido->telegram_chat_id)->toBe(987654321)
         ->and($pedido->telegram_username)->toBe('carlos_gomez')
-        ->and($pedido->estadoPedido->nombre)->toBe('Sin Asignar');
+        ->and($pedido->estadoPedido->nombre)->toBe('Sin Asignar')
+        ->and($pedido->pagos()->count())->toBe(1)
+        ->and($pedido->pagos()->first()->estadoPago->nombre)->toBe('Pendiente')
+        ->and($pedido->pagos()->first()->fecha_pago)->toBeNull();
 
     Http::assertSent(function ($request) {
         return str_contains($request->url(), 'sendMessage')
@@ -81,6 +86,24 @@ it('procesa webhook de Telegram con comando /start <id> y confirma el pedido con
             && str_contains($request['text'], 'confirmado con éxito')
             && isset($request['reply_markup']['inline_keyboard']);
     });
+});
+
+it('confirma sin sobrescribir otro cliente que ya usa el username de Telegram', function () {
+    Http::fake();
+    Cliente::create(['username' => 'usuario_repetido']);
+    $pedidoId = crearPrePedidoParaTelegram();
+    $cliente = Pedido::findOrFail($pedidoId)->cliente;
+    $usernameOriginal = $cliente->username;
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => 987654321],
+            'from' => ['username' => 'usuario_repetido'],
+            'text' => "Pedido #{$pedidoId}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+    expect($cliente->fresh()->username)->toBe($usernameOriginal)
+        ->and(Pedido::findOrFail($pedidoId)->pagos()->count())->toBe(1);
 });
 
 it('aplica anti-spam en saludo inicial cuando el usuario no envia numero de orden', function () {
