@@ -18,6 +18,7 @@ class Pedido extends Model
         'subtotal',
         'monto_total',
         'cliente_id',
+        'nombre_cliente',
         'telegram_chat_id',
         'telegram_username',
         'cocinero_id',

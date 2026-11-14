@@ -4,9 +4,7 @@ use App\Models\Adicional;
 use App\Models\BorradorCheckout;
 use App\Models\Categoria;
 use App\Models\Cliente;
-use App\Models\EstadoPedido;
 use App\Models\Pedido;
-use App\Models\PedidoItem;
 use App\Models\Producto;
 use App\Models\Role;
 use App\Models\User;
@@ -31,6 +29,7 @@ function datosCheckout(): array
     ]);
 
     return [
+        'nombre_cliente' => 'Nombre Apellido',
         'direccion' => 'Calle 123',
         'telefono' => '123456789',
         'notas' => 'Timbre 2',
@@ -70,6 +69,7 @@ it('guarda un borrador publico y crea un Pedido en estado Pre-pedido con sus ite
 
     $pedido = Pedido::with(['estadoPedido', 'cliente', 'metodoPago', 'items.adicionales'])->findOrFail($pedidoId);
     expect($pedido->estadoPedido->nombre)->toBe('Pre-pedido')
+        ->and($pedido->nombre_cliente)->toBe('Nombre Apellido')
         ->and($pedido->cliente->telefono)->toBe('123456789')
         ->and($pedido->cliente->direccion)->toBe('Calle 123')
         ->and((float) $pedido->subtotal)->toBe(2400.0)
@@ -82,6 +82,14 @@ it('guarda un borrador publico y crea un Pedido en estado Pre-pedido con sus ite
         ->and((float) $pedido->items->first()->adicionales->first()->pivot->precio_adicional)->toBe(200.0);
 
     $this->postJson('/api/pedidos', [])->assertUnauthorized();
+});
+
+it('requiere el nombre completo del cliente', function () {
+    $datos = datosCheckout();
+    $datos['nombre_cliente'] = '   ';
+    $this->postJson('/api/checkout/borradores', $datos)->assertUnprocessable()
+        ->assertJsonValidationErrors(['nombre_cliente']);
+    expect(Pedido::count())->toBe(0);
 });
 
 it('rechaza datos invalidos o un carrito vacio sin guardar', function () {
@@ -117,15 +125,16 @@ it('requiere al menos seis digitos en el telefono', function () {
     expect(BorradorCheckout::count())->toBe(0);
 });
 
-it('guarda transferencia como metodo distinto de tarjeta', function () {
+it('rechaza medios de pago no habilitados sin guardar el pedido', function ($metodo) {
     $datos = datosCheckout();
-    $datos['metodo_pago'] = 'transferencia';
+    $datos['metodo_pago'] = $metodo;
 
-    $response = $this->postJson('/api/checkout/borradores', $datos)->assertCreated();
-    expect(BorradorCheckout::findOrFail($response->json('id'))->datos['metodo_pago'])->toBe('transferencia');
-    $response->assertJsonPath('items.0.nombre', 'Hamburguesa')
-        ->assertJsonPath('items.0.subtotal', 2400);
-});
+    $this->postJson('/api/checkout/borradores', $datos)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['metodo_pago']);
+    expect(BorradorCheckout::count())->toBe(0)
+        ->and(Pedido::count())->toBe(0);
+})->with(['tarjeta', 'transferencia']);
 
 it('valida el monto recibido contra el total calculado por el servidor', function () {
     $datos = datosCheckout();
