@@ -448,23 +448,26 @@
                                     "nombre_cliente": {
                                         "type": "string",
                                         "example": "Nombre Apellido",
-                                        "maxLength": 255
+                                        "maxLength": 25
                                     },
                                     "direccion": {
                                         "type": "string",
                                         "example": "Av. Eva Perón 1234",
-                                        "maxLength": 255
+                                        "maxLength": 25
                                     },
                                     "telefono": {
+                                        "description": "Hasta 25 dígitos con + opcional al inicio.",
                                         "type": "string",
-                                        "example": "3454123456",
-                                        "maxLength": 30
+                                        "pattern": "^\\+?[0-9]{1,25}$",
+                                        "example": "+543454123456",
+                                        "maxLength": 26,
+                                        "minLength": 1
                                     },
                                     "notas": {
                                         "type": "string",
                                         "example": "Timbre 2",
                                         "nullable": true,
-                                        "maxLength": 500
+                                        "maxLength": 255
                                     },
                                     "metodo_pago": {
                                         "type": "string",

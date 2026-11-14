@@ -27,10 +27,10 @@ class BorradorCheckoutController extends Controller
             content: new OA\JsonContent(
                 required: ['nombre_cliente', 'direccion', 'telefono', 'metodo_pago', 'items'],
                 properties: [
-                    new OA\Property(property: 'nombre_cliente', type: 'string', maxLength: 255, example: 'Nombre Apellido'),
-                    new OA\Property(property: 'direccion', type: 'string', maxLength: 255, example: 'Av. Eva Perón 1234'),
-                    new OA\Property(property: 'telefono', type: 'string', maxLength: 30, example: '3454123456'),
-                    new OA\Property(property: 'notas', type: 'string', maxLength: 500, nullable: true, example: 'Timbre 2'),
+                    new OA\Property(property: 'nombre_cliente', type: 'string', maxLength: 25, example: 'Nombre Apellido'),
+                    new OA\Property(property: 'direccion', type: 'string', maxLength: 25, example: 'Av. Eva Perón 1234'),
+                    new OA\Property(property: 'telefono', description: 'Hasta 25 dígitos con + opcional al inicio.', type: 'string', maxLength: 26, minLength: 1, pattern: '^\\+?[0-9]{1,25}$', example: '+543454123456'),
+                    new OA\Property(property: 'notas', type: 'string', maxLength: 255, nullable: true, example: 'Timbre 2'),
                     new OA\Property(property: 'metodo_pago', type: 'string', enum: ['efectivo'], example: 'efectivo'),
                     new OA\Property(property: 'monto_recibido', type: 'number', format: 'float', nullable: true, example: 5000),
                     new OA\Property(

@@ -188,7 +188,7 @@ class TelegramWebhookController extends Controller
 
         $this->telegramService->enviarMensaje(
             (int) $chatId,
-            "🎉 <b>¡Tu Pedido #{$pedido->id} fue confirmado con éxito!</b>\n\n💰 Total: <b>$".number_format((float) $pedido->monto_total, 2, ',', '.')."</b>\n\nTe iremos notificando por acá cada avance (en cocina, empaque y en camino con el repartidor).",
+            "⏳ <b>Pedido #{$pedido->id}:</b> En unos instantes se confirmará su pedido.\n\n💰 Total: <b>$".number_format((float) $pedido->monto_total, 2, ',', '.')."</b>\n\nTe iremos notificando por acá cada avance (en cocina, empaque y en camino con el repartidor).",
             $botonesConfirmacion
         );
 

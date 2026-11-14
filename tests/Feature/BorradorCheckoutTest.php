@@ -31,7 +31,7 @@ function datosCheckout(): array
     return [
         'nombre_cliente' => 'Nombre Apellido',
         'direccion' => 'Calle 123',
-        'telefono' => '123456789',
+        'telefono' => '3454000000',
         'notas' => 'Timbre 2',
         'metodo_pago' => 'efectivo',
         'items' => [[
@@ -61,7 +61,7 @@ it('guarda un borrador publico y crea un Pedido en estado Pre-pedido con sus ite
 
     $borrador = BorradorCheckout::findOrFail($response->json('id'));
     expect($borrador->datos['direccion'])->toBe('Calle 123')
-        ->and($borrador->datos['telefono'])->toBe('123456789')
+        ->and($borrador->datos['telefono'])->toBe('3454000000')
         ->and($borrador->datos['pedido_id'])->toBe($pedidoId)
         ->and($borrador->datos['estado'])->toBe('Pre-pedido')
         ->and($borrador->datos['items'][0]['adicionales'][0]['nombre'])->toBe('Queso')
@@ -70,7 +70,7 @@ it('guarda un borrador publico y crea un Pedido en estado Pre-pedido con sus ite
     $pedido = Pedido::with(['estadoPedido', 'cliente', 'metodoPago', 'items.adicionales'])->findOrFail($pedidoId);
     expect($pedido->estadoPedido->nombre)->toBe('Pre-pedido')
         ->and($pedido->nombre_cliente)->toBe('Nombre Apellido')
-        ->and($pedido->cliente->telefono)->toBe('123456789')
+        ->and($pedido->cliente->telefono)->toBe('3454000000')
         ->and($pedido->cliente->direccion)->toBe('Calle 123')
         ->and((float) $pedido->subtotal)->toBe(2400.0)
         ->and((float) $pedido->monto_total)->toBe(3900.0)
@@ -115,14 +115,38 @@ it('rechaza productos inactivos y adicionales repetidos', function () {
     expect(BorradorCheckout::count())->toBe(0);
 });
 
-it('requiere al menos seis digitos en el telefono', function () {
+it('rechaza teléfonos sin dígitos, con letras o con más de 25 dígitos', function ($telefono) {
     $datos = datosCheckout();
-    $datos['telefono'] = '+---1-';
+    $datos['telefono'] = $telefono;
 
     $this->postJson('/api/checkout/borradores', $datos)
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['telefono']);
     expect(BorradorCheckout::count())->toBe(0);
+})->with(['+', str_repeat('1', 26), '+'.str_repeat('1', 26), '345 4000000', '345400000a', '12+34']);
+
+it('acepta los límites de los datos de entrega y un teléfono con prefijo', function () {
+    $datos = datosCheckout();
+    $datos['nombre_cliente'] = str_repeat('N', 25);
+    $datos['direccion'] = str_repeat('D', 25);
+    $datos['telefono'] = '+'.str_repeat('1', 25);
+    $datos['notas'] = str_repeat('A', 255);
+
+    $response = $this->postJson('/api/checkout/borradores', $datos)->assertCreated();
+    $pedido = Pedido::with('cliente')->findOrFail($response->json('pedido_id'));
+    expect($pedido->cliente->telefono)->toBe($datos['telefono']);
+});
+
+it('rechaza datos de entrega que excedan los límites', function () {
+    $datos = datosCheckout();
+    $datos['nombre_cliente'] = str_repeat('N', 26);
+    $datos['direccion'] = str_repeat('D', 26);
+    $datos['notas'] = str_repeat('A', 256);
+
+    $this->postJson('/api/checkout/borradores', $datos)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['nombre_cliente', 'direccion', 'notas']);
+    expect(Pedido::count())->toBe(0);
 });
 
 it('rechaza medios de pago no habilitados sin guardar el pedido', function ($metodo) {

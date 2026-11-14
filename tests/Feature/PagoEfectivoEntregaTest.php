@@ -61,7 +61,7 @@ it('registra el pago pendiente al confirmar y lo cobra al finalizar la entrega',
     ]);
 
     $pedidoId = $this->postJson('/api/checkout/borradores', [
-        'nombre_cliente' => 'Nombre Apellido', 'direccion' => 'Calle de prueba', 'telefono' => '123456789', 'metodo_pago' => 'efectivo',
+        'nombre_cliente' => 'Nombre Apellido', 'direccion' => 'Calle de prueba', 'telefono' => '3454000000', 'metodo_pago' => 'efectivo',
         'items' => [['producto_id' => $producto->id, 'cantidad' => 1, 'adicionales' => []]],
     ])->assertCreated()->json('pedido_id');
     expect(Pago::where('pedido_id', $pedidoId)->count())->toBe(0);

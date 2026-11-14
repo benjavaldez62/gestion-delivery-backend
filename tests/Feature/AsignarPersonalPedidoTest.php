@@ -6,6 +6,7 @@ use App\Models\Pedido;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
@@ -31,6 +32,8 @@ function crearPedidoParaAsignacion(): Pedido
 }
 
 it('permite al administrador asignar personal activo con el rol correspondiente', function () {
+    config(['services.telegram.bot_token' => 'token-de-prueba']);
+    Http::fake();
     $adminRole = Role::create(['nombre' => 'Administrador']);
     $cocineroRole = Role::create(['nombre' => 'Cocinero']);
     $repartidorRole = Role::create(['nombre' => 'Repartidor']);
@@ -42,6 +45,7 @@ it('permite al administrador asignar personal activo con el rol correspondiente'
     $cocinero = User::factory()->create(['role_id' => $cocineroRole->id, 'activo' => true]);
     $repartidor = User::factory()->create(['role_id' => $repartidorRole->id, 'activo' => true]);
     $pedido = crearPedidoParaAsignacion();
+    $pedido->update(['telegram_chat_id' => 987654321]);
 
     $this->actingAs($admin, 'sanctum')
         ->putJson("/api/pedidos/{$pedido->id}/asignaciones", [
@@ -57,6 +61,8 @@ it('permite al administrador asignar personal activo con el rol correspondiente'
     expect($pedido->fresh()->cocinero_id)->toBe($cocinero->id)
         ->and($pedido->fresh()->repartidor_id)->toBe($repartidor->id)
         ->and($pedido->fresh()->estado_pedidos_id)->toBe($estadoPendiente->id);
+    Http::assertSent(fn ($request) => $request['chat_id'] === 987654321
+        && str_contains($request['text'], 'Pedido confirmado con éxito, en breve comenzará su preparación.'));
 });
 
 it('avanza a Pendiente cuando se asigna un solo integrante del personal', function () {

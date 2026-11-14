@@ -65,8 +65,8 @@ class TelegramService
 
         $estadoNombre = $pedido->estadoPedido?->nombre ?? '';
         $mensaje = match (mb_strtolower(trim($estadoNombre))) {
-            'sin asignar' => "✅ <b>¡Tu Pedido #{$pedido->id} fue confirmado!</b>\nEstamos asignando a nuestro equipo para iniciar su preparación.",
-            'pendiente' => "👨‍🍳 <b>Pedido #{$pedido->id}:</b> Personal asignado. En breve comenzará su preparación.",
+            'sin asignar' => "⏳ <b>Pedido #{$pedido->id}:</b> En unos instantes se confirmará su pedido.",
+            'pendiente' => "👨‍🍳 <b>Pedido #{$pedido->id}:</b> Pedido confirmado con éxito, en breve comenzará su preparación.",
             'en preparación', 'en preparacion' => "🔥 <b>¡Tu Pedido #{$pedido->id} ya se está cocinando!</b>\nNuestros cocineros lo están preparando con dedicación.",
             'listo para entregar' => "📦 <b>Pedido #{$pedido->id} listo:</b> Ya está empacado esperando al repartidor.",
             'en camino' => "🛵 <b>¡Tu Pedido #{$pedido->id} va en camino!</b>\nEl repartidor se dirige a tu domicilio.",
