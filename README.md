@@ -203,7 +203,7 @@ actual de privacidad de SD-150; coordinar este cambio con el equipo.
 
 | Método | Ruta | Acceso | Descripción |
 |:---:|:---|:---:|:---|
-| `POST` | `/api/checkout/borradores` | Público | Registra cliente por teléfono y persiste de forma atómica un `Pedido` en estado inicial `Pre-pedido` junto con sus líneas (`PedidoItem`) y adicionales, calculando precios, subtotales y costo de envío fijo ($1500) en el servidor. Solo acepta efectivo por ahora. Retorna `pedido_id` y `estado: Pre-pedido` para continuar la confirmación en Telegram. Rate limit: 10 req/min. |
+| `POST` | `/api/checkout/borradores` | Público | Registra cliente por teléfono y persiste de forma atómica un `Pedido` en estado inicial `Pre-pedido` junto con sus líneas (`PedidoItem`) y adicionales, calculando precios, subtotales y costo de envío fijo ($1500) en el servidor. Nombre y dirección admiten hasta 25 caracteres, aclaraciones hasta 255 y teléfono hasta 25 dígitos con + opcional al inicio. Solo acepta efectivo por ahora. Retorna `pedido_id` y `estado: Pre-pedido` para continuar la confirmación en Telegram. Rate limit: 10 req/min. |
 | `POST` | `/api/pedidos/{id}/confirmar-telegram` | Público | Confirma el pre-pedido, vincula los datos del cliente y registra el pago en efectivo como pendiente. |
 | `POST` | `/api/telegram/webhook` | Público | Webhook oficial para recibir eventos de Telegram Bot API (`Update`). Procesa `/start <id>`, comandos con número de pedido (`Pedido #<id>`), consulta de estado `/estado` y respuestas interactivas con anti-spam (cooldown de 2 horas). |
 
@@ -315,7 +315,7 @@ Gestionado en `TelegramWebhookController@handle` cuando el usuario envía un men
 | **1** | Saludo o texto cualquiera sin número de pedido (ej: `Hola`, `/start` solo). | No se detecta `/start <id>` ni `Pedido #<id>` (aplica cooldown anti-spam de 2 horas en saludo largo). | `👋 ¡Hola! Bienvenido a <b>La Posta Delivery</b>.<br>Para confirmar tu pedido, envianos el mensaje con el número de tu orden (por ejemplo: <code>Pedido #12</code> o hacé clic en el enlace desde la web).` |
 | **2** | Número de pedido inexistente (ej: `Pedido #999` o `/start 999`). | No se encuentra registro del pedido en base de datos. | `⚠️ No pudimos encontrar el <b>Pedido #999</b>. Por favor verificá el número ingresado.` |
 | **3** | Pedido ya confirmado o en cocina/camino (ej: reintento `Pedido #12`). | El pedido existe pero su estado es distinto de `Pre-pedido`. | `ℹ️ El <b>Pedido #12</b> ya se encuentra registrado con estado: <b>[NombreEstado]</b>.` |
-| **4** | Mensaje de checkout web válido (ej: `/start 12` o texto con `Pedido #12`). | El pedido existe y su estado es **`Pre-pedido`** (transiciona a `Sin Asignar` y registra chat ID). | `🎉 <b>¡Tu Pedido #12 fue confirmado con éxito!</b><br><br>💰 Total: <b>$[monto_total]</b><br>Te iremos notificando por acá el avance de tu comida (en cocina, empaque y en viaje con el repartidor).` |
+| **4** | Mensaje de checkout web válido (ej: `/start 12` o texto con `Pedido #12`). | El pedido existe y su estado es **`Pre-pedido`** (transiciona a `Sin Asignar` y registra chat ID). | `⏳ <b>Pedido #12:</b> En unos instantes se confirmará su pedido.` Se incluye el total y se indica que se notificará el avance. |
 | **5** | Consulta de estado (`/estado` o botón interactivo). | Cliente con chat ID registrado en el sistema. | `📦 <b>Estado de tu último pedido:</b><br>Pedido #12: <b>[NombreEstado]</b>.` |
 
 ### 5.3. Catálogo de Notificaciones Push Proactivas (Cambios de Estado)
