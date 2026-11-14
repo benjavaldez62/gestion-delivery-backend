@@ -203,8 +203,8 @@ actual de privacidad de SD-150; coordinar este cambio con el equipo.
 
 | Método | Ruta | Acceso | Descripción |
 |:---:|:---|:---:|:---|
-| `POST` | `/api/checkout/borradores` | Público | Registra cliente por teléfono y persiste de forma atómica un `Pedido` en estado inicial `Pre-pedido` junto con sus líneas (`PedidoItem`) y adicionales, calculando precios, subtotales y costo de envío fijo ($1500) en el servidor. Retorna `pedido_id` y `estado: Pre-pedido` para continuar la confirmación en Telegram. Rate limit: 10 req/min. |
-| `POST` | `/api/pedidos/{id}/confirmar-telegram` | Público | Endpoint consumido por la integración de Telegram para confirmar una orden en estado `Pre-pedido`, actualizando nombre, username, chat ID y domicilio del cliente, y transicionando el pedido a `Sin Asignar`. |
+| `POST` | `/api/checkout/borradores` | Público | Registra cliente por teléfono y persiste de forma atómica un `Pedido` en estado inicial `Pre-pedido` junto con sus líneas (`PedidoItem`) y adicionales, calculando precios, subtotales y costo de envío fijo ($1500) en el servidor. Solo acepta efectivo por ahora. Retorna `pedido_id` y `estado: Pre-pedido` para continuar la confirmación en Telegram. Rate limit: 10 req/min. |
+| `POST` | `/api/pedidos/{id}/confirmar-telegram` | Público | Confirma el pre-pedido, vincula los datos del cliente y registra el pago en efectivo como pendiente. |
 | `POST` | `/api/telegram/webhook` | Público | Webhook oficial para recibir eventos de Telegram Bot API (`Update`). Procesa `/start <id>`, comandos con número de pedido (`Pedido #<id>`), consulta de estado `/estado` y respuestas interactivas con anti-spam (cooldown de 2 horas). |
 
 ### 4.5. Dashboard y Métricas Operativas (`/api/dashboard`)
@@ -230,20 +230,37 @@ actual de privacidad de SD-150; coordinar este cambio con el equipo.
 
 | Método | Ruta | Acceso | Descripción |
 |:---:|:---|:---:|:---|
-| `GET` | `/api/pagos` | `auth:sanctum` | Listar pagos registrados con método, estado y comprobantes. |
-| `POST` | `/api/pagos` | `auth:sanctum` | Registrar pago admitiendo campo opcional `referencia`. |
-| `GET` | `/api/pagos/{id}` | `auth:sanctum` | Detalle del pago exponiendo `referencia` y array de comprobantes. |
-| `PUT` | `/api/pagos/{id}` | `auth:sanctum` | Modificar datos de pago (ej. actualizar referencia). |
-| `DELETE` | `/api/pagos/{id}` | `auth:sanctum` | Baja lógica de pago. |
-| `PUT` | `/api/pagos/{id}/restore` | `auth:sanctum` | Restaurar pago eliminado. |
+| `GET` | `/api/pagos` | Administrador | Listar pagos; admite `busqueda` por número de pago, pedido o cliente, nombre o teléfono, y filtros `pedido_id`, `estado_pago_id` y `metodo_pago_id`. |
+| `GET` | `/api/pagos/resumen` | Administrador | Totales cobrados del día y mes hasta la fecha actual, según la zona horaria de pagos. |
+| `GET` | `/api/pagos/envios?fecha=YYYY-MM-DD` | Administrador | Detalle y suma de envíos cobrados por repartidor; sin fecha usa el día de la zona horaria de pagos. |
+| `POST` | `/api/pagos` | Administrador | Registrar un pago pendiente en efectivo, indicando `pedido_id`, `metodo_pago_id`, `monto` y `referencia` opcional. |
+| `POST` | `/api/pedidos/{pedido}/pagos` | Administrador | Registrar el pago pendiente del pedido con método, monto y referencia opcional. Rechaza duplicados o montos distintos del total. |
+| `GET` | `/api/pagos/{id}` | Administrador | Consultar pago, pedido, método, estado y comprobantes. |
+| `PUT` | `/api/pagos/{id}` | Administrador | Actualizar el estado pendiente/fallido y la referencia de un pago no confirmado. |
+| `DELETE` | `/api/pagos/{id}` | Administrador | Baja lógica de pagos pendientes o fallidos sin comprobante. |
+| `PUT` | `/api/pagos/{id}/restore` | Administrador | Restaurar un pago si el pedido no tiene otro pago activo. |
+| `POST` | `/api/pedidos/{id}/ticket/enviar` | Administrador o repartidor asignado | Reintentar el envío del ticket no fiscal por Telegram para un pedido entregado y pagado. |
 | `GET` | `/api/metodos-pago` | `auth:sanctum` | Listar métodos de pago (Efectivo, Transferencia, MercadoPago, etc.) con soporte para relación inversa hacia pedidos (`pedidos(): HasMany`). |
-| `POST` | `/api/metodos-pago` | `auth:sanctum` | Crear método de pago. |
+| `POST` | `/api/metodos-pago` | Administrador | Crear método de pago. |
 | `GET` | `/api/metodos-pago/{id}` | `auth:sanctum` | Detalle de método de pago. |
-| `PUT` | `/api/metodos-pago/{id}` | `auth:sanctum` | Actualizar método de pago. |
-| `DELETE` | `/api/metodos-pago/{id}` | `auth:sanctum` | Baja lógica de método de pago. |
+| `PUT` | `/api/metodos-pago/{id}` | Administrador | Actualizar método de pago. No se puede renombrar uno asociado a pagos. |
+| `DELETE` | `/api/metodos-pago/{id}` | Administrador | Baja lógica si no está asociado a pagos. |
 | `GET` | `/api/estado-pagos` | `auth:sanctum` | Listar estados de pago (Pendiente, Aprobado, Rechazado). |
-| `GET` | `/api/comprobantes` | `auth:sanctum` | Listar comprobantes emitidos. |
-| `POST` | `/api/comprobantes` | `auth:sanctum` | Asociar comprobante o factura a un pago. |
+| `GET` | `/api/comprobantes` | Administrador | Listar comprobantes emitidos. |
+| `GET` | `/api/comprobantes/{id}` | Administrador | Consultar un comprobante y el contenido original de su ticket, si existe. |
+| `POST` | `/api/comprobantes` | Administrador | Asociar comprobante o factura a un pago. Los tickets de entrega se generan automáticamente. |
+
+Al confirmar el pedido desde Telegram se registra el pago en efectivo como pendiente, sin fecha de cobro. Al pasar un pedido de `En camino` a `Entregado`, el repartidor asignado o un administrador registra el cobro, la fecha y un ticket no fiscal en una transacción. El contenido original del ticket queda guardado para que los reenvíos no cambien si se modifican los productos. Después se intenta enviarlo por Telegram: un fallo de envío no revierte la entrega ni el cobro y puede reintentarse con el endpoint indicado. Los tickets extensos se dividen en mensajes; al reintentar un envío parcial el cliente podría recibir partes repetidas. Si un ticket no tiene contenido guardado, requiere revisión y no se reconstruye automáticamente. El ticket no es una factura fiscal.
+
+Los nuevos cobros, tickets y resúmenes usan `America/Argentina/Buenos_Aires` por defecto, configurable mediante `PAGOS_TIMEZONE` (o `TICKET_TIMEZONE` si no se definió la nueva variable). La zona horaria general de la aplicación no cambia. Los tickets y fechas de cobro anteriores se conservan: como antes se guardaba solo la fecha UTC, los cobros históricos cercanos a medianoche pueden figurar en otro día y no se corrigen automáticamente.
+
+El checkout solicita el nombre completo y lo guarda en el pedido para incluirlo en el ticket. Al editar ítems antes de cocina se conserva el costo de envío del pedido y se actualiza el importe de su pago pendiente en la misma transacción. Al cancelar un pedido se anula lógicamente su pago pendiente o fallido; no se permite cancelar uno con pago confirmado o facturado.
+
+La búsqueda de pagos compara el nombre guardado en cada pedido y el teléfono actual del cliente; también admite coincidencias parciales y el usuario de clientes antiguos. Los filtros de estado y método se combinan con la búsqueda.
+
+El resumen de envíos usa la fecha de cobro y la zona horaria configurada, considera pagos activos `Pagado` de pedidos entregados y calcula el importe como total menos subtotal. Excluye y señala pedidos con datos inconsistentes, repartidor faltante o más de un pago cobrado. Es un estimado: no registra una liquidación ni indica que se haya pagado al repartidor; solo representa su adicional si se le asigna el 100 % del envío.
+
+Esta versión requiere ejecutar `php artisan migrate` para permitir que un pago pendiente no tenga fecha de cobro y guardar el contenido del ticket y el nombre del cliente. Los pedidos anteriores sin un pago pendiente requieren registrarlo antes de confirmar la entrega. `PagoSeeder` genera datos ficticios únicamente en el entorno de pruebas; no se ejecuta en producción.
 
 ### 4.8. Administración General (Exclusivo Rol `Administrador`)
 

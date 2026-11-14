@@ -438,12 +438,18 @@
                         "application/json": {
                             "schema": {
                                 "required": [
+                                    "nombre_cliente",
                                     "direccion",
                                     "telefono",
                                     "metodo_pago",
                                     "items"
                                 ],
                                 "properties": {
+                                    "nombre_cliente": {
+                                        "type": "string",
+                                        "example": "Nombre Apellido",
+                                        "maxLength": 255
+                                    },
                                     "direccion": {
                                         "type": "string",
                                         "example": "Av. Eva Perón 1234",
@@ -464,9 +470,7 @@
                                         "type": "string",
                                         "example": "efectivo",
                                         "enum": [
-                                            "efectivo",
-                                            "tarjeta",
-                                            "transferencia"
+                                            "efectivo"
                                         ]
                                     },
                                     "monto_recibido": {
@@ -1205,10 +1209,53 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Comprobante obtenido correctamente."
+                        "description": "Comprobante y contenido original del ticket, si está disponible.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "comprobante": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "pago_id": {
+                                                    "type": "integer"
+                                                },
+                                                "tipo_comprobante": {
+                                                    "type": "string"
+                                                },
+                                                "numero_comprobante": {
+                                                    "type": "string"
+                                                },
+                                                "titular": {
+                                                    "type": "string"
+                                                },
+                                                "url_pdf": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "contenido_ticket": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
                     },
                     "404": {
                         "description": "Comprobante no encontrado."
@@ -1216,7 +1263,12 @@
                     "500": {
                         "description": "Error interno del servidor."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
@@ -2209,13 +2261,196 @@
                 }
             }
         },
+        "/api/pagos/envios": {
+            "get": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Envíos cobrados por repartidor y fecha",
+                "description": "Suma el costo de envío de pedidos entregados y cobrados; usa la zona horaria de pagos y señala los registros inconsistentes.",
+                "operationId": "869918592360390d5e267127f4c4591c",
+                "parameters": [
+                    {
+                        "name": "fecha",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Envíos agrupados por repartidor.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "fecha": {
+                                            "type": "string",
+                                            "format": "date"
+                                        },
+                                        "zona_horaria": {
+                                            "type": "string"
+                                        },
+                                        "total_envios": {
+                                            "type": "number"
+                                        },
+                                        "repartidores": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "nombre": {
+                                                        "type": "string"
+                                                    },
+                                                    "total": {
+                                                        "type": "number"
+                                                    },
+                                                    "envios": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "properties": {
+                                                                "pedido_id": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "importe": {
+                                                                    "type": "number"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pendientes_revision": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "pedido_id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "motivo": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
+                    "422": {
+                        "description": "Fecha inválida."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/pagos/resumen": {
+            "get": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Ingresos cobrados del día y del mes",
+                "description": "Suma los pagos en estado Pagado según su fecha de cobro, usando la zona horaria de pagos.",
+                "operationId": "33c236510c8ae253a95ce5f051872f43",
+                "responses": {
+                    "200": {
+                        "description": "Totales cobrados y fecha de referencia.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "fecha": {
+                                            "type": "string",
+                                            "format": "date"
+                                        },
+                                        "zona_horaria": {
+                                            "type": "string"
+                                        },
+                                        "ingreso_diario": {
+                                            "type": "number"
+                                        },
+                                        "ingreso_mensual": {
+                                            "type": "number"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/pagos": {
             "get": {
                 "tags": [
                     "Pagos"
                 ],
-                "summary": "Listar todos los pagos",
+                "summary": "Listar pagos con filtros opcionales",
                 "operationId": "aaa8aed42f2cf9d3951bf459a8f6cce1",
+                "parameters": [
+                    {
+                        "name": "pedido_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "busqueda",
+                        "in": "query",
+                        "description": "Número de pago, pedido o cliente, nombre o teléfono.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "estado_pago_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "metodo_pago_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Pagos obtenidos correctamente."
@@ -2229,7 +2464,12 @@
                     "500": {
                         "description": "Error interno del servidor."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "post": {
                 "tags": [
@@ -2245,9 +2485,7 @@
                                 "required": [
                                     "pedido_id",
                                     "monto",
-                                    "metodo_pago_id",
-                                    "estado_pago_id",
-                                    "fecha_pago"
+                                    "metodo_pago_id"
                                 ],
                                 "properties": {
                                     "pedido_id": {
@@ -2262,15 +2500,6 @@
                                     "metodo_pago_id": {
                                         "type": "integer",
                                         "example": 1
-                                    },
-                                    "estado_pago_id": {
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "fecha_pago": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "example": "2026-03-30"
                                     },
                                     "referencia": {
                                         "type": "string",
@@ -2297,7 +2526,76 @@
                     "500": {
                         "description": "Error interno al crear el pago."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/pedidos/{pedido}/pagos": {
+            "post": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Registrar un pago pendiente en efectivo para un pedido",
+                "operationId": "575fcb6a054b5fc9b15689b3294e9a39",
+                "parameters": [
+                    {
+                        "name": "pedido",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "metodo_pago_id",
+                                    "monto"
+                                ],
+                                "properties": {
+                                    "metodo_pago_id": {
+                                        "type": "integer"
+                                    },
+                                    "monto": {
+                                        "type": "number"
+                                    },
+                                    "referencia": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pago pendiente registrado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "422": {
+                        "description": "Pago inválido o duplicado."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pagos/{id}": {
@@ -2331,7 +2629,12 @@
                     "500": {
                         "description": "Error interno al obtener el pago."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "put": {
                 "tags": [
@@ -2356,11 +2659,7 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "pedido_id",
-                                    "monto",
-                                    "metodo_pago_id",
-                                    "estado_pago_id",
-                                    "fecha_pago"
+                                    "estado_pago_id"
                                 ],
                                 "properties": {
                                     "pedido_id": {
@@ -2383,7 +2682,7 @@
                                     "fecha_pago": {
                                         "type": "string",
                                         "format": "date",
-                                        "example": "2026-03-30"
+                                        "nullable": true
                                     },
                                     "referencia": {
                                         "type": "string",
@@ -2413,7 +2712,12 @@
                     "500": {
                         "description": "Error interno al actualizar el pago."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
@@ -2451,7 +2755,12 @@
                     "500": {
                         "description": "Error interno al eliminar el pago."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pagos-desactivados": {
@@ -2474,7 +2783,12 @@
                     "500": {
                         "description": "Error interno del servidor al obtener pagos desactivados."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pagos/{id}/restore": {
@@ -2514,7 +2828,12 @@
                     "500": {
                         "description": "Error interno al restaurar el pago."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/forgot-password": {
@@ -3083,6 +3402,47 @@
                         "description": "Error interno al confirmar el pedido."
                     }
                 }
+            }
+        },
+        "/api/pedidos/{id}/ticket/enviar": {
+            "post": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Reintentar el envío del ticket no fiscal de un pedido entregado",
+                "operationId": "b935f0a0002c6ce8ea05c07c04d6466f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ticket enviado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "422": {
+                        "description": "El pedido no tiene un ticket disponible."
+                    },
+                    "503": {
+                        "description": "No se pudo enviar el ticket."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pedido-items": {
