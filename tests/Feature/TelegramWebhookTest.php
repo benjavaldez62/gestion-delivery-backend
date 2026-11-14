@@ -83,7 +83,7 @@ it('procesa webhook de Telegram con comando /start <id> y confirma el pedido con
     Http::assertSent(function ($request) {
         return str_contains($request->url(), 'sendMessage')
             && $request['chat_id'] === 987654321
-            && str_contains($request['text'], 'confirmado con éxito')
+            && str_contains($request['text'], 'En unos instantes se confirmará su pedido')
             && isset($request['reply_markup']['inline_keyboard']);
     });
 });
