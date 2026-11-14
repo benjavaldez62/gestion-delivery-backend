@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\UserResource;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -13,7 +12,6 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
-use phpDocumentor\Reflection\PseudoTypes\LowercaseString;
 use Symfony\Contracts\Service\Attribute\Required;
 
 class UserController extends Controller
@@ -399,8 +397,8 @@ class UserController extends Controller
                 ], 422);
             }
 
-            // Buscamos el usuario a eliminar
-            $user = User::with('role')->findOrFail($id);
+            // Buscamos el usuario a eliminar (find devuelve null para responder 404 en lugar de 500)
+            $user = User::with('role')->find($id);
 
             // Importante 2 - Verificamos si el usuario existe antes de eliminarlo
             if (! $user) {

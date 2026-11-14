@@ -152,7 +152,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/comprobantes-desactivados', [ComprobanteController::class, 'indexDesactivados']);
 
     // Administración General (Restringido a Administrador / SuperAdmin)
-    Route::middleware('role:Administrador,SuperAdministrador')->group(function () {
+    Route::middleware('role:Administrador')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'resumen']);
         Route::put('/pedidos/{id}/asignaciones', [PedidoController::class, 'asignarPersonal']);
 
