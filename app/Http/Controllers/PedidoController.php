@@ -8,11 +8,15 @@ use App\Http\Resources\PedidoResource;
 use App\Models\Cliente;
 use App\Models\EstadoPedido;
 use App\Models\Pedido;
+use App\Services\PagoEfectivoService;
+use App\Services\TelegramService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
@@ -83,7 +87,7 @@ class PedidoController extends Controller
             });
 
             if ($pedido->wasChanged('estado_pedidos_id')) {
-                app(\App\Services\TelegramService::class)->notificarCambioEstado($pedido);
+                app(TelegramService::class)->notificarCambioEstado($pedido);
             }
 
             return response()->json([
@@ -380,13 +384,92 @@ class PedidoController extends Controller
                 'repartidor_id.exists' => 'El repartidor seleccionado no existe.',
             ]);
 
-            $cambioEstado = isset($validated['estado_pedidos_id']) && (int) $validated['estado_pedidos_id'] !== (int) $pedido->estado_pedidos_id;
+            if (isset($validated['estado_pedidos_id'])) {
+                $estadoDestino = EstadoPedido::findOrFail($validated['estado_pedidos_id']);
+                if (mb_strtolower(trim($estadoDestino->nombre)) === 'entregado') {
+                    if (count($validated) !== 1) {
+                        throw ValidationException::withMessages([
+                            'pedido' => 'La entrega debe confirmarse sin modificar otros datos del pedido.',
+                        ]);
+                    }
 
-            $pedido->update($validated);
-            $pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago', 'items.producto', 'items.adicionales', 'pagos.estadoPago']);
+                    [$pedido, $comprobante] = DB::transaction(function () use ($id, $request, $estadoDestino) {
+                        $pedido = Pedido::with(['estadoPedido', 'cliente'])->lockForUpdate()->findOrFail($id);
+                        $this->autorizarEntrega($request, $pedido);
+                        $estadoActual = mb_strtolower(trim($pedido->estadoPedido?->nombre ?? ''));
+                        if ($estadoActual === 'entregado') {
+                            $comprobante = $pedido->pagos()->with(['estadoPago', 'comprobantes'])->get()
+                                ->filter(fn ($pago) => mb_strtolower(trim($pago->estadoPago?->nombre ?? '')) === 'pagado')
+                                ->flatMap(fn ($pago) => $pago->comprobantes)
+                                ->firstWhere('tipo_comprobante', 'Ticket no fiscal');
+                            if (! $comprobante) {
+                                throw ValidationException::withMessages(['pago' => 'El pedido entregado requiere revisión del pago.']);
+                            }
+                        } else {
+                            if ($estadoActual !== 'en camino') {
+                                throw ValidationException::withMessages(['pedido' => 'Solo se puede entregar un pedido que está en camino.']);
+                            }
+                            $comprobante = app(PagoEfectivoService::class)->confirmarCobro($pedido);
+                            $pedido->update(['estado_pedidos_id' => $estadoDestino->id]);
+                        }
+
+                        return [$pedido->load([
+                            'cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago',
+                            'items.producto', 'items.adicionales', 'pagos.estadoPago',
+                        ]), $comprobante];
+                    });
+
+                    $enviado = app(TelegramService::class)->enviarTicket($pedido, $comprobante);
+
+                    return response()->json([
+                        'message' => $enviado
+                            ? 'Entrega y cobro registrados. Ticket enviado por Telegram.'
+                            : 'Entrega y cobro registrados, pero no se pudo enviar el ticket. Podés reintentar el envío.',
+                        'comprobante_enviado' => $enviado,
+                        'pedido' => new PedidoResource($pedido),
+                    ]);
+                }
+            }
+
+            [$pedido, $cambioEstado] = DB::transaction(function () use ($id, $validated) {
+                $pedido = Pedido::with('estadoPedido')->lockForUpdate()->findOrFail($id);
+                if (mb_strtolower(trim($pedido->estadoPedido?->nombre ?? '')) === 'entregado') {
+                    throw ValidationException::withMessages(['pedido' => 'No se puede modificar un pedido entregado.']);
+                }
+                if (mb_strtolower(trim($pedido->estadoPedido?->nombre ?? '')) === 'cancelado') {
+                    throw ValidationException::withMessages(['pedido' => 'No se puede modificar un pedido cancelado.']);
+                }
+                if ($pedido->pagos()->exists() &&
+                    ((array_key_exists('monto_total', $validated) &&
+                        (int) round((float) $validated['monto_total'] * 100) !== (int) round((float) $pedido->monto_total * 100)) ||
+                    (array_key_exists('subtotal', $validated) &&
+                        ($validated['subtotal'] === null || (int) round((float) $validated['subtotal'] * 100) !== (int) round((float) $pedido->subtotal * 100))) ||
+                    (array_key_exists('metodo_pago_id', $validated) &&
+                        (int) $validated['metodo_pago_id'] !== (int) $pedido->metodo_pago_id))) {
+                    throw ValidationException::withMessages(['pago' => 'No se puede modificar el subtotal, total o método directamente en un pedido con pagos.']);
+                }
+
+                $cambioEstado = isset($validated['estado_pedidos_id']) && (int) $validated['estado_pedidos_id'] !== (int) $pedido->estado_pedidos_id;
+                if ($cambioEstado) {
+                    $destino = EstadoPedido::findOrFail($validated['estado_pedidos_id']);
+                    if (mb_strtolower(trim($destino->nombre)) === 'cancelado') {
+                        $pagos = $pedido->pagos()->with('estadoPago')->lockForUpdate()->get();
+                        foreach ($pagos as $pago) {
+                            if (! in_array(mb_strtolower(trim($pago->estadoPago?->nombre ?? '')), ['pendiente', 'fallido'], true)
+                                || $pago->comprobantes()->exists()) {
+                                throw ValidationException::withMessages(['pago' => 'No se puede cancelar un pedido con un pago confirmado o facturado.']);
+                            }
+                            $pago->delete();
+                        }
+                    }
+                }
+                $pedido->update($validated);
+
+                return [$pedido->load(['cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago', 'items.producto', 'items.adicionales', 'pagos.estadoPago']), $cambioEstado];
+            });
 
             if ($cambioEstado) {
-                app(\App\Services\TelegramService::class)->notificarCambioEstado($pedido);
+                app(TelegramService::class)->notificarCambioEstado($pedido);
             }
 
             return response()->json([
@@ -397,15 +480,18 @@ class PedidoController extends Controller
             return response()->json([
                 'message' => 'Pedido no encontrado.',
             ], 404);
+        } catch (AuthorizationException $e) {
+            return response()->json(['message' => 'No tenés permiso para confirmar esta entrega.'], 403);
         } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'Error de validación.',
+                'message' => collect($e->errors())->flatten()->first() ?? 'Error de validación.',
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
+            report($e);
+
             return response()->json([
                 'message' => 'Error interno al actualizar el pedido.',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -602,77 +688,73 @@ class PedidoController extends Controller
                 ], 404);
             }
 
-            $pedido = Pedido::with(['cliente', 'estadoPedido'])->findOrFail($id);
-
-            $estadoActual = mb_strtolower(trim($pedido->estadoPedido?->nombre ?? ''));
-            if ($estadoActual !== 'pre-pedido') {
-                return response()->json([
-                    'message' => 'El pedido no se encuentra en estado Pre-pedido o ya fue confirmado.',
-                ], 422);
-            }
-
             $validated = $request->validated();
+            $pedido = DB::transaction(function () use ($id, $validated): Pedido {
+                $pedido = Pedido::with(['cliente', 'estadoPedido'])->lockForUpdate()->findOrFail($id);
+                $estadoActual = mb_strtolower(trim($pedido->estadoPedido?->nombre ?? ''));
+                if ($estadoActual !== 'pre-pedido') {
+                    throw ValidationException::withMessages([
+                        'pedido' => 'El pedido no se encuentra en estado Pre-pedido o ya fue confirmado.',
+                    ]);
+                }
 
-            if ($pedido->cliente) {
-                $cliente = $pedido->cliente;
-                $huboCambiosCliente = false;
+                if ($pedido->cliente) {
+                    $cliente = $pedido->cliente;
+                    $huboCambiosCliente = false;
 
-                $nuevoUsername = trim((string) ($validated['username_telegram'] ?? $validated['nombre'] ?? ''));
-                $nuevoUsername = ltrim($nuevoUsername, '@');
-                if ($nuevoUsername !== '') {
-                    $usernameTruncado = mb_substr($nuevoUsername, 0, 30);
-                    $existeOtro = Cliente::withTrashed()
-                        ->where('username', $usernameTruncado)
-                        ->where('id', '!=', $cliente->id)
-                        ->exists();
+                    $nuevoUsername = trim((string) ($validated['username_telegram'] ?? $validated['nombre'] ?? ''));
+                    $nuevoUsername = ltrim($nuevoUsername, '@');
+                    if ($nuevoUsername !== '') {
+                        $usernameTruncado = mb_substr($nuevoUsername, 0, 30);
+                        $existeOtro = Cliente::withTrashed()
+                            ->where('username', $usernameTruncado)
+                            ->where('id', '!=', $cliente->id)
+                            ->exists();
 
-                    if (! $existeOtro) {
-                        $cliente->username = $usernameTruncado;
+                        if (! $existeOtro) {
+                            $cliente->username = $usernameTruncado;
+                            $huboCambiosCliente = true;
+                        }
+
+                    }
+
+                    if (isset($validated['telefono']) && trim((string) $validated['telefono']) !== '') {
+                        $cliente->telefono = trim((string) $validated['telefono']);
                         $huboCambiosCliente = true;
+                    }
+
+                    if (isset($validated['direccion']) && trim((string) $validated['direccion']) !== '') {
+                        $cliente->direccion = trim((string) $validated['direccion']);
+                        $huboCambiosCliente = true;
+                    }
+
+                    if ($huboCambiosCliente) {
+                        $cliente->save();
                     }
                 }
 
-                if (isset($validated['telefono']) && trim((string) $validated['telefono']) !== '') {
-                    $cliente->telefono = trim((string) $validated['telefono']);
-                    $huboCambiosCliente = true;
+                $estadoSinAsignar = EstadoPedido::whereRaw("LOWER(TRIM(nombre)) = 'sin asignar'")->first()
+                    ?? EstadoPedido::firstOrCreate(
+                        ['nombre' => 'Sin Asignar'],
+                        ['descripcion' => 'El pedido fue creado y está pendiente de asignación de un recurso']
+                    );
+
+                if (isset($validated['chat_id'])) {
+                    $pedido->telegram_chat_id = (int) $validated['chat_id'];
+                }
+                if (isset($validated['username_telegram'])) {
+                    $pedido->telegram_username = ltrim(trim((string) $validated['username_telegram']), '@');
                 }
 
-                if (isset($validated['direccion']) && trim((string) $validated['direccion']) !== '') {
-                    $cliente->direccion = trim((string) $validated['direccion']);
-                    $huboCambiosCliente = true;
-                }
+                $pedido->estado_pedidos_id = $estadoSinAsignar->id;
+                $pedido->save();
+                app(PagoEfectivoService::class)->registrarPendiente($pedido);
 
-                if ($huboCambiosCliente) {
-                    $cliente->save();
-                }
-            }
-
-            $estadoSinAsignar = EstadoPedido::whereRaw("LOWER(TRIM(nombre)) = 'sin asignar'")->first()
-                ?? EstadoPedido::firstOrCreate(
-                    ['nombre' => 'Sin Asignar'],
-                    ['descripcion' => 'El pedido fue creado y está pendiente de asignación de un recurso']
-                );
-
-            if (isset($validated['chat_id'])) {
-                $pedido->telegram_chat_id = (int) $validated['chat_id'];
-            }
-            if (isset($validated['username_telegram'])) {
-                $pedido->telegram_username = ltrim(trim((string) $validated['username_telegram']), '@');
-            }
-
-            $pedido->estado_pedidos_id = $estadoSinAsignar->id;
-            $pedido->save();
-
-            $pedido->load([
-                'cliente',
-                'cocinero',
-                'repartidor',
-                'estadoPedido',
-                'metodoPago',
-                'items.producto',
-                'items.adicionales',
-                'pagos.estadoPago',
-            ]);
+                return $pedido->load([
+                    'cliente', 'cocinero', 'repartidor', 'estadoPedido', 'metodoPago',
+                    'items.producto', 'items.adicionales', 'pagos.estadoPago',
+                ]);
+            });
 
             return response()->json([
                 'message' => 'Pedido confirmado correctamente. Estado actualizado a Sin Asignar.',
@@ -682,11 +764,64 @@ class PedidoController extends Controller
             return response()->json([
                 'message' => 'Pedido no encontrado.',
             ], 404);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => $e->errors()['pedido'][0] ?? 'No se pudo confirmar el pedido.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
+            Log::error('Error al confirmar el pedido de Telegram.', [
+                'pedido_id' => is_numeric($id) ? (int) $id : null,
+                'exception_type' => $e::class,
+            ]);
+
             return response()->json([
                 'message' => 'Error interno al confirmar el pedido.',
-                'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    #[OA\Post(
+        path: '/api/pedidos/{id}/ticket/enviar',
+        summary: 'Reintentar el envío del ticket no fiscal de un pedido entregado',
+        tags: ['Pedidos'],
+        security: [['sanctum' => []]],
+        parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))],
+        responses: [
+            new OA\Response(response: 200, description: 'Ticket enviado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
+            new OA\Response(response: 404, description: 'Pedido no encontrado.'),
+            new OA\Response(response: 422, description: 'El pedido no tiene un ticket disponible.'),
+            new OA\Response(response: 503, description: 'No se pudo enviar el ticket.'),
+        ]
+    )]
+    public function reenviarTicket(Request $request, string $id): JsonResponse
+    {
+        $pedido = Pedido::with(['estadoPedido', 'pagos.estadoPago', 'pagos.comprobantes'])->findOrFail($id);
+        $this->autorizarEntrega($request, $pedido);
+        $pago = $pedido->pagos->first(fn ($pago) => mb_strtolower(trim($pago->estadoPago?->nombre ?? '')) === 'pagado');
+        $comprobante = $pago?->comprobantes->firstWhere('tipo_comprobante', 'Ticket no fiscal');
+        if (mb_strtolower(trim($pedido->estadoPedido?->nombre ?? '')) !== 'entregado' || ! $comprobante) {
+            return response()->json(['message' => 'El pedido no tiene un ticket disponible.'], 422);
+        }
+        if (! $comprobante->contenido_ticket) {
+            return response()->json(['message' => 'El ticket no tiene contenido guardado y requiere revisión.'], 422);
+        }
+
+        if (! app(TelegramService::class)->enviarTicket($pedido, $comprobante)) {
+            return response()->json(['message' => 'No se pudo enviar el ticket por Telegram.'], 503);
+        }
+
+        return response()->json(['message' => 'Ticket enviado por Telegram.']);
+    }
+
+    private function autorizarEntrega(Request $request, Pedido $pedido): void
+    {
+        $user = $request->user();
+        $rol = mb_strtolower(trim($user?->role?->nombre ?? ''));
+        if (! $user?->activo || (! in_array($rol, ['administrador', 'superadmin'], true) &&
+            ! ($rol === 'repartidor' && (int) $pedido->repartidor_id === (int) $user->id))) {
+            throw new AuthorizationException('No tenés permiso para confirmar esta entrega.');
         }
     }
 }

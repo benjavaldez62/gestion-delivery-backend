@@ -72,20 +72,20 @@ class EstadoPagosController extends Controller
             // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
             if ($estadoPagosDesactivados->isEmpty()) {
                 return response()->json([
-                    'message' => 'No se encontraron estados de pagos desactivados.'
+                    'message' => 'No se encontraron estados de pagos desactivados.',
                 ], 404);
             }
 
             // Caso 200: retornamos lo desactivado
             return response()->json([
                 'message' => 'Estados de pagos desactivados obtenidos exitosamente.',
-                'estadoPagosDesactivados' => EstadoPagosResource::collection($estadoPagosDesactivados)
+                'estadoPagosDesactivados' => EstadoPagosResource::collection($estadoPagosDesactivados),
             ], 200);
         } catch (\Exception $e) {
             // Caso 500: Falla en el servidor -> retornamos mensaje.
             return response()->json([
                 'message' => 'Error interno del servidor al obtener estados de pago desactivados.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -252,7 +252,7 @@ class EstadoPagosController extends Controller
                         'string',
                         'min:4',
                         'max:50',
-                        'unique:estado_pagos,nombre,' . $estadoPago->id,
+                        'unique:estado_pagos,nombre,'.$estadoPago->id,
                     ],
                     'descripcion' => 'nullable|string|max:255',
                     'estado' => [],
@@ -267,8 +267,13 @@ class EstadoPagosController extends Controller
                 ]
             );
 
+            if (mb_strtolower(trim($estadoPago->nombre)) !== mb_strtolower(trim($validated['nombre'])) &&
+                $estadoPago->pagos()->withTrashed()->exists()) {
+                throw ValidationException::withMessages(['nombre' => 'No se puede cambiar el nombre de un estado utilizado por pagos.']);
+            }
+
             $estadoPago->nombre = $validated['nombre'];
-            $estadoPago->descripcion = $validated['descripcion'];
+            $estadoPago->descripcion = $validated['descripcion'] ?? null;
             $estadoPago->save();
 
             return response()->json([
@@ -335,6 +340,10 @@ class EstadoPagosController extends Controller
                 return response()->json([
                     'message' => 'Estado de pago no encontrado.',
                 ], 404);
+            }
+
+            if ($estadoPago->pagos()->withTrashed()->exists()) {
+                return response()->json(['message' => 'No se puede eliminar un estado utilizado por pagos.'], 409);
             }
 
             // Eliminar estado de pago

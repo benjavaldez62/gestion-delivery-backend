@@ -21,6 +21,7 @@ class Comprobante extends Model
         'numero_comprobante',
         'titular',
         'url_pdf',
+        'contenido_ticket',
     ];
 
     public function pago(): BelongsTo

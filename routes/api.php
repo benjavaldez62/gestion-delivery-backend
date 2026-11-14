@@ -88,6 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pedidos', [PedidoController::class, 'index'])->middleware('role:Administrador,Cocinero,Repartidor');
     Route::post('/pedidos', [PedidoController::class, 'store']);
     Route::get('/pedidos/{id}', [PedidoController::class, 'show']);
+    Route::post('/pedidos/{id}/ticket/enviar', [PedidoController::class, 'reenviarTicket']);
     Route::put('/pedidos/{id}', [PedidoController::class, 'update']);
     Route::delete('/pedidos/{id}', [PedidoController::class, 'destroy']);
     Route::put('/pedidos/{id}/restore', [PedidoController::class, 'restore']);
@@ -120,36 +121,43 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/estado-pedidos-desactivados', [EstadoPedidoController::class, 'indexDesactivados']);
 
     // Finanzas y Pagos
-    Route::get('/pagos', [PagoController::class, 'index']);
-    Route::post('/pagos', [PagoController::class, 'store']);
-    Route::get('/pagos/{id}', [PagoController::class, 'show']);
-    Route::put('/pagos/{id}', [PagoController::class, 'update']);
-    Route::delete('/pagos/{id}', [PagoController::class, 'destroy']);
-    Route::put('/pagos/{id}/restore', [PagoController::class, 'restore']);
-    Route::get('/pagos-desactivados', [PagoController::class, 'indexDesactivados']);
+    Route::middleware('role:Administrador')->group(function () {
+        Route::get('/pagos', [PagoController::class, 'index']);
+        Route::post('/pagos', [PagoController::class, 'store']);
+        Route::post('/pedidos/{pedido}/pagos', [PagoController::class, 'registrarPago']);
+        Route::get('/pagos-desactivados', [PagoController::class, 'indexDesactivados']);
+        Route::get('/pagos/resumen', [PagoController::class, 'resumen']);
+        Route::get('/pagos/envios', [PagoController::class, 'resumenEnvios']);
+        Route::get('/pagos/{id}', [PagoController::class, 'show']);
+        Route::put('/pagos/{id}', [PagoController::class, 'update']);
+        Route::delete('/pagos/{id}', [PagoController::class, 'destroy']);
+        Route::put('/pagos/{id}/restore', [PagoController::class, 'restore']);
+    });
 
     Route::get('/estado-pagos', [EstadoPagosController::class, 'index']);
-    Route::post('/estado-pagos', [EstadoPagosController::class, 'store']);
+    Route::post('/estado-pagos', [EstadoPagosController::class, 'store'])->middleware('role:Administrador');
     Route::get('/estado-pagos/{id}', [EstadoPagosController::class, 'show']);
-    Route::put('/estado-pagos/{id}', [EstadoPagosController::class, 'update']);
-    Route::delete('/estado-pagos/{id}', [EstadoPagosController::class, 'destroy']);
-    Route::put('/estado-pagos/{id}/restore', [EstadoPagosController::class, 'restore']);
+    Route::put('/estado-pagos/{id}', [EstadoPagosController::class, 'update'])->middleware('role:Administrador');
+    Route::delete('/estado-pagos/{id}', [EstadoPagosController::class, 'destroy'])->middleware('role:Administrador');
+    Route::put('/estado-pagos/{id}/restore', [EstadoPagosController::class, 'restore'])->middleware('role:Administrador');
     Route::get('/estado-pagos-desactivados', [EstadoPagosController::class, 'indexDesactivados']);
 
     Route::get('/metodos-pago', [MetodoPagoController::class, 'index']);
-    Route::post('/metodos-pago', [MetodoPagoController::class, 'store']);
+    Route::post('/metodos-pago', [MetodoPagoController::class, 'store'])->middleware('role:Administrador');
     Route::get('/metodos-pago/{id}', [MetodoPagoController::class, 'show']);
-    Route::put('/metodos-pago/{id}', [MetodoPagoController::class, 'update']);
-    Route::delete('/metodos-pago/{id}', [MetodoPagoController::class, 'destroy']);
-    Route::put('/metodos-pago/{id}/restore', [MetodoPagoController::class, 'restore']);
+    Route::put('/metodos-pago/{id}', [MetodoPagoController::class, 'update'])->middleware('role:Administrador');
+    Route::delete('/metodos-pago/{id}', [MetodoPagoController::class, 'destroy'])->middleware('role:Administrador');
+    Route::put('/metodos-pago/{id}/restore', [MetodoPagoController::class, 'restore'])->middleware('role:Administrador');
     Route::get('/metodos-pago-desactivados', [MetodoPagoController::class, 'indexDesactivados']);
 
-    Route::get('/comprobantes', [ComprobanteController::class, 'index']);
-    Route::post('/comprobantes', [ComprobanteController::class, 'store']);
-    Route::get('/comprobantes/{id}', [ComprobanteController::class, 'show']);
-    Route::delete('/comprobantes/{id}', [ComprobanteController::class, 'destroy']);
-    Route::put('/comprobantes/{id}/restore', [ComprobanteController::class, 'restore']);
-    Route::get('/comprobantes-desactivados', [ComprobanteController::class, 'indexDesactivados']);
+    Route::middleware('role:Administrador')->group(function () {
+        Route::get('/comprobantes', [ComprobanteController::class, 'index']);
+        Route::post('/comprobantes', [ComprobanteController::class, 'store']);
+        Route::get('/comprobantes-desactivados', [ComprobanteController::class, 'indexDesactivados']);
+        Route::get('/comprobantes/{id}', [ComprobanteController::class, 'show']);
+        Route::delete('/comprobantes/{id}', [ComprobanteController::class, 'destroy']);
+        Route::put('/comprobantes/{id}/restore', [ComprobanteController::class, 'restore']);
+    });
 
     // Administración General (Restringido a Administrador / SuperAdmin)
     Route::middleware('role:Administrador')->group(function () {

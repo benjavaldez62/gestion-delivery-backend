@@ -35,12 +35,13 @@ class PedidoItem extends Model
 
     public function producto(): BelongsTo
     {
-        return $this->belongsTo(Producto::class);
+        return $this->belongsTo(Producto::class)->withTrashed();
     }
 
     public function adicionales(): BelongsToMany
     {
         return $this->belongsToMany(Adicional::class, 'pedidoitems_adicionales', 'pedido_item_id', 'adicional_id')
+            ->withTrashed()
             ->withPivot('precio_adicional')
             ->withTimestamps();
     }

@@ -15,10 +15,11 @@ class StoreBorradorCheckoutRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'nombre_cliente' => ['required', 'string', 'max:255', 'regex:/\S/'],
             'direccion' => ['required', 'string', 'max:255', 'regex:/\S/'],
             'telefono' => ['required', 'string', 'max:30', 'regex:/^(?=(?:[^0-9]*[0-9]){6})[0-9+() \-]{6,30}$/'],
             'notas' => ['nullable', 'string', 'max:500'],
-            'metodo_pago' => ['required', Rule::in(['efectivo', 'tarjeta', 'transferencia'])],
+            'metodo_pago' => ['required', Rule::in(['efectivo'])],
             'monto_recibido' => ['nullable', 'numeric', 'min:0', 'decimal:0,2', 'prohibited_unless:metodo_pago,efectivo'],
             'items' => ['required', 'array', 'min:1', 'max:50'],
             'items.*.producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->where('activo', true)->whereNull('deleted_at')],

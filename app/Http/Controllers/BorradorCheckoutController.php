@@ -25,12 +25,13 @@ class BorradorCheckoutController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['direccion', 'telefono', 'metodo_pago', 'items'],
+                required: ['nombre_cliente', 'direccion', 'telefono', 'metodo_pago', 'items'],
                 properties: [
+                    new OA\Property(property: 'nombre_cliente', type: 'string', maxLength: 255, example: 'Nombre Apellido'),
                     new OA\Property(property: 'direccion', type: 'string', maxLength: 255, example: 'Av. Eva Perón 1234'),
                     new OA\Property(property: 'telefono', type: 'string', maxLength: 30, example: '3454123456'),
                     new OA\Property(property: 'notas', type: 'string', maxLength: 500, nullable: true, example: 'Timbre 2'),
-                    new OA\Property(property: 'metodo_pago', type: 'string', enum: ['efectivo', 'tarjeta', 'transferencia'], example: 'efectivo'),
+                    new OA\Property(property: 'metodo_pago', type: 'string', enum: ['efectivo'], example: 'efectivo'),
                     new OA\Property(property: 'monto_recibido', type: 'number', format: 'float', nullable: true, example: 5000),
                     new OA\Property(
                         property: 'items',
@@ -125,6 +126,7 @@ class BorradorCheckoutController extends Controller
             }
 
             $direccion = trim($validated['direccion']);
+            $nombreCliente = trim($validated['nombre_cliente']);
             $telefono = trim($validated['telefono']);
             $subtotal = $subtotalCentavos / 100;
             $montoTotal = ($subtotalCentavos / 100) + $costoEnvio;
@@ -191,6 +193,7 @@ class BorradorCheckoutController extends Controller
             // Crear el registro de Pedido en estado 'Pre-pedido'
             $pedido = Pedido::create([
                 'cliente_id' => $cliente->id,
+                'nombre_cliente' => $nombreCliente,
                 'estado_pedidos_id' => $estadoPrePedido->id,
                 'metodo_pago_id' => $metodoPago->id,
                 'subtotal' => $subtotal,
@@ -223,6 +226,7 @@ class BorradorCheckoutController extends Controller
             $borrador = BorradorCheckout::create(['datos' => [
                 'pedido_id' => $pedido->id,
                 'estado' => 'Pre-pedido',
+                'nombre_cliente' => $nombreCliente,
                 'direccion' => $direccion,
                 'telefono' => $telefono,
                 'notas' => trim($validated['notas'] ?? ''),
