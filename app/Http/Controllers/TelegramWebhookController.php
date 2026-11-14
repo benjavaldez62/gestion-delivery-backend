@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cliente;
 use App\Models\EstadoPedido;
 use App\Models\Pedido;
+use App\Services\PagoEfectivoService;
 use App\Services\TelegramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
 class TelegramWebhookController extends Controller
@@ -95,7 +98,7 @@ class TelegramWebhookController extends Controller
             } else {
                 $this->telegramService->enviarMensaje(
                     (int) $chatId,
-                    "ℹ️ Para confirmar una orden envianos <code>Pedido #número</code>, o tocá <b>¿Cómo viene mi pedido?</b> para ver el estado actual.",
+                    'ℹ️ Para confirmar una orden envianos <code>Pedido #número</code>, o tocá <b>¿Cómo viene mi pedido?</b> para ver el estado actual.',
                     $tecladoPrincipal
                 );
             }
@@ -135,26 +138,43 @@ class TelegramWebhookController extends Controller
             return response()->json(['status' => 'already_confirmed', 'estado' => $pedido->estadoPedido?->nombre], 200);
         }
 
-        // Transicionar a Sin Asignar y guardar datos de Telegram
-        $estadoSinAsignar = EstadoPedido::whereRaw("LOWER(TRIM(nombre)) = 'sin asignar'")->first()
-            ?? EstadoPedido::firstOrCreate(
-                ['nombre' => 'Sin Asignar'],
-                ['descripcion' => 'El pedido fue creado y está pendiente de asignación de un recurso']
-            );
-
-        $pedido->estado_pedidos_id = $estadoSinAsignar->id;
-        $pedido->telegram_chat_id = (int) $chatId;
-        if (! empty($username)) {
-            $pedido->telegram_username = ltrim(trim($username), '@');
-        }
-        $pedido->save();
-
-        if ($pedido->cliente && ! empty($username)) {
-            $usernameTruncado = mb_substr(ltrim(trim($username), '@'), 0, 30);
-            if ($usernameTruncado !== '') {
-                $pedido->cliente->username = $usernameTruncado;
-                $pedido->cliente->save();
+        $pedido = DB::transaction(function () use ($pedidoId, $chatId, $username): ?Pedido {
+            $pedido = Pedido::with(['estadoPedido', 'cliente'])->lockForUpdate()->findOrFail($pedidoId);
+            if (mb_strtolower(trim($pedido->estadoPedido?->nombre ?? '')) !== 'pre-pedido') {
+                return null;
             }
+
+            $estadoSinAsignar = EstadoPedido::whereRaw("LOWER(TRIM(nombre)) = 'sin asignar'")->first()
+                ?? EstadoPedido::firstOrCreate(
+                    ['nombre' => 'Sin Asignar'],
+                    ['descripcion' => 'El pedido fue creado y está pendiente de asignación de un recurso']
+                );
+
+            $pedido->estado_pedidos_id = $estadoSinAsignar->id;
+            $pedido->telegram_chat_id = (int) $chatId;
+            if (! empty($username)) {
+                $pedido->telegram_username = ltrim(trim($username), '@');
+            }
+            $pedido->save();
+
+            if ($pedido->cliente && ! empty($username)) {
+                $usernameTruncado = mb_substr(ltrim(trim($username), '@'), 0, 30);
+                $existeOtro = Cliente::withTrashed()->where('username', $usernameTruncado)
+                    ->where('id', '!=', $pedido->cliente->id)->exists();
+                if ($usernameTruncado !== '' && ! $existeOtro) {
+                    $pedido->cliente->update(['username' => $usernameTruncado]);
+                }
+            }
+
+            app(PagoEfectivoService::class)->registrarPendiente($pedido);
+
+            return $pedido;
+        });
+
+        if (! $pedido) {
+            $this->telegramService->enviarMensaje((int) $chatId, "ℹ️ El <b>Pedido #{$pedidoId}</b> ya se encuentra confirmado.");
+
+            return response()->json(['status' => 'already_confirmed'], 200);
         }
 
         // Responder confirmación amigable con Inline Keyboard interactivo
@@ -217,7 +237,7 @@ class TelegramWebhookController extends Controller
 
         $this->telegramService->enviarMensaje(
             $chatId,
-            "📦 <b>Estado de tu Pedido #{$ultimoPedido->id}:</b>\n\n{$emoji} Estado actual: <b>{$estadoNombre}</b>\n💰 Total: <b>$".number_format((float) $ultimoPedido->monto_total, 2, ',', '.')."</b>",
+            "📦 <b>Estado de tu Pedido #{$ultimoPedido->id}:</b>\n\n{$emoji} Estado actual: <b>{$estadoNombre}</b>\n💰 Total: <b>$".number_format((float) $ultimoPedido->monto_total, 2, ',', '.').'</b>',
             [
                 'inline_keyboard' => [
                     [['text' => '🌐 Abrir La Posta Web', 'url' => $frontendUrl]],

@@ -57,7 +57,8 @@ class ComprobanteController extends Controller
             new OA\Response(response: 500, description: 'Error interno del servidor al obtener los comprobantes desactivados.'),
         ]
     )]
-    public function indexDesactivados() {
+    public function indexDesactivados()
+    {
         try {
             // llamamos lo inhabilitado
             $comprobantesDesactivados = Comprobante::onlyTrashed()->get();
@@ -65,20 +66,20 @@ class ComprobanteController extends Controller
             // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
             if ($comprobantesDesactivados->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay comprobantes desactivados para mostrar.'
+                    'message' => 'No hay comprobantes desactivados para mostrar.',
                 ], 404);
             }
 
             // Caso 200: retornamos lo desactivado
             return response()->json([
                 'message' => 'Comprobantes desactivados obtenidos correctamente.',
-                'comprobantesDesactivados' => ComprobanteResource::collection($comprobantesDesactivados)
+                'comprobantesDesactivados' => ComprobanteResource::collection($comprobantesDesactivados),
             ], 200);
-        } catch (\Exception $e){
+        } catch (\Exception $e) {
             // Caso 500: Falla en el servidor -> retornamos mensaje.
             return response()->json([
                 'message' => 'Error interno del servidor al obtener los comprobantes desactivados.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -133,6 +134,11 @@ class ComprobanteController extends Controller
 
                 'url_pdf.max' => 'La URL del PDF no debe exceder los 255 caracteres.',
             ]);
+            if (mb_strtolower(trim($validated['tipo_comprobante'])) === 'ticket no fiscal') {
+                throw ValidationException::withMessages([
+                    'tipo_comprobante' => 'Los tickets de entrega se generan automáticamente al confirmar el cobro.',
+                ]);
+            }
             // Crear comprobante
             $comprobante = new Comprobante;
             $comprobante->pago_id = $validated['pago_id'];
@@ -166,6 +172,7 @@ class ComprobanteController extends Controller
         path: '/api/comprobantes/{id}',
         summary: 'Obtener un comprobante específico',
         tags: ['Comprobantes'],
+        security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -176,8 +183,22 @@ class ComprobanteController extends Controller
             ),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Comprobante obtenido correctamente.'),
+            new OA\Response(response: 200, description: 'Comprobante y contenido original del ticket, si está disponible.', content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'message', type: 'string'),
+                    new OA\Property(property: 'comprobante', properties: [
+                        new OA\Property(property: 'id', type: 'integer'),
+                        new OA\Property(property: 'pago_id', type: 'integer'),
+                        new OA\Property(property: 'tipo_comprobante', type: 'string'),
+                        new OA\Property(property: 'numero_comprobante', type: 'string'),
+                        new OA\Property(property: 'titular', type: 'string'),
+                        new OA\Property(property: 'url_pdf', type: 'string', nullable: true),
+                        new OA\Property(property: 'contenido_ticket', type: 'string', nullable: true),
+                    ], type: 'object'),
+                ]
+            )),
             new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Comprobante no encontrado.'),
             new OA\Response(response: 500, description: 'Error interno del servidor.'),
         ]
@@ -189,7 +210,9 @@ class ComprobanteController extends Controller
 
             return response()->json([
                 'message' => 'Comprobante obtenido correctamente.',
-                'comprobante' => new ComprobanteResource($comprobante),
+                'comprobante' => array_merge((new ComprobanteResource($comprobante))->resolve(), [
+                    'contenido_ticket' => $comprobante->contenido_ticket,
+                ]),
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -242,6 +265,10 @@ class ComprobanteController extends Controller
                 return response()->json([
                     'message' => 'Comprobante no encontrado.',
                 ], 404);
+            }
+
+            if (mb_strtolower(trim($comprobante->tipo_comprobante)) === 'ticket no fiscal') {
+                return response()->json(['message' => 'No se puede eliminar el ticket de una entrega.'], 422);
             }
 
             // Eliminar comprobante

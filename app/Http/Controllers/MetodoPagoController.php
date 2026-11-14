@@ -251,6 +251,11 @@ class MetodoPagoController extends Controller
                 'activo.boolean' => 'El campo activo debe ser un valor booleano.',
             ]);
 
+            if (mb_strtolower(trim($metodoPago->nombre)) !== mb_strtolower(trim($validated['nombre'])) &&
+                $metodoPago->pagos()->withTrashed()->exists()) {
+                throw ValidationException::withMessages(['nombre' => 'No se puede cambiar el nombre de un método utilizado por pagos.']);
+            }
+
             // Actualizar Método de Pago
             $metodoPago->nombre = $validated['nombre'];
             $metodoPago->descripcion = $validated['descripcion'] ?? null;
@@ -321,6 +326,10 @@ class MetodoPagoController extends Controller
                 return response()->json([
                     'message' => 'Método de pago no encontrado.',
                 ], 404);
+            }
+
+            if ($metodoPago->pagos()->withTrashed()->exists()) {
+                return response()->json(['message' => 'No se puede eliminar un método utilizado por pagos.'], 409);
             }
 
             // Cambiamos la disponibilidad a 'false' antes de eliminarlo
@@ -431,7 +440,8 @@ class MetodoPagoController extends Controller
             new OA\Response(response: 500, description: 'Error interno del servidor al obtener los métodos de pago desactivados.'),
         ]
     )]
-    public function indexDesactivados() {
+    public function indexDesactivados()
+    {
         try {
             // llamamos lo inhabilitado
             $metodosPagoDesactivados = MetodoPago::onlyTrashed()->get();
@@ -439,20 +449,20 @@ class MetodoPagoController extends Controller
             // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
             if ($metodosPagoDesactivados->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay métodos de pago desactivados para mostrar.'
+                    'message' => 'No hay métodos de pago desactivados para mostrar.',
                 ], 404);
             }
 
             // Caso 200: retornamos lo desactivado
             return response()->json([
                 'message' => 'Métodos de pago desactivados obtenidos correctamente.',
-                'metodosPagoDesactivados' => MetodoPagoResource::collection($metodosPagoDesactivados)
+                'metodosPagoDesactivados' => MetodoPagoResource::collection($metodosPagoDesactivados),
             ], 200);
-        } catch (\Exception $e){
+        } catch (\Exception $e) {
             // Caso 500: Falla en el servidor -> retornamos mensaje.
             return response()->json([
                 'message' => 'Error interno del servidor al obtener los métodos de pago desactivados.',
-                'metodosPagosDesactivados' => $e->getMessage()
+                'metodosPagosDesactivados' => $e->getMessage(),
             ], 500);
         }
     }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Comprobante;
 use App\Models\Pedido;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -75,5 +76,49 @@ class TelegramService
         };
 
         return $this->enviarMensaje((int) $pedido->telegram_chat_id, $mensaje);
+    }
+
+    public function enviarTicket(Pedido $pedido, Comprobante $comprobante): bool
+    {
+        if (! $pedido->telegram_chat_id) {
+            Log::warning('[TelegramService] No hay chat vinculado para enviar el ticket.', ['pedido_id' => $pedido->id]);
+
+            return false;
+        }
+
+        if (! $comprobante->contenido_ticket) {
+            Log::warning('[TelegramService] El ticket no tiene contenido guardado.', ['pedido_id' => $pedido->id]);
+
+            return false;
+        }
+
+        $partes = [];
+        $parte = '';
+        foreach (explode("\n", $comprobante->contenido_ticket) as $linea) {
+            $siguiente = $parte === '' ? $linea : $parte."\n".$linea;
+            if (strlen(mb_convert_encoding($siguiente, 'UTF-16LE', 'UTF-8')) / 2 > 3500) {
+                if ($parte === '' || strlen(mb_convert_encoding($linea, 'UTF-16LE', 'UTF-8')) / 2 > 3500) {
+                    Log::warning('[TelegramService] Una línea del ticket supera el límite de envío.', ['pedido_id' => $pedido->id]);
+
+                    return false;
+                }
+                $partes[] = $parte;
+                $parte = $linea;
+            } else {
+                $parte = $siguiente;
+            }
+        }
+        if ($parte !== '') {
+            $partes[] = $parte;
+        }
+        foreach ($partes as $texto) {
+            if (! $this->enviarMensaje((int) $pedido->telegram_chat_id, $texto)) {
+                Log::warning('[TelegramService] No se pudo enviar el ticket completo.', ['pedido_id' => $pedido->id]);
+
+                return false;
+            }
+        }
+
+        return true;
     }
 }

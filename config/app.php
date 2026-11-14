@@ -67,6 +67,7 @@ return [
     */
 
     'timezone' => 'UTC',
+    'pagos_timezone' => env('PAGOS_TIMEZONE', env('TICKET_TIMEZONE', 'America/Argentina/Buenos_Aires')),
 
     /*
     |--------------------------------------------------------------------------

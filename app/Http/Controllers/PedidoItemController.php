@@ -34,12 +34,41 @@ class PedidoItemController extends Controller
     /**
      * Helper privado para recalcular el subtotal y monto_total del pedido padre.
      */
-    private function recalcularMontoTotalPedido(Pedido $pedido): void
+    private function prepararEdicion(Pedido $pedido): array
     {
-        $nuevoTotal = $pedido->items()->sum('subtotal');
-        $pedido->subtotal = $nuevoTotal;
-        $pedido->monto_total = $nuevoTotal;
+        $pedido = Pedido::with('estadoPedido')->lockForUpdate()->findOrFail($pedido->id);
+        if (! $this->esPedidoEditable($pedido)) {
+            throw ValidationException::withMessages(['pedido' => 'El pedido ya no está en estado editable.']);
+        }
+        $pagos = $pedido->pagos()->with('estadoPago')->lockForUpdate()->get();
+        if ($pagos->count() > 1 || $pagos->contains(
+            fn ($pago) => mb_strtolower(trim($pago->estadoPago?->nombre ?? '')) !== 'pendiente' || $pago->comprobantes()->exists()
+        )) {
+            throw ValidationException::withMessages(['pago' => 'Solo se pueden editar pedidos sin pago o con un pago pendiente.']);
+        }
+        $pago = $pagos->first();
+        if ($pago && ((int) $pago->metodo_pago_id !== (int) $pedido->metodo_pago_id ||
+            (int) round((float) $pago->monto * 100) !== (int) round((float) $pedido->monto_total * 100))) {
+            throw ValidationException::withMessages(['pago' => 'El pago no coincide con el pedido y requiere revisión.']);
+        }
+        $subtotalAnterior = $pedido->subtotal ?? $pedido->items()->sum('subtotal');
+        $envioCentavos = (int) round(((float) $pedido->monto_total - (float) $subtotalAnterior) * 100);
+        if ($envioCentavos < 0) {
+            throw ValidationException::withMessages(['pedido' => 'El costo de envío requiere revisión.']);
+        }
+
+        return [$pedido, $pago, $envioCentavos];
+    }
+
+    private function recalcularMontoTotalPedido(Pedido $pedido, $pago, int $envioCentavos): void
+    {
+        $subtotalCentavos = (int) round((float) $pedido->items()->sum('subtotal') * 100);
+        $pedido->subtotal = $subtotalCentavos / 100;
+        $pedido->monto_total = ($subtotalCentavos + $envioCentavos) / 100;
         $pedido->save();
+        if ($pago) {
+            $pago->update(['monto' => $pedido->monto_total]);
+        }
     }
 
     #[OA\Get(
@@ -160,6 +189,7 @@ class PedidoItemController extends Controller
             $precioUnitario = $producto->precio;
 
             $pedidoItem = DB::transaction(function () use ($pedidoModel, $validated, $precioUnitario) {
+                [$pedidoModel, $pago, $envioCentavos] = $this->prepararEdicion($pedidoModel);
                 $costoAdicionalesUnitario = 0;
                 $attachData = [];
 
@@ -187,7 +217,7 @@ class PedidoItemController extends Controller
                     $item->adicionales()->attach($attachData);
                 }
 
-                $this->recalcularMontoTotalPedido($pedidoModel);
+                $this->recalcularMontoTotalPedido($pedidoModel, $pago, $envioCentavos);
 
                 return $item;
             });
@@ -314,6 +344,8 @@ class PedidoItemController extends Controller
             }
 
             DB::transaction(function () use ($item, $pedido, $validated) {
+                [$pedido, $pago, $envioCentavos] = $this->prepararEdicion($pedido);
+                $item = PedidoItem::where('pedido_id', $pedido->id)->lockForUpdate()->findOrFail($item->id);
                 $item->cantidad = $validated['cantidad'];
 
                 if (array_key_exists('adicionales', $validated)) {
@@ -336,7 +368,7 @@ class PedidoItemController extends Controller
                 $item->subtotal = ($item->precio_unitario + $costoAdicionalesUnitario) * $validated['cantidad'];
                 $item->save();
 
-                $this->recalcularMontoTotalPedido($pedido);
+                $this->recalcularMontoTotalPedido($pedido, $pago, $envioCentavos);
             });
 
             return response()->json([
@@ -417,13 +449,20 @@ class PedidoItemController extends Controller
             }
 
             DB::transaction(function () use ($item, $pedido) {
+                [$pedido, $pago, $envioCentavos] = $this->prepararEdicion($pedido);
+                $item = PedidoItem::where('pedido_id', $pedido->id)->lockForUpdate()->findOrFail($item->id);
+                if ($pedido->items()->count() <= 1) {
+                    throw ValidationException::withMessages(['pedido' => 'Un pedido no puede quedar sin ítems.']);
+                }
                 $item->delete();
-                $this->recalcularMontoTotalPedido($pedido);
+                $this->recalcularMontoTotalPedido($pedido, $pago, $envioCentavos);
             });
 
             return response()->json([
                 'message' => 'Ítem eliminado del pedido correctamente.',
             ], 200);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'No se pudo eliminar el ítem.', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error interno al eliminar el ítem.',

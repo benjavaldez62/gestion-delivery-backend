@@ -17,6 +17,14 @@ class PagoResource extends JsonResource
         return [
             'id' => $this->id,
             'pedido_id' => $this->pedido_id,
+            'pedido' => $this->whenLoaded('pedido', fn () => $this->pedido ? [
+                'id' => $this->pedido->id,
+                'monto_total' => (float) $this->pedido->monto_total,
+                'cliente_id' => $this->pedido->cliente_id,
+                'nombre_cliente' => $this->pedido->nombre_cliente,
+                'usuario_cliente' => $this->pedido->relationLoaded('cliente') ? $this->pedido->cliente?->username : null,
+                'telefono_cliente' => $this->pedido->relationLoaded('cliente') ? $this->pedido->cliente?->telefono : null,
+            ] : null),
             'monto' => (float) $this->monto,
             'fecha_pago' => $this->fecha_pago,
             'referencia' => $this->referencia,
