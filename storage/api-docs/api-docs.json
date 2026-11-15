@@ -4389,6 +4389,67 @@
                 }
             }
         },
+        "/api/profile": {
+            "put": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Actualizar el perfil del usuario autenticado",
+                "operationId": "116515f53f0ecf2584e4a57a7e7db4ba",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Marta Duglas",
+                                        "maxLength": 25
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+                                        "example": "marta@ejemplo.com",
+                                        "maxLength": 255
+                                    },
+                                    "telefono": {
+                                        "type": "string",
+                                        "pattern": "^\\+?[0-9]{1,25}$",
+                                        "example": "+5493455124468",
+                                        "nullable": true,
+                                        "maxLength": 26
+                                    },
+                                    "direccion": {
+                                        "type": "string",
+                                        "example": "SM de Oro 79",
+                                        "nullable": true,
+                                        "maxLength": 25
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Perfil actualizado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "422": {
+                        "description": "Los datos proporcionados no son válidos."
+                    }
+                }
+            }
+        },
         "/api/users": {
             "get": {
                 "tags": [
