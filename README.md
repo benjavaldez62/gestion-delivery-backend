@@ -154,6 +154,7 @@ actual de privacidad de SD-150; coordinar este cambio con el equipo.
 | `POST` | `/api/login` | Público | Inicia sesión con email y contraseña. Retorna un Bearer Token Sanctum. |
 | `POST` | `/api/logout` | `auth:sanctum` | Revoca el Bearer Token del usuario activo. |
 | `GET` | `/api/user` | `auth:sanctum` | Obtiene el perfil del usuario autenticado. |
+| `PUT` | `/api/profile` | `auth:sanctum` | Actualiza nombre, correo, teléfono y dirección únicamente del usuario autenticado; no permite cambiar rol, estado ni contraseña. |
 
 ### 4.2. Catálogo Gastronómico (Lectura pública / Mutación Staff)
 

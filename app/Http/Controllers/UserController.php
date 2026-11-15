@@ -16,6 +16,46 @@ use Symfony\Contracts\Service\Attribute\Required;
 
 class UserController extends Controller
 {
+    #[OA\Put(
+        path: '/api/profile',
+        summary: 'Actualizar el perfil del usuario autenticado',
+        tags: ['Usuarios'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['name', 'email'],
+                properties: [
+                    new OA\Property(property: 'name', type: 'string', maxLength: 25, example: 'Marta Duglas'),
+                    new OA\Property(property: 'email', type: 'string', format: 'email', maxLength: 255, pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$', example: 'marta@ejemplo.com'),
+                    new OA\Property(property: 'telefono', type: 'string', nullable: true, maxLength: 26, pattern: '^\\+?[0-9]{1,25}$', example: '+5493455124468'),
+                    new OA\Property(property: 'direccion', type: 'string', nullable: true, maxLength: 25, example: 'SM de Oro 79'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Perfil actualizado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 422, description: 'Los datos proporcionados no son válidos.'),
+        ]
+    )]
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:25', 'regex:/\S/'],
+            'email' => ['required', 'string', 'email', 'regex:/^[^\s@]+@[^\s@]+\.[^\s@]+$/', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'telefono' => ['nullable', 'string', 'regex:/^\+?[0-9]{1,25}$/'],
+            'direccion' => ['nullable', 'string', 'max:25', 'regex:/\S/'],
+        ]);
+
+        $user->fill($validated)->save();
+
+        return response()->json([
+            'message' => 'Perfil actualizado correctamente.',
+            'user' => new UserResource($user->load('role')),
+        ]);
+    }
+
     /* ==============
     *   MOSTRAR TODO
     *  ============== */
