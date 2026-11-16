@@ -190,3 +190,32 @@ it('incluye el array de adicionales en items al consultar pedidos por index y sh
         ->assertJsonPath('pedido.items.0.adicionales.0.nombre', 'Papas Extra')
         ->assertJsonPath('pedido.items.0.adicionales.1.nombre', 'Bacon Extra');
 });
+
+it('expone nombre_cliente en PedidoResource al consultar index y show manteniendo cliente.username', function () {
+    $adminRole = Role::create([
+        'nombre' => 'Administrador',
+        'descripcion' => 'Acceso completo',
+    ]);
+
+    $admin = User::factory()->create([
+        'role_id' => $adminRole->id,
+        'activo' => true,
+    ]);
+
+    $pedido = createPedidoConFecha(now()->toDateTimeString());
+    $pedido->update(['nombre_cliente' => 'Carlos Gómez']);
+
+    $this->actingAs($admin, 'sanctum')
+        ->getJson('/api/pedidos')
+        ->assertOk()
+        ->assertJsonPath('pedidos.0.id', $pedido->id)
+        ->assertJsonPath('pedidos.0.nombre_cliente', 'Carlos Gómez')
+        ->assertJsonPath('pedidos.0.cliente.username', $pedido->cliente->username);
+
+    $this->actingAs($admin, 'sanctum')
+        ->getJson("/api/pedidos/{$pedido->id}")
+        ->assertOk()
+        ->assertJsonPath('pedido.id', $pedido->id)
+        ->assertJsonPath('pedido.nombre_cliente', 'Carlos Gómez')
+        ->assertJsonPath('pedido.cliente.username', $pedido->cliente->username);
+});
