@@ -43,7 +43,7 @@ class UserSeeder extends Seeder
             'activo' => true,
         ]);
         User::create([
-            'name' => 'Aguistina Berra',
+            'name' => 'Agustina Berra',
             'email' => 'agustinaberra.ab@gmail.com',
             'password' => bcrypt('12345678'),
             'role_id' => 1, // Administrador
