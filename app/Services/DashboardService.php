@@ -190,14 +190,16 @@ class DashboardService
 
         // Lista detallada de pedidos pendientes de asignación
         $pedidosParaAsignar = $pedidosParaAsignarModels->map(function (Pedido $p) {
+            $nombreCliente = $this->resolverNombreCliente($p);
+
             return [
                 'id' => (int) $p->id,
                 'codigo' => $p->codigo,
                 'monto_total' => (float) $p->monto_total,
                 'created_at' => $p->created_at?->toISOString(),
-                'cliente' => $p->cliente ? [
-                    'id' => (int) $p->cliente->id,
-                    'username' => $p->cliente->username,
+                'cliente' => ($p->cliente || $nombreCliente !== null) ? [
+                    'id' => $p->cliente ? (int) $p->cliente->id : null,
+                    'username' => $nombreCliente,
                 ] : null,
                 'estado' => $p->estadoPedido ? [
                     'id' => (int) $p->estadoPedido->id,
@@ -317,7 +319,7 @@ class DashboardService
                 'id' => (int) $p->id,
                 'codigo' => $p->codigo,
                 'estado' => $p->estadoPedido?->nombre,
-                'cliente' => $p->cliente?->username,
+                'cliente' => $this->resolverNombreCliente($p),
                 'monto_total' => (float) $p->monto_total,
             ];
         })->values()->all();
@@ -340,5 +342,19 @@ class DashboardService
             'pedidos_completados_periodo' => (int) $completadosCount,
             'pedidos_activos' => $pedidosActivos,
         ];
+    }
+
+    /**
+     * Resuelve el nombre visible del cliente priorizando nombre_cliente con respaldo en cliente.username.
+     */
+    private function resolverNombreCliente(Pedido $pedido): ?string
+    {
+        $nombre = trim((string) ($pedido->nombre_cliente ?? ''));
+
+        if ($nombre !== '') {
+            return $nombre;
+        }
+
+        return $pedido->cliente?->username;
     }
 }

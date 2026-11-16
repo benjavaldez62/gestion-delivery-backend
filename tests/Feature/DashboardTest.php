@@ -348,3 +348,63 @@ it('excluye los pedidos en estado Pre-pedido de las metricas, distribucion de es
     expect($nombresEstados)->not->toContain('Pre-pedido')
         ->and($nombresEstados)->toContain('Sin Asignar');
 });
+
+it('prioriza nombre_cliente sobre cliente.username en dashboard y conserva el fallback cuando falta', function () {
+    $roles = crearRolesBaseDashboard();
+
+    $admin = User::factory()->create([
+        'role_id' => $roles['admin']->id,
+        'activo' => true,
+    ]);
+
+    $cocinero = User::factory()->create([
+        'email' => 'cocinero.nombre@test.com',
+        'role_id' => $roles['cocinero']->id,
+        'activo' => true,
+    ]);
+
+    $repartidor = User::factory()->create([
+        'email' => 'repartidor.nombre@test.com',
+        'role_id' => $roles['repartidor']->id,
+        'activo' => true,
+    ]);
+
+    $estadoSinAsignar = EstadoPedido::create(['nombre' => 'Sin asignar', 'descripcion' => 'Sin asignar']);
+    $estadoEnPreparacion = EstadoPedido::create(['nombre' => 'En preparación', 'descripcion' => 'En preparación']);
+    $metodoEfectivo = MetodoPago::create(['nombre' => 'Efectivo', 'descripcion' => 'Efectivo', 'activo' => true]);
+
+    $clienteWeb = Cliente::create([
+        'username' => 'web_3454123456',
+        'telefono' => '3454123456',
+        'direccion' => 'Av. Principal 100',
+    ]);
+
+    $pedidoConNombre = Pedido::create([
+        'cliente_id' => $clienteWeb->id,
+        'nombre_cliente' => 'Juan Pérez',
+        'estado_pedidos_id' => $estadoSinAsignar->id,
+        'metodo_pago_id' => $metodoEfectivo->id,
+        'subtotal' => 4000,
+        'monto_total' => 5500,
+    ]);
+
+    Pedido::create([
+        'cliente_id' => $clienteWeb->id,
+        'nombre_cliente' => '   ',
+        'estado_pedidos_id' => $estadoEnPreparacion->id,
+        'metodo_pago_id' => $metodoEfectivo->id,
+        'cocinero_id' => $cocinero->id,
+        'repartidor_id' => $repartidor->id,
+        'subtotal' => 6000,
+        'monto_total' => 7500,
+    ]);
+
+    $response = $this->actingAs($admin, 'sanctum')->getJson('/api/dashboard');
+
+    $response->assertOk()
+        ->assertJsonPath('dashboard.pedidos_para_asignar.0.id', $pedidoConNombre->id)
+        ->assertJsonPath('dashboard.pedidos_para_asignar.0.cliente.username', 'Juan Pérez');
+
+    $cocineros = collect($response->json('dashboard.staff.cocineros'))->keyBy('email');
+    expect($cocineros['cocinero.nombre@test.com']['pedidos_activos'][0]['cliente'])->toBe('web_3454123456');
+});
