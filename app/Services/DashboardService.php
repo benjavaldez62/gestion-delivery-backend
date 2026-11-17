@@ -248,18 +248,22 @@ class DashboardService
      */
     private function aplicarFiltroPeriodo(Builder $query, string $periodo): Builder
     {
+        $zonaHoraria = config('app.pagos_timezone', 'America/Argentina/Buenos_Aires');
+        $ahora = Carbon::now($zonaHoraria);
+        $finUtc = $ahora->copy()->endOfDay()->utc();
+
         return match ($periodo) {
             'hoy' => $query->whereBetween('created_at', [
-                Carbon::today(),
-                Carbon::now()->endOfDay(),
+                $ahora->copy()->startOfDay()->utc(),
+                $finUtc,
             ]),
             '7d' => $query->whereBetween('created_at', [
-                Carbon::now()->subDays(6)->startOfDay(),
-                Carbon::now()->endOfDay(),
+                $ahora->copy()->subDays(6)->startOfDay()->utc(),
+                $finUtc,
             ]),
             '30d' => $query->whereBetween('created_at', [
-                Carbon::now()->subDays(29)->startOfDay(),
-                Carbon::now()->endOfDay(),
+                $ahora->copy()->subDays(29)->startOfDay()->utc(),
+                $finUtc,
             ]),
             default => $query,
         };

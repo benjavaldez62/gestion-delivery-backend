@@ -383,3 +383,25 @@ it('actualiza la cantidad de un item con adicionales recalculando subtotal con e
     expect((float) $ctx['pedido']->fresh()->monto_total)->toBe(6900.00);
 });
 
+it('retorna 404 y no 500 al editar o eliminar un item cuyo pedido padre fue eliminado logicamente', function () {
+    $ctx = createTestContext();
+
+    $response = $this->actingAs($ctx['user'], 'sanctum')
+        ->postJson("/api/pedidos/{$ctx['pedido']->id}/items", [
+            'producto_id' => $ctx['productoActivo']->id,
+            'cantidad' => 1,
+        ])
+        ->assertCreated();
+
+    $itemId = $response->json('item.id');
+    $ctx['pedido']->delete();
+
+    $this->actingAs($ctx['user'], 'sanctum')
+        ->putJson("/api/pedido-items/{$itemId}", ['cantidad' => 2])
+        ->assertNotFound();
+
+    $this->actingAs($ctx['user'], 'sanctum')
+        ->deleteJson("/api/pedido-items/{$itemId}")
+        ->assertNotFound();
+});
+

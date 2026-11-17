@@ -150,3 +150,18 @@ test('GET /api/productos retorna HTTP 404 cuando la base esta vacia y no se envi
         ->assertJsonPath('message', 'No hay productos disponibles para mostrar.');
 });
 
+test('GET /api/productos ignora parametros q o categoria_id no escalares sin arrojar error 500', function () {
+    $cat = Categoria::create(['nombre' => 'Pizzas', 'activo' => true]);
+    Producto::create([
+        'categoria_id' => $cat->id,
+        'nombre' => 'Pizza Napolitana',
+        'descripcion' => 'Con tomate y ajo',
+        'precio' => 4500,
+        'activo' => true,
+    ]);
+
+    $this->getJson('/api/productos?q[]=malo&categoria_id[]=1')
+        ->assertOk()
+        ->assertJsonCount(1, 'productos');
+});
+

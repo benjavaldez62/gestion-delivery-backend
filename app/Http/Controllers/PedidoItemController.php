@@ -22,8 +22,12 @@ class PedidoItemController extends Controller
      * Regla de dominio: Únicamente los pedidos en estado 'Pre-pedido', 'Sin Asignar' o 'Pendiente'
      * pueden ser modificados o alterados. Una vez iniciada la preparación en cocina, no se admiten cambios.
      */
-    private function esPedidoEditable(Pedido $pedido): bool
+    private function esPedidoEditable(?Pedido $pedido): bool
     {
+        if (! $pedido) {
+            return false;
+        }
+
         $estadoNombre = mb_strtolower(trim($pedido->estadoPedido?->nombre ?? ''));
         $estadoNombreNormalizado = str_replace(['_', '-'], ' ', $estadoNombre);
 
@@ -326,6 +330,12 @@ class PedidoItemController extends Controller
             $item = PedidoItem::with(['pedido', 'producto', 'adicionales'])->findOrFail($pedidoItem);
             $pedido = $item->pedido;
 
+            if (! $pedido) {
+                return response()->json([
+                    'message' => 'Pedido asociado no encontrado.',
+                ], 404);
+            }
+
             if (! $this->esPedidoEditable($pedido)) {
                 return response()->json([
                     'message' => 'No se puede modificar un ítem de un pedido que no está en estado editable.',
@@ -434,6 +444,12 @@ class PedidoItemController extends Controller
             }
 
             $pedido = $item->pedido;
+
+            if (! $pedido) {
+                return response()->json([
+                    'message' => 'Pedido asociado no encontrado.',
+                ], 404);
+            }
 
             if (! $this->esPedidoEditable($pedido)) {
                 return response()->json([
