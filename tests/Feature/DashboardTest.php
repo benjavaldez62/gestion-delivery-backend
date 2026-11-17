@@ -408,3 +408,55 @@ it('prioriza nombre_cliente sobre cliente.username en dashboard y conserva el fa
     $cocineros = collect($response->json('dashboard.staff.cocineros'))->keyBy('email');
     expect($cocineros['cocinero.nombre@test.com']['pedidos_activos'][0]['cliente'])->toBe('web_3454123456');
 });
+
+it('filtra el periodo hoy usando la zona horaria de pagos cuando UTC ya cambio de dia', function () {
+    $roles = crearRolesBaseDashboard();
+
+    $admin = User::factory()->create([
+        'role_id' => $roles['admin']->id,
+        'activo' => true,
+    ]);
+
+    $estadoEntregado = EstadoPedido::create(['nombre' => 'Entregado', 'descripcion' => 'Entregado']);
+    $cliente = Cliente::create([
+        'username' => 'cliente_tz',
+        'telefono' => '1122334455',
+        'direccion' => 'Calle TZ 100',
+    ]);
+
+    // 2026-11-16 22:30 America/Argentina/Buenos_Aires = 2026-11-17 01:30 UTC
+    Carbon::setTestNow(Carbon::parse('2026-11-17 01:30:00', 'UTC'));
+
+    try {
+        $pedidoDeHoyArt = Pedido::create([
+            'cliente_id' => $cliente->id,
+            'estado_pedidos_id' => $estadoEntregado->id,
+            'subtotal' => 3500,
+            'monto_total' => 3500,
+        ]);
+        // 20:00 ART del mismo 16/11 (23:00 UTC del 16/11)
+        $pedidoDeHoyArt->forceFill([
+            'created_at' => Carbon::parse('2026-11-16 23:00:00', 'UTC'),
+            'updated_at' => Carbon::parse('2026-11-16 23:00:00', 'UTC'),
+        ])->saveQuietly();
+
+        $pedidoDeAyerArt = Pedido::create([
+            'cliente_id' => $cliente->id,
+            'estado_pedidos_id' => $estadoEntregado->id,
+            'subtotal' => 9000,
+            'monto_total' => 9000,
+        ]);
+        // 23:30 ART del 15/11 (02:30 UTC del 16/11)
+        $pedidoDeAyerArt->forceFill([
+            'created_at' => Carbon::parse('2026-11-16 02:30:00', 'UTC'),
+            'updated_at' => Carbon::parse('2026-11-16 02:30:00', 'UTC'),
+        ])->saveQuietly();
+
+        $resHoy = $this->actingAs($admin, 'sanctum')->getJson('/api/dashboard?periodo=hoy');
+        $resHoy->assertOk()
+            ->assertJsonPath('dashboard.kpis.total_pedidos', 1);
+        expect((float) $resHoy->json('dashboard.kpis.ingresos_totales'))->toBe(3500.0);
+    } finally {
+        Carbon::setTestNow();
+    }
+});

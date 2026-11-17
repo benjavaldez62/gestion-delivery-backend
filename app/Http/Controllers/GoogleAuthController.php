@@ -22,9 +22,19 @@ class GoogleAuthController extends Controller
                 'idToken.string' => 'El token de Google debe ser texto.',
             ]);
 
+            $clientId = trim((string) config('services.google.client_id'));
+            if ($clientId === '') {
+                Log::warning('Inicio de sesión con Google rechazado: GOOGLE_CLIENT_ID no está configurado.');
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El inicio de sesión con Google no está configurado.',
+                ], 503);
+            }
+
             try {
                 $payload = (new AccessToken())->verify($validated['idToken'], [
-                    'audience' => config('services.google.client_id'),
+                    'audience' => $clientId,
                 ]);
             } catch (Throwable $e) {
                 Log::warning('Token de Google inválido', ['message' => $e->getMessage()]);
