@@ -425,6 +425,113 @@
                 ]
             }
         },
+        "/api/checkout/borradores": {
+            "post": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Registrar un pre-pedido desde el checkout web y persistir el borrador",
+                "operationId": "b01ac004475215d92442379835cb8c31",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nombre_cliente",
+                                    "direccion",
+                                    "telefono",
+                                    "metodo_pago",
+                                    "items"
+                                ],
+                                "properties": {
+                                    "nombre_cliente": {
+                                        "type": "string",
+                                        "example": "Nombre Apellido",
+                                        "maxLength": 25
+                                    },
+                                    "direccion": {
+                                        "type": "string",
+                                        "example": "Av. Eva Perón 1234",
+                                        "maxLength": 25
+                                    },
+                                    "telefono": {
+                                        "description": "Hasta 25 dígitos con + opcional al inicio.",
+                                        "type": "string",
+                                        "pattern": "^\\+?[0-9]{1,25}$",
+                                        "example": "+543454123456",
+                                        "maxLength": 26,
+                                        "minLength": 1
+                                    },
+                                    "notas": {
+                                        "type": "string",
+                                        "example": "Timbre 2",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    },
+                                    "metodo_pago": {
+                                        "type": "string",
+                                        "example": "efectivo",
+                                        "enum": [
+                                            "efectivo"
+                                        ]
+                                    },
+                                    "monto_recibido": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 5000,
+                                        "nullable": true
+                                    },
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "producto_id",
+                                                "cantidad",
+                                                "adicionales"
+                                            ],
+                                            "properties": {
+                                                "producto_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "cantidad": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "adicionales": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer"
+                                                    },
+                                                    "example": [
+                                                        1,
+                                                        2
+                                                    ]
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pre-pedido y borrador de checkout registrados correctamente."
+                    },
+                    "422": {
+                        "description": "Error de validación en los datos enviados o productos no disponibles."
+                    },
+                    "500": {
+                        "description": "Error interno al procesar el checkout."
+                    }
+                }
+            }
+        },
         "/api/categorias": {
             "get": {
                 "tags": [
@@ -1105,10 +1212,53 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Comprobante obtenido correctamente."
+                        "description": "Comprobante y contenido original del ticket, si está disponible.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "comprobante": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "pago_id": {
+                                                    "type": "integer"
+                                                },
+                                                "tipo_comprobante": {
+                                                    "type": "string"
+                                                },
+                                                "numero_comprobante": {
+                                                    "type": "string"
+                                                },
+                                                "titular": {
+                                                    "type": "string"
+                                                },
+                                                "url_pdf": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "contenido_ticket": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
                     },
                     "404": {
                         "description": "Comprobante no encontrado."
@@ -1116,7 +1266,12 @@
                     "500": {
                         "description": "Error interno del servidor."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
@@ -1183,6 +1338,88 @@
                         "description": "Error interno al restaurar el comprobante."
                     }
                 }
+            }
+        },
+        "/api/configuracion-publica": {
+            "get": {
+                "tags": [
+                    "Telegram"
+                ],
+                "summary": "Obtener configuración pública de Telegram",
+                "operationId": "fbc95ad724ae14eea81775ca6a362fac",
+                "responses": {
+                    "200": {
+                        "description": "Nombre público del bot configurado.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "telegram_bot_username"
+                                    ],
+                                    "properties": {
+                                        "telegram_bot_username": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Configuración de Telegram no disponible."
+                    }
+                },
+                "security": []
+            }
+        },
+        "/api/dashboard": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Obtener resumen y métricas agregadas del dashboard administrativo",
+                "operationId": "eea0d80849eae1a9544bcc5634f34ce3",
+                "parameters": [
+                    {
+                        "name": "periodo",
+                        "in": "query",
+                        "description": "Rango temporal de consulta: hoy, 7d, 30d o historico (por defecto: historico)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "historico",
+                            "enum": [
+                                "hoy",
+                                "7d",
+                                "30d",
+                                "historico"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Resumen del dashboard obtenido correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
+                    "422": {
+                        "description": "El periodo seleccionado no es válido."
+                    },
+                    "500": {
+                        "description": "Error interno al obtener el resumen del dashboard."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/estado-pagos": {
@@ -2027,13 +2264,196 @@
                 }
             }
         },
+        "/api/pagos/envios": {
+            "get": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Envíos cobrados por repartidor y fecha",
+                "description": "Suma el costo de envío de pedidos entregados y cobrados; usa la zona horaria de pagos y señala los registros inconsistentes.",
+                "operationId": "869918592360390d5e267127f4c4591c",
+                "parameters": [
+                    {
+                        "name": "fecha",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Envíos agrupados por repartidor.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "fecha": {
+                                            "type": "string",
+                                            "format": "date"
+                                        },
+                                        "zona_horaria": {
+                                            "type": "string"
+                                        },
+                                        "total_envios": {
+                                            "type": "number"
+                                        },
+                                        "repartidores": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "nombre": {
+                                                        "type": "string"
+                                                    },
+                                                    "total": {
+                                                        "type": "number"
+                                                    },
+                                                    "envios": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "properties": {
+                                                                "pedido_id": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "importe": {
+                                                                    "type": "number"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pendientes_revision": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "pedido_id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "motivo": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
+                    "422": {
+                        "description": "Fecha inválida."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/pagos/resumen": {
+            "get": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Ingresos cobrados del día y del mes",
+                "description": "Suma los pagos en estado Pagado según su fecha de cobro, usando la zona horaria de pagos.",
+                "operationId": "33c236510c8ae253a95ce5f051872f43",
+                "responses": {
+                    "200": {
+                        "description": "Totales cobrados y fecha de referencia.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "fecha": {
+                                            "type": "string",
+                                            "format": "date"
+                                        },
+                                        "zona_horaria": {
+                                            "type": "string"
+                                        },
+                                        "ingreso_diario": {
+                                            "type": "number"
+                                        },
+                                        "ingreso_mensual": {
+                                            "type": "number"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/pagos": {
             "get": {
                 "tags": [
                     "Pagos"
                 ],
-                "summary": "Listar todos los pagos",
+                "summary": "Listar pagos con filtros opcionales",
                 "operationId": "aaa8aed42f2cf9d3951bf459a8f6cce1",
+                "parameters": [
+                    {
+                        "name": "pedido_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "busqueda",
+                        "in": "query",
+                        "description": "Número de pago, pedido o cliente, nombre o teléfono.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "estado_pago_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "metodo_pago_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Pagos obtenidos correctamente."
@@ -2047,7 +2467,12 @@
                     "500": {
                         "description": "Error interno del servidor."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "post": {
                 "tags": [
@@ -2063,9 +2488,7 @@
                                 "required": [
                                     "pedido_id",
                                     "monto",
-                                    "metodo_pago_id",
-                                    "estado_pago_id",
-                                    "fecha_pago"
+                                    "metodo_pago_id"
                                 ],
                                 "properties": {
                                     "pedido_id": {
@@ -2080,15 +2503,6 @@
                                     "metodo_pago_id": {
                                         "type": "integer",
                                         "example": 1
-                                    },
-                                    "estado_pago_id": {
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "fecha_pago": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "example": "2026-03-30"
                                     },
                                     "referencia": {
                                         "type": "string",
@@ -2115,7 +2529,76 @@
                     "500": {
                         "description": "Error interno al crear el pago."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/pedidos/{pedido}/pagos": {
+            "post": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Registrar un pago pendiente en efectivo para un pedido",
+                "operationId": "575fcb6a054b5fc9b15689b3294e9a39",
+                "parameters": [
+                    {
+                        "name": "pedido",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "metodo_pago_id",
+                                    "monto"
+                                ],
+                                "properties": {
+                                    "metodo_pago_id": {
+                                        "type": "integer"
+                                    },
+                                    "monto": {
+                                        "type": "number"
+                                    },
+                                    "referencia": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pago pendiente registrado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "422": {
+                        "description": "Pago inválido o duplicado."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pagos/{id}": {
@@ -2149,7 +2632,12 @@
                     "500": {
                         "description": "Error interno al obtener el pago."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "put": {
                 "tags": [
@@ -2174,11 +2662,7 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "pedido_id",
-                                    "monto",
-                                    "metodo_pago_id",
-                                    "estado_pago_id",
-                                    "fecha_pago"
+                                    "estado_pago_id"
                                 ],
                                 "properties": {
                                     "pedido_id": {
@@ -2201,7 +2685,7 @@
                                     "fecha_pago": {
                                         "type": "string",
                                         "format": "date",
-                                        "example": "2026-03-30"
+                                        "nullable": true
                                     },
                                     "referencia": {
                                         "type": "string",
@@ -2231,7 +2715,12 @@
                     "500": {
                         "description": "Error interno al actualizar el pago."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
@@ -2269,7 +2758,12 @@
                     "500": {
                         "description": "Error interno al eliminar el pago."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pagos-desactivados": {
@@ -2292,7 +2786,12 @@
                     "500": {
                         "description": "Error interno del servidor al obtener pagos desactivados."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pagos/{id}/restore": {
@@ -2332,7 +2831,185 @@
                     "500": {
                         "description": "Error interno al restaurar el pago."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/forgot-password": {
+            "post": {
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Solicitar recuperación de contraseña local",
+                "description": "Las direcciones del dominio exacto test.com deben contactar al administrador. Las respuestas distinguen cuentas inexistentes e inactivas.",
+                "operationId": "81fb5ebb68e18c422a9177619fc75588",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Correo aceptado por SMTP (action: enlace_enviado) o cuenta de prueba (action: contactar_administrador)."
+                    },
+                    "403": {
+                        "description": "Cuenta inactiva."
+                    },
+                    "404": {
+                        "description": "Correo no registrado."
+                    },
+                    "422": {
+                        "description": "Datos inválidos o solicitud no procesada."
+                    },
+                    "429": {
+                        "description": "Límite de solicitudes alcanzado."
+                    },
+                    "503": {
+                        "description": "Envío de correo no disponible o fallido."
+                    }
+                },
+                "security": []
+            }
+        },
+        "/api/reset-password": {
+            "post": {
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Restablecer contraseña local",
+                "description": "Requiere cuenta activa y token vigente de un solo uso. Revoca los tokens Sanctum; no modifica la contraseña de Google.",
+                "operationId": "afa031cb1a74122f2f834f7f8a8c43f0",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "token",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "maxLength": 255
+                                    },
+                                    "token": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Contraseña actualizada."
+                    },
+                    "403": {
+                        "description": "Cuenta de prueba: contactar al administrador."
+                    },
+                    "422": {
+                        "description": "Datos inválidos o enlace inválido, vencido o usado."
+                    },
+                    "429": {
+                        "description": "Límite de solicitudes alcanzado."
+                    }
+                },
+                "security": []
+            }
+        },
+        "/api/pedidos/{id}/asignaciones": {
+            "put": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Asignar cocinero o repartidor a un pedido",
+                "operationId": "efdc8d8318fa6de31b7b8b594b0f1e19",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pedido",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "cocinero_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "repartidor_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Personal asignado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "422": {
+                        "description": "El personal debe estar activo y tener el rol correspondiente."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pedidos": {
@@ -2340,8 +3017,20 @@
                 "tags": [
                     "Pedidos"
                 ],
-                "summary": "Listar todos los pedidos",
+                "summary": "Listar todos los pedidos operativos",
                 "operationId": "9368500233e75a120cb606e08d7a06e4",
+                "parameters": [
+                    {
+                        "name": "incluir_pre_pedidos",
+                        "in": "query",
+                        "description": "Indica si se deben incluir los pedidos en estado Pre-pedido en el listado",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Pedidos obtenidos correctamente."
@@ -2377,15 +3066,10 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "cliente_id",
-                                    "estado_pedidos_id"
+                                    "cliente_id"
                                 ],
                                 "properties": {
                                     "cliente_id": {
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "estado_pedidos_id": {
                                         "type": "integer",
                                         "example": 1
                                     },
@@ -2404,16 +3088,6 @@
                                     "metodo_pago_id": {
                                         "type": "integer",
                                         "example": 1,
-                                        "nullable": true
-                                    },
-                                    "cocinero_id": {
-                                        "type": "integer",
-                                        "example": 2,
-                                        "nullable": true
-                                    },
-                                    "repartidor_id": {
-                                        "type": "integer",
-                                        "example": 3,
                                         "nullable": true
                                     }
                                 },
@@ -2656,6 +3330,122 @@
                         "description": "Error interno al restaurar el pedido."
                     }
                 }
+            }
+        },
+        "/api/pedidos/{id}/confirmar-telegram": {
+            "post": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Confirmar un pre-pedido desde el bot de Telegram y pasarlo a Sin Asignar",
+                "operationId": "d9a05751e166e2adfee44a7c03e8979b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del pedido en estado Pre-pedido a confirmar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "example": "Juan Pérez",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    },
+                                    "username_telegram": {
+                                        "type": "string",
+                                        "example": "juan_perez",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    },
+                                    "chat_id": {
+                                        "type": "integer",
+                                        "example": 987654321,
+                                        "nullable": true
+                                    },
+                                    "telefono": {
+                                        "type": "string",
+                                        "example": "+5493454123456",
+                                        "nullable": true,
+                                        "maxLength": 30
+                                    },
+                                    "direccion": {
+                                        "type": "string",
+                                        "example": "Av. Eva Perón 1234",
+                                        "nullable": true,
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pedido confirmado correctamente. Estado actualizado a Sin Asignar."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "422": {
+                        "description": "El pedido no se encuentra en estado Pre-pedido o error de validación."
+                    },
+                    "500": {
+                        "description": "Error interno al confirmar el pedido."
+                    }
+                }
+            }
+        },
+        "/api/pedidos/{id}/ticket/enviar": {
+            "post": {
+                "tags": [
+                    "Pedidos"
+                ],
+                "summary": "Reintentar el envío del ticket no fiscal de un pedido entregado",
+                "operationId": "b935f0a0002c6ce8ea05c07c04d6466f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ticket enviado."
+                    },
+                    "403": {
+                        "description": "No autorizado."
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado."
+                    },
+                    "422": {
+                        "description": "El pedido no tiene un ticket disponible."
+                    },
+                    "503": {
+                        "description": "No se pudo enviar el ticket."
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/pedido-items": {
@@ -3582,6 +4372,84 @@
                 }
             }
         },
+        "/api/telegram/webhook": {
+            "post": {
+                "tags": [
+                    "Telegram"
+                ],
+                "summary": "Webhook receptor de actualizaciones de Telegram Bot o n8n",
+                "operationId": "43153ed9037f884b9187a032d9db7277",
+                "responses": {
+                    "200": {
+                        "description": "Mensaje procesado correctamente."
+                    },
+                    "422": {
+                        "description": "No se pudo vincular o pedido no válido."
+                    }
+                }
+            }
+        },
+        "/api/profile": {
+            "put": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Actualizar el perfil del usuario autenticado",
+                "operationId": "116515f53f0ecf2584e4a57a7e7db4ba",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Marta Duglas",
+                                        "maxLength": 25
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+                                        "example": "marta@ejemplo.com",
+                                        "maxLength": 255
+                                    },
+                                    "telefono": {
+                                        "type": "string",
+                                        "pattern": "^\\+?[0-9]{1,25}$",
+                                        "example": "+5493455124468",
+                                        "nullable": true,
+                                        "maxLength": 26
+                                    },
+                                    "direccion": {
+                                        "type": "string",
+                                        "example": "SM de Oro 79",
+                                        "nullable": true,
+                                        "maxLength": 25
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Perfil actualizado correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado."
+                    },
+                    "422": {
+                        "description": "Los datos proporcionados no son válidos."
+                    }
+                }
+            }
+        },
         "/api/users": {
             "get": {
                 "tags": [
@@ -3964,6 +4832,10 @@
             "description": "Autenticación"
         },
         {
+            "name": "Checkout",
+            "description": "Checkout"
+        },
+        {
             "name": "Categorías",
             "description": "Categorías"
         },
@@ -3974,6 +4846,14 @@
         {
             "name": "Comprobantes",
             "description": "Comprobantes"
+        },
+        {
+            "name": "Telegram",
+            "description": "Telegram"
+        },
+        {
+            "name": "Dashboard",
+            "description": "Dashboard"
         },
         {
             "name": "Estados de Pago",

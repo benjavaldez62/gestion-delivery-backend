@@ -4,6 +4,9 @@ use App\Models\Adicional;
 use App\Models\Categoria;
 use App\Models\Cliente;
 use App\Models\EstadoPedido;
+use App\Models\EstadoPagos;
+use App\Models\MetodoPago;
+use App\Models\Pago;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
 use App\Models\Producto;
@@ -68,6 +71,37 @@ it('permite listar pedidos solo a usuarios autenticados con permisos de staff y 
 
 it('requiere autenticacion para consultar pedidos', function () {
     $this->getJson('/api/pedidos')->assertUnauthorized();
+});
+
+it('incluye el estado de pago al listar pedidos', function () {
+    $repartidorRole = Role::create(['nombre' => 'Repartidor']);
+    $repartidor = User::factory()->create([
+        'role_id' => $repartidorRole->id,
+        'activo' => true,
+    ]);
+    $estadoPago = EstadoPagos::create([
+        'nombre' => 'Pagado',
+        'descripcion' => 'Pago completado',
+    ]);
+    $metodoPago = MetodoPago::create([
+        'nombre' => 'Efectivo',
+        'descripcion' => 'Pago en efectivo',
+        'activo' => true,
+    ]);
+    $pedido = createPedidoConFecha(now()->toDateTimeString());
+    $pedido->update(['repartidor_id' => $repartidor->id]);
+    Pago::create([
+        'pedido_id' => $pedido->id,
+        'metodo_pago_id' => $metodoPago->id,
+        'monto' => 2500,
+        'fecha_pago' => now()->toDateString(),
+        'estado_pago_id' => $estadoPago->id,
+    ]);
+
+    $this->actingAs($repartidor, 'sanctum')
+        ->getJson('/api/pedidos')
+        ->assertOk()
+        ->assertJsonPath('pedidos.0.pagos.0.estado_pago.nombre', 'Pagado');
 });
 
 it('rechaza usuarios no autorizados para consultar pedidos', function () {
@@ -157,3 +191,31 @@ it('incluye el array de adicionales en items al consultar pedidos por index y sh
         ->assertJsonPath('pedido.items.0.adicionales.1.nombre', 'Bacon Extra');
 });
 
+it('expone nombre_cliente en PedidoResource al consultar index y show manteniendo cliente.username', function () {
+    $adminRole = Role::create([
+        'nombre' => 'Administrador',
+        'descripcion' => 'Acceso completo',
+    ]);
+
+    $admin = User::factory()->create([
+        'role_id' => $adminRole->id,
+        'activo' => true,
+    ]);
+
+    $pedido = createPedidoConFecha(now()->toDateTimeString());
+    $pedido->update(['nombre_cliente' => 'Carlos Gómez']);
+
+    $this->actingAs($admin, 'sanctum')
+        ->getJson('/api/pedidos')
+        ->assertOk()
+        ->assertJsonPath('pedidos.0.id', $pedido->id)
+        ->assertJsonPath('pedidos.0.nombre_cliente', 'Carlos Gómez')
+        ->assertJsonPath('pedidos.0.cliente.username', $pedido->cliente->username);
+
+    $this->actingAs($admin, 'sanctum')
+        ->getJson("/api/pedidos/{$pedido->id}")
+        ->assertOk()
+        ->assertJsonPath('pedido.id', $pedido->id)
+        ->assertJsonPath('pedido.nombre_cliente', 'Carlos Gómez')
+        ->assertJsonPath('pedido.cliente.username', $pedido->cliente->username);
+});

@@ -53,6 +53,7 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:4200'),
 
     /*
     |--------------------------------------------------------------------------
@@ -66,6 +67,7 @@ return [
     */
 
     'timezone' => 'UTC',
+    'pagos_timezone' => env('PAGOS_TIMEZONE', env('TICKET_TIMEZONE', 'America/Argentina/Buenos_Aires')),
 
     /*
     |--------------------------------------------------------------------------

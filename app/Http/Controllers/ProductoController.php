@@ -46,7 +46,10 @@ class ProductoController extends Controller
         try {
             $query = Producto::with('categoria');
 
-            $filters = $request->only(['categoria_id', 'q']);
+            $filters = [
+                'categoria_id' => is_scalar($request->input('categoria_id')) ? $request->input('categoria_id') : null,
+                'q' => is_string($request->input('q')) ? $request->input('q') : null,
+            ];
 
             if (!empty($filters['categoria_id']) || !empty($filters['q'])) {
                 $query->filtrar($filters);

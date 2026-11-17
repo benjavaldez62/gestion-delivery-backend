@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Cliente;
 use App\Models\EstadoPedido;
+use App\Models\MetodoPago;
 use App\Models\Pedido;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -11,33 +12,38 @@ use Illuminate\Database\Seeder;
 class PedidoSeeder extends Seeder
 {
     /**
-     * Requiere los seeders de roles, usuarios, clientes y estados de pedido.
+     * Requiere los seeders de roles, usuarios, clientes, métodos de pago y estados de pedido.
      */
     public function run(): void
     {
         $costoEnvio = 1500;
+        $efectivo = MetodoPago::where('nombre', 'Efectivo')->first();
+        $transferencia = MetodoPago::where('nombre', 'Transferencia bancaria')->first();
 
         $pedidos = [
             [
                 'cliente' => 'juan-martin96',
-                'estado' => 'Pendiente',
+                'estado' => 'Sin Asignar',
                 'cocinero' => null,
                 'repartidor' => null,
                 'subtotal' => 14500,
+                'metodo_pago_id' => $transferencia?->id,
             ],
             [
                 'cliente' => 'gusmachax779',
                 'estado' => 'En preparación',
                 'cocinero' => 'felipemartinez@test.com',
-                'repartidor' => null,
+                'repartidor' => 'studyfabri.a@gmail.com',
                 'subtotal' => 11500,
+                'metodo_pago_id' => $efectivo?->id,
             ],
             [
                 'cliente' => 'cata_lopez001',
                 'estado' => 'En camino',
-                'cocinero' => 'felipemartinez@test.com',
+                'cocinero' => 'benjavaldez62@gmail.com',
                 'repartidor' => 'sebastiangomez@test.com',
                 'subtotal' => 24000,
+                'metodo_pago_id' => $transferencia?->id,
             ],
             [
                 'cliente' => 'alinablue21',
@@ -45,13 +51,15 @@ class PedidoSeeder extends Seeder
                 'cocinero' => 'felipemartinez@test.com',
                 'repartidor' => 'sebastiangomez@test.com',
                 'subtotal' => 9500,
+                'metodo_pago_id' => $efectivo?->id,
             ],
             [
                 'cliente' => 'juan-martin96',
                 'estado' => 'Cancelado',
-                'cocinero' => null,
-                'repartidor' => null,
+                'cocinero' => 'benjavaldez62@gmail.com',
+                'repartidor' => 'studyfabri.a@gmail.com',
                 'subtotal' => 13500,
+                'metodo_pago_id' => $efectivo?->id,
             ],
         ];
 
@@ -80,6 +88,7 @@ class PedidoSeeder extends Seeder
                     'monto_total' => $datos['subtotal'] + $costoEnvio,
                     'cocinero_id' => $cocinero?->id,
                     'repartidor_id' => $repartidor?->id,
+                    'metodo_pago_id' => $datos['metodo_pago_id'],
                 ]
             );
         }

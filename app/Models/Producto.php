@@ -45,16 +45,18 @@ class Producto extends Model
      */
     public function scopeFiltrar($query, array $filters)
     {
-        if (!empty($filters['categoria_id'])) {
+        if (isset($filters['categoria_id']) && is_scalar($filters['categoria_id']) && trim((string) $filters['categoria_id']) !== '') {
             $query->where('categoria_id', $filters['categoria_id']);
         }
 
-        if (!empty($filters['q'])) {
+        if (isset($filters['q']) && is_string($filters['q'])) {
             $termino = trim($filters['q']);
-            $query->where(function ($q) use ($termino) {
-                $q->whereRaw('LOWER(nombre) LIKE ?', ['%' . mb_strtolower($termino) . '%'])
-                  ->orWhereRaw('LOWER(descripcion) LIKE ?', ['%' . mb_strtolower($termino) . '%']);
-            });
+            if ($termino !== '') {
+                $query->where(function ($q) use ($termino) {
+                    $q->whereRaw('LOWER(nombre) LIKE ?', ['%' . mb_strtolower($termino) . '%'])
+                      ->orWhereRaw('LOWER(descripcion) LIKE ?', ['%' . mb_strtolower($termino) . '%']);
+                });
+            }
         }
 
         return $query;

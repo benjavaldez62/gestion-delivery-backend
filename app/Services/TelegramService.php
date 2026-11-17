@@ -1,0 +1,124 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Comprobante;
+use App\Models\Pedido;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class TelegramService
+{
+    protected ?string $botToken;
+
+    public function __construct(?string $botToken = null)
+    {
+        $this->botToken = $botToken ?? config('services.telegram.bot_token');
+    }
+
+    /**
+     * Enviar mensaje de texto a un chat específico de Telegram, con soporte para botones inline o reply markup.
+     */
+    public function enviarMensaje(int $chatId, string $texto, ?array $replyMarkup = null): bool
+    {
+        if (empty($this->botToken)) {
+            Log::warning('[TelegramService] No se configuró TELEGRAM_BOT_TOKEN en el entorno.');
+
+            return false;
+        }
+
+        try {
+            $payload = [
+                'chat_id' => $chatId,
+                'text' => $texto,
+                'parse_mode' => 'HTML',
+            ];
+
+            if ($replyMarkup) {
+                $payload['reply_markup'] = $replyMarkup;
+            }
+
+            $response = Http::post("https://api.telegram.org/bot{$this->botToken}/sendMessage", $payload);
+
+            if (! $response->successful()) {
+                Log::warning('[TelegramService] Telegram rechazó el envío.', ['status' => $response->status()]);
+
+                return false;
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('[TelegramService] Error al enviar mensaje.', ['exception_type' => $e::class]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Notificar al cliente cuando su pedido cambia de estado.
+     */
+    public function notificarCambioEstado(Pedido $pedido): bool
+    {
+        if (! $pedido->telegram_chat_id) {
+            return false;
+        }
+
+        $estadoNombre = $pedido->estadoPedido?->nombre ?? '';
+        $mensaje = match (mb_strtolower(trim($estadoNombre))) {
+            'sin asignar' => "⏳ <b>Pedido #{$pedido->id}:</b> En unos instantes se confirmará su pedido.",
+            'pendiente' => "👨‍🍳 <b>Pedido #{$pedido->id}:</b> Pedido confirmado con éxito, en breve comenzará su preparación.",
+            'en preparación', 'en preparacion' => "🔥 <b>¡Tu Pedido #{$pedido->id} ya se está cocinando!</b>\nNuestros cocineros lo están preparando con dedicación.",
+            'listo para entregar' => "📦 <b>Pedido #{$pedido->id} listo:</b> Ya está empacado esperando al repartidor.",
+            'en camino' => "🛵 <b>¡Tu Pedido #{$pedido->id} va en camino!</b>\nEl repartidor se dirige a tu domicilio.",
+            'entregado' => "🎉 <b>¡Pedido #{$pedido->id} entregado!</b>\n¡Que lo disfrutes mucho! Gracias por elegir La Posta.",
+            'cancelado' => "❌ <b>Pedido #{$pedido->id} cancelado:</b> Tu pedido fue cancelado. Por favor comunicate con el restaurante si tenés dudas.",
+            default => "ℹ️ <b>Pedido #{$pedido->id}:</b> El estado se actualizó a '{$estadoNombre}'."
+        };
+
+        return $this->enviarMensaje((int) $pedido->telegram_chat_id, $mensaje);
+    }
+
+    public function enviarTicket(Pedido $pedido, Comprobante $comprobante): bool
+    {
+        if (! $pedido->telegram_chat_id) {
+            Log::warning('[TelegramService] No hay chat vinculado para enviar el ticket.', ['pedido_id' => $pedido->id]);
+
+            return false;
+        }
+
+        if (! $comprobante->contenido_ticket) {
+            Log::warning('[TelegramService] El ticket no tiene contenido guardado.', ['pedido_id' => $pedido->id]);
+
+            return false;
+        }
+
+        $partes = [];
+        $parte = '';
+        foreach (explode("\n", $comprobante->contenido_ticket) as $linea) {
+            $siguiente = $parte === '' ? $linea : $parte."\n".$linea;
+            if (strlen(mb_convert_encoding($siguiente, 'UTF-16LE', 'UTF-8')) / 2 > 3500) {
+                if ($parte === '' || strlen(mb_convert_encoding($linea, 'UTF-16LE', 'UTF-8')) / 2 > 3500) {
+                    Log::warning('[TelegramService] Una línea del ticket supera el límite de envío.', ['pedido_id' => $pedido->id]);
+
+                    return false;
+                }
+                $partes[] = $parte;
+                $parte = $linea;
+            } else {
+                $parte = $siguiente;
+            }
+        }
+        if ($parte !== '') {
+            $partes[] = $parte;
+        }
+        foreach ($partes as $texto) {
+            if (! $this->enviarMensaje((int) $pedido->telegram_chat_id, $texto)) {
+                Log::warning('[TelegramService] No se pudo enviar el ticket completo.', ['pedido_id' => $pedido->id]);
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+}

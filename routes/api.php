@@ -6,15 +6,19 @@ use App\Http\Controllers\BorradorCheckoutController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComprobanteController;
+use App\Http\Controllers\ConfiguracionPublicaController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EstadoPagosController;
 use App\Http\Controllers\EstadoPedidoController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\PagoController;
+use App\Http\Controllers\PasswordRecoveryController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\PedidoItemController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -26,10 +30,15 @@ use Illuminate\Support\Facades\Route;
 | Consumidas por el cliente frontend (menú) y personal para iniciar sesión.
 */
 
-// Autenticación
+// Autenticación y Checkout / Bot
+Route::get('/configuracion-publica', ConfiguracionPublicaController::class);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/forgot-password', [PasswordRecoveryController::class, 'solicitar'])->middleware('throttle:password-request');
+Route::post('/reset-password', [PasswordRecoveryController::class, 'restablecer'])->middleware('throttle:password-reset');
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:10,1');
 Route::post('/checkout/borradores', [BorradorCheckoutController::class, 'store'])->middleware('throttle:10,1');
+Route::post('/pedidos/{id}/confirmar-telegram', [PedidoController::class, 'confirmarTelegram'])->middleware('throttle:30,1');
+Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])->middleware('throttle:60,1');
 
 // Catálogo (Lectura pública para armar pedidos)
 Route::get('/productos', [ProductoController::class, 'index']);
@@ -54,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+    Route::put('/profile', [UserController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Gestión de Catálogo (ABM y desactivados)
@@ -79,6 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pedidos', [PedidoController::class, 'index'])->middleware('role:Administrador,Cocinero,Repartidor');
     Route::post('/pedidos', [PedidoController::class, 'store']);
     Route::get('/pedidos/{id}', [PedidoController::class, 'show']);
+    Route::post('/pedidos/{id}/ticket/enviar', [PedidoController::class, 'reenviarTicket']);
     Route::put('/pedidos/{id}', [PedidoController::class, 'update']);
     Route::delete('/pedidos/{id}', [PedidoController::class, 'destroy']);
     Route::put('/pedidos/{id}/restore', [PedidoController::class, 'restore']);
@@ -111,39 +122,47 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/estado-pedidos-desactivados', [EstadoPedidoController::class, 'indexDesactivados']);
 
     // Finanzas y Pagos
-    Route::get('/pagos', [PagoController::class, 'index']);
-    Route::post('/pagos', [PagoController::class, 'store']);
-    Route::get('/pagos/{id}', [PagoController::class, 'show']);
-    Route::put('/pagos/{id}', [PagoController::class, 'update']);
-    Route::delete('/pagos/{id}', [PagoController::class, 'destroy']);
-    Route::put('/pagos/{id}/restore', [PagoController::class, 'restore']);
-    Route::get('/pagos-desactivados', [PagoController::class, 'indexDesactivados']);
+    Route::middleware('role:Administrador')->group(function () {
+        Route::get('/pagos', [PagoController::class, 'index']);
+        Route::post('/pagos', [PagoController::class, 'store']);
+        Route::post('/pedidos/{pedido}/pagos', [PagoController::class, 'registrarPago']);
+        Route::get('/pagos-desactivados', [PagoController::class, 'indexDesactivados']);
+        Route::get('/pagos/resumen', [PagoController::class, 'resumen']);
+        Route::get('/pagos/envios', [PagoController::class, 'resumenEnvios']);
+        Route::get('/pagos/{id}', [PagoController::class, 'show']);
+        Route::put('/pagos/{id}', [PagoController::class, 'update']);
+        Route::delete('/pagos/{id}', [PagoController::class, 'destroy']);
+        Route::put('/pagos/{id}/restore', [PagoController::class, 'restore']);
+    });
 
     Route::get('/estado-pagos', [EstadoPagosController::class, 'index']);
-    Route::post('/estado-pagos', [EstadoPagosController::class, 'store']);
+    Route::post('/estado-pagos', [EstadoPagosController::class, 'store'])->middleware('role:Administrador');
     Route::get('/estado-pagos/{id}', [EstadoPagosController::class, 'show']);
-    Route::put('/estado-pagos/{id}', [EstadoPagosController::class, 'update']);
-    Route::delete('/estado-pagos/{id}', [EstadoPagosController::class, 'destroy']);
-    Route::put('/estado-pagos/{id}/restore', [EstadoPagosController::class, 'restore']);
+    Route::put('/estado-pagos/{id}', [EstadoPagosController::class, 'update'])->middleware('role:Administrador');
+    Route::delete('/estado-pagos/{id}', [EstadoPagosController::class, 'destroy'])->middleware('role:Administrador');
+    Route::put('/estado-pagos/{id}/restore', [EstadoPagosController::class, 'restore'])->middleware('role:Administrador');
     Route::get('/estado-pagos-desactivados', [EstadoPagosController::class, 'indexDesactivados']);
 
     Route::get('/metodos-pago', [MetodoPagoController::class, 'index']);
-    Route::post('/metodos-pago', [MetodoPagoController::class, 'store']);
+    Route::post('/metodos-pago', [MetodoPagoController::class, 'store'])->middleware('role:Administrador');
     Route::get('/metodos-pago/{id}', [MetodoPagoController::class, 'show']);
-    Route::put('/metodos-pago/{id}', [MetodoPagoController::class, 'update']);
-    Route::delete('/metodos-pago/{id}', [MetodoPagoController::class, 'destroy']);
-    Route::put('/metodos-pago/{id}/restore', [MetodoPagoController::class, 'restore']);
+    Route::put('/metodos-pago/{id}', [MetodoPagoController::class, 'update'])->middleware('role:Administrador');
+    Route::delete('/metodos-pago/{id}', [MetodoPagoController::class, 'destroy'])->middleware('role:Administrador');
+    Route::put('/metodos-pago/{id}/restore', [MetodoPagoController::class, 'restore'])->middleware('role:Administrador');
     Route::get('/metodos-pago-desactivados', [MetodoPagoController::class, 'indexDesactivados']);
 
-    Route::get('/comprobantes', [ComprobanteController::class, 'index']);
-    Route::post('/comprobantes', [ComprobanteController::class, 'store']);
-    Route::get('/comprobantes/{id}', [ComprobanteController::class, 'show']);
-    Route::delete('/comprobantes/{id}', [ComprobanteController::class, 'destroy']);
-    Route::put('/comprobantes/{id}/restore', [ComprobanteController::class, 'restore']);
-    Route::get('/comprobantes-desactivados', [ComprobanteController::class, 'indexDesactivados']);
+    Route::middleware('role:Administrador')->group(function () {
+        Route::get('/comprobantes', [ComprobanteController::class, 'index']);
+        Route::post('/comprobantes', [ComprobanteController::class, 'store']);
+        Route::get('/comprobantes-desactivados', [ComprobanteController::class, 'indexDesactivados']);
+        Route::get('/comprobantes/{id}', [ComprobanteController::class, 'show']);
+        Route::delete('/comprobantes/{id}', [ComprobanteController::class, 'destroy']);
+        Route::put('/comprobantes/{id}/restore', [ComprobanteController::class, 'restore']);
+    });
 
     // Administración General (Restringido a Administrador / SuperAdmin)
     Route::middleware('role:Administrador')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'resumen']);
         Route::put('/pedidos/{id}/asignaciones', [PedidoController::class, 'asignarPersonal']);
 
         // Roles

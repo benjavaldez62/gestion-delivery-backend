@@ -16,6 +16,46 @@ use Symfony\Contracts\Service\Attribute\Required;
 
 class UserController extends Controller
 {
+    #[OA\Put(
+        path: '/api/profile',
+        summary: 'Actualizar el perfil del usuario autenticado',
+        tags: ['Usuarios'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['name', 'email'],
+                properties: [
+                    new OA\Property(property: 'name', type: 'string', maxLength: 25, example: 'Marta Duglas'),
+                    new OA\Property(property: 'email', type: 'string', format: 'email', maxLength: 255, pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$', example: 'marta@ejemplo.com'),
+                    new OA\Property(property: 'telefono', type: 'string', nullable: true, maxLength: 26, pattern: '^\\+?[0-9]{1,25}$', example: '+5493455124468'),
+                    new OA\Property(property: 'direccion', type: 'string', nullable: true, maxLength: 25, example: 'SM de Oro 79'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Perfil actualizado correctamente.'),
+            new OA\Response(response: 401, description: 'No autenticado.'),
+            new OA\Response(response: 422, description: 'Los datos proporcionados no son válidos.'),
+        ]
+    )]
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:25', 'regex:/\S/'],
+            'email' => ['required', 'string', 'email', 'regex:/^[^\s@]+@[^\s@]+\.[^\s@]+$/', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'telefono' => ['nullable', 'string', 'regex:/^\+?[0-9]{1,25}$/'],
+            'direccion' => ['nullable', 'string', 'max:25', 'regex:/\S/'],
+        ]);
+
+        $user->fill($validated)->save();
+
+        return response()->json([
+            'message' => 'Perfil actualizado correctamente.',
+            'user' => new UserResource($user->load('role')),
+        ]);
+    }
+
     /* ==============
     *   MOSTRAR TODO
     *  ============== */
@@ -384,24 +424,56 @@ class UserController extends Controller
             new OA\Response(response: 500, description: 'Error al intentar eliminar al usuario.'),
         ]
     )]
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         try {
-            // Verificar que el ID sea válido
+            // Traemos el user autenticado
+            $authUser = $request->user();
+
+            // Importante 1 - ID debe ser válido
             if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
                     'message' => 'El ID del usuario no es válido.',
                 ], 422);
             }
 
-            // Buscamos el usuario a eliminar
-            $user = User::findOrFail($id);
+            // Buscamos el usuario a eliminar (find devuelve null para responder 404 en lugar de 500)
+            $user = User::with('role')->find($id);
 
-            // Verificamos si el usuario existe antes de eliminarlo
+            // Importante 2 - Verificamos si el usuario existe antes de eliminarlo
             if (! $user) {
                 return response()->json([
                     'message' => 'Usuario no encontrado.'
                 ], 404);
+            }
+
+            // Importante 3 - NO se permite la auto-eliminación
+            if ($authUser->id === $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No puedes eliminar tu propio usuario.',
+                ], 403);
+            }
+
+            // Roles en minúsculas: del autenticado y del que se quiere eliminar
+            $authRole = strtolower($authUser->role?->nombre ?? '');
+            $userRole = strtolower($user->role?->nombre ?? '');
+
+
+            // 1er validación: NADIE puede eliminar a un superadmin
+            if ($userRole === 'superadmin') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No puedes eliminar a un superadmin.'
+                ], 403);
+            }
+
+            // 2da validación: solo un superadmin puede borrar a un admin
+            if ($userRole === 'administrador' && $authRole !== 'superadmin') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No puedes eliminar a un administrador.'
+                ], 403);
             }
 
             // Cambiamos la disponibilidad a 'false' antes de eliminarlo
@@ -431,7 +503,7 @@ class UserController extends Controller
     /* =============
     *   RESTAURAR
     *  ============= */
-        #[OA\Put(
+    #[OA\Put(
         path: '/api/users/{id}/restore',
         summary: 'Restaurar un usuario eliminado',
         tags: ['Usuarios'],
@@ -492,7 +564,6 @@ class UserController extends Controller
                 'message' => 'Usuario restaurado correctamente.',
                 'user' => new UserResource($user)
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al intentar restaurar al usuario.',
@@ -516,10 +587,11 @@ class UserController extends Controller
             new OA\Response(response: 500, description: 'Error al intentar obtener los usuarios desactivados.'),
         ],
     )]
-    public function indexDesactivados() {
+    public function indexDesactivados()
+    {
         try {
             // llamamos lo inhabilitado
-            $usersDesactivados = User::onlyTrashed()->get();
+            $usersDesactivados = User::with('role')->onlyTrashed()->get();
 
             // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
             if ($usersDesactivados->isEmpty()) {
@@ -533,12 +605,12 @@ class UserController extends Controller
                 'message' => 'Usuarios desactivados obtenidos correctamente.',
                 'usuariosDesactivados' => UserResource::collection($usersDesactivados)
             ], 200);
-        } catch (\Exception $e){
+        } catch (\Exception $e) {
             // Caso 500: Falla en el servidor -> retornamos mensaje.
             return response()->json([
                 'message' => 'Error al intentar obtener los usuarios desactivados.',
-                'error' => $e->getMessage() 
-            ], 500); 
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

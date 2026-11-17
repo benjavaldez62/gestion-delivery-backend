@@ -26,7 +26,10 @@ class DatabaseSeeder extends Seeder
             PedidoSeeder::class,
             PedidoItemSeeder::class,
             EstadoPagoSeeder::class,
-            // PagoSeeder::class,
         ]);
+
+        if (app()->environment('testing')) {
+            $this->call(PagoSeeder::class);
+        }
     }
 }

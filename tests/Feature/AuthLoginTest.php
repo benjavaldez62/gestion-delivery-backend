@@ -106,3 +106,12 @@ it('valida el formato del email', function () {
     ])->assertUnprocessable()
         ->assertJsonPath('errors.email.0', 'El correo electrónico debe ser una dirección válida.');
 });
+
+it('rechaza el login con Google cuando GOOGLE_CLIENT_ID no está configurado', function () {
+    config(['services.google.client_id' => '']);
+
+    $this->postJson('/api/auth/google', [
+        'idToken' => 'token-falso',
+    ])->assertStatus(503)
+        ->assertJsonPath('success', false);
+});
