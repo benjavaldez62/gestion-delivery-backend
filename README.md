@@ -377,8 +377,8 @@ Disparadas por `TelegramService@notificarCambioEstado`:
 
 El backend configura CORS en `config/cors.php` sobre `api/*` y `sanctum/csrf-cookie`:
 
-- **Orígenes autorizados:** `http://localhost:4200`, `http://127.0.0.1:4200` y el origen configurado en `FRONTEND_URL`.
-- **Patrones regex permitidos:** `#^http://localhost:\d+$#` y `#^http://127\.0\.0\.1:\d+$#`.
+- **Orígenes autorizados:** `http://localhost:4200`, `http://127.0.0.1:4200`, el origen definido en `FRONTEND_URL` y los orígenes adicionales separados por coma declarados en `CORS_ALLOWED_ORIGINS`.
+- **Patrones regex permitidos:** `#^http://localhost:\d+$#` y `#^http://127\.0\.0\.1:\d+$#` por defecto. Al definir `CORS_ALLOW_LAN=true` en `.env` (deshabilitado por defecto con `false`), se habilitan además los rangos privados RFC 1918 sobre HTTP (`192.168.x.x`, `10.x.x.x` y `172.16.x.x` a `172.31.x.x` con puerto).
 - **Métodos admitidos:** `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`.
 - **Cabeceras permitidas:** `Authorization`, `Content-Type`, `Accept`, `X-Requested-With`, `X-XSRF-TOKEN`, `Origin`.
 - **Cabecera expuesta:** `Authorization`.
@@ -472,6 +472,8 @@ Configurar en `.env` según el entorno local:
 ```env
 APP_URL=http://127.0.0.1:8000
 FRONTEND_URL=http://localhost:4200
+CORS_ALLOWED_ORIGINS=
+CORS_ALLOW_LAN=false
 PAGOS_TIMEZONE=America/Argentina/Buenos_Aires
 
 DB_CONNECTION=mysql
@@ -501,11 +503,30 @@ php artisan migrate --seed
 
 ### 6. Iniciar el servidor de desarrollo
 
+**Modo 100% local (`localhost` / `127.0.0.1`):**
+
 ```bash
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
 La API quedará disponible en `http://127.0.0.1:8000` y Swagger UI en `http://127.0.0.1:8000/api/documentation`.
+
+**Modo escucha en red local (LAN / múltiples dispositivos):**
+
+Para permitir conexiones desde celulares u otras computadoras conectadas a la misma red local:
+
+```bash
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+Consideraciones para acceso en red local:
+1. Consultar la IP local del equipo servidor (`ipconfig` en Windows o `hostname -I` en Linux/macOS, por ejemplo `192.168.1.50`).
+2. Configurar `.env` para autorizar el origen LAN en `config/cors.php` usando alguna de estas alternativas:
+   - Habilitar todos los rangos privados RFC 1918 con `CORS_ALLOW_LAN=true`.
+   - O autorizar orígenes puntuales mediante `FRONTEND_URL=http://<IP-LOCAL>:4200` y/o `CORS_ALLOWED_ORIGINS=http://<IP-LOCAL>:4200` (admite varios orígenes separados por coma).
+3. Ejecutar `php artisan config:clear` si la configuración estaba cacheada.
+4. Permitir tráfico entrante en el puerto TCP `8000` en el firewall del equipo si el sistema operativo lo bloquea en red privada.
+5. La API responderá en `http://<IP-LOCAL>:8000`.
 
 ---
 
