@@ -40,9 +40,7 @@ class TelegramWebhookController extends Controller
             return response()->json(['status' => 'ignored', 'message' => 'No chat_id or text provided'], 200);
         }
 
-        $frontendUrl = rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:4200')), '/');
-        // Si la URL es localhost o 127.0.0.1, usamos lvh.me (resuelve automáticamente a 127.0.0.1) para que Telegram lo active como enlace web clickeable
-        $frontendTelegramUrl = preg_replace('/(localhost|127\.0\.0\.1)/i', 'lvh.me', $frontendUrl);
+        $frontendUrl = rtrim((string) config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:4200')), '/');
 
         // Comando /estado o /mispedidos: consultar último pedido
         if (preg_match('/^\/?(estado|mispedidos|mis_pedidos)/i', $text)) {
@@ -62,23 +60,18 @@ class TelegramWebhookController extends Controller
         if (! $pedidoId) {
             // Anti-spam de saludo con Cache (evita enviar mensaje largo repetidas veces al mismo chat)
             $cacheKey = "tg_welcome_sent_{$chatId}";
-            $tecladoPrincipal = [
-                'keyboard' => [
-                    [['text' => '📦 ¿Cómo viene mi pedido?'], ['text' => '🌐 Ver Menú']],
-                ],
-                'resize_keyboard' => true,
-            ];
+            $tecladoPrincipal = $this->tecladoPrincipal();
 
             if (preg_match('/men[uú]/i', $text)) {
-                $urlMenu = "{$frontendTelegramUrl}/menu";
+                $urlMenu = "{$frontendUrl}/menu";
+                $enlaceMenu = $this->esUrlPublicaParaTelegram($urlMenu)
+                    ? "<a href=\"{$urlMenu}\">{$urlMenu}</a>"
+                    : "<code>{$urlMenu}</code>";
+
                 $this->telegramService->enviarMensaje(
                     (int) $chatId,
-                    "🍕 <b>Menú Online — La Posta Delivery</b>\n\nPodés explorar todos nuestros platos, promociones y hacer tu pedido ingresando a:\n👉 <a href=\"{$urlMenu}\">{$urlMenu}</a>",
-                    [
-                        'inline_keyboard' => [
-                            [['text' => '🌐 Abrir Menú Online', 'url' => $urlMenu]],
-                        ],
-                    ]
+                    "🍕 <b>Menú Online — La Posta Delivery</b>\n\nPodés explorar todos nuestros platos, promociones y hacer tu pedido ingresando a:\n👉 {$enlaceMenu}",
+                    $this->construirReplyMarkupWeb('🌐 Abrir Menú Online', $urlMenu)
                 );
 
                 return response()->json(['status' => 'menu_sent'], 200);
@@ -111,11 +104,7 @@ class TelegramWebhookController extends Controller
             $this->telegramService->enviarMensaje(
                 (int) $chatId,
                 "⚠️ No pudimos encontrar el <b>Pedido #{$pedidoId}</b>. Por favor verificá el número ingresado.",
-                [
-                    'inline_keyboard' => [
-                        [['text' => '🌐 Ir a La Posta Web', 'url' => $frontendUrl]],
-                    ],
-                ]
+                $this->construirReplyMarkupWeb('🌐 Ir a La Posta Web', $frontendUrl)
             );
 
             return response()->json(['status' => 'not_found', 'pedido_id' => $pedidoId], 200);
@@ -128,11 +117,7 @@ class TelegramWebhookController extends Controller
             $this->telegramService->enviarMensaje(
                 (int) $chatId,
                 "ℹ️ El <b>Pedido #{$pedidoId}</b> ya se encuentra registrado con estado: <b>{$pedido->estadoPedido?->nombre}</b>.",
-                [
-                    'inline_keyboard' => [
-                        [['text' => '📦 Consultar Estado Actual', 'callback_data' => "estado_{$pedido->id}"], ['text' => '🌐 Abrir Web', 'url' => $frontendUrl]],
-                    ],
-                ]
+                $this->construirReplyMarkupWeb('🌐 Abrir Web', $frontendUrl)
             );
 
             return response()->json(['status' => 'already_confirmed', 'estado' => $pedido->estadoPedido?->nombre], 200);
@@ -172,24 +157,19 @@ class TelegramWebhookController extends Controller
         });
 
         if (! $pedido) {
-            $this->telegramService->enviarMensaje((int) $chatId, "ℹ️ El <b>Pedido #{$pedidoId}</b> ya se encuentra confirmado.");
+            $this->telegramService->enviarMensaje(
+                (int) $chatId,
+                "ℹ️ El <b>Pedido #{$pedidoId}</b> ya se encuentra confirmado.",
+                $this->construirReplyMarkupWeb('🌐 Abrir Web', $frontendUrl)
+            );
 
             return response()->json(['status' => 'already_confirmed'], 200);
         }
 
-        // Responder confirmación amigable con Inline Keyboard interactivo
-        $botonesConfirmacion = [
-            'inline_keyboard' => [
-                [
-                    ['text' => '🌐 Ver en la Web', 'url' => "{$frontendTelegramUrl}/carrito"],
-                ],
-            ],
-        ];
-
         $this->telegramService->enviarMensaje(
             (int) $chatId,
             "⏳ <b>Pedido #{$pedido->id}:</b> En unos instantes se confirmará su pedido.\n\n💰 Total: <b>$".number_format((float) $pedido->monto_total, 2, ',', '.')."</b>\n\nTe iremos notificando por acá cada avance (en cocina, empaque y en camino con el repartidor).",
-            $botonesConfirmacion
+            $this->construirReplyMarkupWeb('🌐 Ver en la Web', "{$frontendUrl}/carrito")
         );
 
         return response()->json([
@@ -197,6 +177,63 @@ class TelegramWebhookController extends Controller
             'pedido_id' => $pedido->id,
             'estado' => 'Sin Asignar',
         ], 200);
+    }
+
+    /**
+     * Construye el teclado de respuestas rápidas principal del bot.
+     */
+    protected function tecladoPrincipal(): array
+    {
+        return [
+            'keyboard' => [
+                [['text' => '📦 ¿Cómo viene mi pedido?'], ['text' => '🌐 Ver Menú']],
+            ],
+            'resize_keyboard' => true,
+        ];
+    }
+
+    /**
+     * Determina si una URL es pública y válida para ser enviada dentro de un botón inline de Telegram.
+     */
+    protected function esUrlPublicaParaTelegram(string $url): bool
+    {
+        $componentes = parse_url($url);
+        if (! is_array($componentes)) {
+            return false;
+        }
+
+        $esquema = strtolower((string) ($componentes['scheme'] ?? ''));
+        $host = strtolower(trim((string) ($componentes['host'] ?? ''), '[]'));
+
+        if (! in_array($esquema, ['http', 'https'], true) || $host === '') {
+            return false;
+        }
+
+        if (in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
+            return false;
+        }
+
+        if (str_ends_with($host, '.localhost') || str_ends_with($host, '.local')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Construye un botón inline con enlace web si la URL es pública; en entornos locales devuelve el teclado principal.
+     */
+    protected function construirReplyMarkupWeb(string $textoBoton, string $url): array
+    {
+        if ($this->esUrlPublicaParaTelegram($url)) {
+            return [
+                'inline_keyboard' => [
+                    [['text' => $textoBoton, 'url' => $url]],
+                ],
+            ];
+        }
+
+        return $this->tecladoPrincipal();
     }
 
     /**
@@ -213,11 +250,7 @@ class TelegramWebhookController extends Controller
             $this->telegramService->enviarMensaje(
                 $chatId,
                 "🔍 No encontramos ningún pedido vinculado a este chat de Telegram.\nSi hiciste un pedido en la web, envianos el mensaje con el número de orden (ej: <code>Pedido #12</code>) para vincularlo.",
-                [
-                    'inline_keyboard' => [
-                        [['text' => '🌐 Ir al Menú Online', 'url' => $frontendUrl]],
-                    ],
-                ]
+                $this->construirReplyMarkupWeb('🌐 Ir al Menú Online', $frontendUrl)
             );
 
             return response()->json(['status' => 'no_orders_found'], 200);
@@ -238,11 +271,7 @@ class TelegramWebhookController extends Controller
         $this->telegramService->enviarMensaje(
             $chatId,
             "📦 <b>Estado de tu Pedido #{$ultimoPedido->id}:</b>\n\n{$emoji} Estado actual: <b>{$estadoNombre}</b>\n💰 Total: <b>$".number_format((float) $ultimoPedido->monto_total, 2, ',', '.').'</b>',
-            [
-                'inline_keyboard' => [
-                    [['text' => '🌐 Abrir La Posta Web', 'url' => $frontendUrl]],
-                ],
-            ]
+            $this->construirReplyMarkupWeb('🌐 Abrir La Posta Web', $frontendUrl)
         );
 
         return response()->json(['status' => 'order_status_sent', 'pedido_id' => $ultimoPedido->id, 'estado' => $estadoNombre], 200);
