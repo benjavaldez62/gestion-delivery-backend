@@ -2,9 +2,13 @@
 
 use App\Models\Categoria;
 use App\Models\Cliente;
+use App\Models\EstadoPagos;
 use App\Models\EstadoPedido;
+use App\Models\Pago;
 use App\Models\Pedido;
 use App\Models\Producto;
+use App\Models\Role;
+use App\Models\User;
 use App\Services\TelegramService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -369,4 +373,191 @@ it('adjunta inline_keyboard con URL publica HTTPS cuando FRONTEND_URL es publica
         return str_contains($request['text'], 'No pudimos encontrar el <b>Pedido #999</b>')
             && ($request['reply_markup']['inline_keyboard'][0][0]['url'] ?? null) === 'https://laposta.example.com';
     });
+});
+
+it('permite cancelar un pedido desde Telegram en estado Sin Asignar o Pendiente y anula el pago pendiente', function (string $estadoInicial) {
+    Http::fake();
+
+    EstadoPedido::firstOrCreate(['nombre' => 'Cancelado'], ['descripcion' => 'El pedido fue cancelado']);
+    $pedidoId = crearPrePedidoParaTelegram();
+    $chatId = 801001;
+
+    // Confirmar el pre-pedido para vincular el chat y registrar el pago pendiente en efectivo
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => "/start {$pedidoId}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    $pedido = Pedido::findOrFail($pedidoId);
+    if ($estadoInicial !== 'Sin Asignar') {
+        $estado = EstadoPedido::firstOrCreate(['nombre' => $estadoInicial]);
+        $pedido->update(['estado_pedidos_id' => $estado->id]);
+    }
+
+    $pago = Pago::where('pedido_id', $pedidoId)->firstOrFail();
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => '❌ Cancelar mi pedido',
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'cancelled')
+        ->assertJsonPath('pedido_id', $pedidoId)
+        ->assertJsonPath('estado', 'Cancelado');
+
+    expect($pedido->fresh()->estadoPedido->nombre)->toBe('Cancelado')
+        ->and(Pago::find($pago->id))->toBeNull()
+        ->and(Pago::withTrashed()->findOrFail($pago->id)->trashed())->toBeTrue();
+
+    Http::assertSent(function ($request) use ($chatId, $pedidoId) {
+        return $request['chat_id'] === $chatId
+            && str_contains($request['text'], "Pedido #{$pedidoId} cancelado correctamente")
+            && isset($request['reply_markup']['keyboard']);
+    });
+
+    // Reintentar cancelación informa que ya se encuentra cancelado
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => "Cancelar pedido #{$pedidoId}",
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'already_cancelled')
+        ->assertJsonPath('pedido_id', $pedidoId);
+})->with(['Sin Asignar', 'Pendiente']);
+
+it('rechaza cancelar desde Telegram cuando el pedido ya pasó a En preparación, Listo para entregar o En camino', function (string $estadoBloqueado) {
+    Http::fake();
+
+    EstadoPedido::firstOrCreate(['nombre' => 'Cancelado'], ['descripcion' => 'El pedido fue cancelado']);
+    $pedidoId = crearPrePedidoParaTelegram();
+    $chatId = 802002;
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => "/start {$pedidoId}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    $estado = EstadoPedido::firstOrCreate(['nombre' => $estadoBloqueado]);
+    $pedido = Pedido::findOrFail($pedidoId);
+    $pedido->update(['estado_pedidos_id' => $estado->id]);
+    $pago = Pago::where('pedido_id', $pedidoId)->firstOrFail();
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => '❌ Cancelar mi pedido',
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'cancel_not_allowed')
+        ->assertJsonPath('pedido_id', $pedidoId)
+        ->assertJsonPath('estado', $estadoBloqueado);
+
+    expect($pedido->fresh()->estadoPedido->nombre)->toBe($estadoBloqueado)
+        ->and(Pago::find($pago->id))->not->toBeNull();
+
+    Http::assertSent(function ($request) use ($chatId, $pedidoId, $estadoBloqueado) {
+        return $request['chat_id'] === $chatId
+            && str_contains($request['text'], "No se puede cancelar el <b>Pedido #{$pedidoId}</b>")
+            && str_contains($request['text'], $estadoBloqueado)
+            && str_contains($request['text'], 'antes de que pase a preparación');
+    });
+})->with(['En preparación', 'Listo para entregar', 'En camino']);
+
+it('impide que otro chat_id cancele un pedido ajeno mediante /cancelar <id>', function () {
+    Http::fake();
+
+    EstadoPedido::firstOrCreate(['nombre' => 'Cancelado'], ['descripcion' => 'El pedido fue cancelado']);
+    $pedidoId = crearPrePedidoParaTelegram();
+    $chatPropietario = 803003;
+    $chatIntruso = 803999;
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatPropietario],
+            'text' => "/start {$pedidoId}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatIntruso],
+            'text' => "/cancelar {$pedidoId}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'no_orders_found');
+
+    expect(Pedido::findOrFail($pedidoId)->estadoPedido->nombre)->toBe('Sin Asignar');
+});
+
+it('no cancela desde Telegram un pedido que ya tiene un pago confirmado', function () {
+    Http::fake();
+
+    EstadoPedido::firstOrCreate(['nombre' => 'Cancelado'], ['descripcion' => 'El pedido fue cancelado']);
+    $pedidoId = crearPrePedidoParaTelegram();
+    $chatId = 804004;
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => "/start {$pedidoId}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    $estadoPagado = EstadoPagos::firstOrCreate(['nombre' => 'Pagado']);
+    $pago = Pago::where('pedido_id', $pedidoId)->firstOrFail();
+    $pago->update(['estado_pago_id' => $estadoPagado->id, 'fecha_pago' => now()->toDateString()]);
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => '❌ Cancelar mi pedido',
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'cancel_not_allowed')
+        ->assertJsonPath('pedido_id', $pedidoId);
+
+    expect(Pedido::findOrFail($pedidoId)->estadoPedido->nombre)->toBe('Sin Asignar')
+        ->and(Pago::find($pago->id))->not->toBeNull();
+});
+
+it('PUT /api/pedidos/{id} rechaza pasar a Cancelado con HTTP 400 desde En preparación, Listo para entregar o En camino y permite Sin Asignar o Pendiente', function () {
+    Http::fake();
+
+    $rolAdmin = Role::firstOrCreate(['nombre' => 'Administrador']);
+    $admin = User::factory()->create(['role_id' => $rolAdmin->id, 'activo' => true]);
+    $estadoCancelado = EstadoPedido::firstOrCreate(['nombre' => 'Cancelado'], ['descripcion' => 'El pedido fue cancelado']);
+
+    $this->actingAs($admin, 'sanctum');
+
+    foreach (['En preparación', 'Listo para entregar', 'En camino'] as $estadoBloqueado) {
+        $pedidoId = crearPrePedidoParaTelegram();
+        $estado = EstadoPedido::firstOrCreate(['nombre' => $estadoBloqueado]);
+        $pedido = Pedido::findOrFail($pedidoId);
+        $pedido->update(['estado_pedidos_id' => $estado->id]);
+
+        $this->putJson("/api/pedidos/{$pedidoId}", [
+            'estado_pedidos_id' => $estadoCancelado->id,
+        ])->assertStatus(400)
+            ->assertJsonPath('message', 'Solo se puede cancelar un pedido antes de que pase a En preparación.');
+
+        expect($pedido->fresh()->estadoPedido->nombre)->toBe($estadoBloqueado);
+    }
+
+    foreach (['Sin Asignar', 'Pendiente'] as $estadoPermitido) {
+        $pedidoId = crearPrePedidoParaTelegram();
+        $estado = EstadoPedido::firstOrCreate(['nombre' => $estadoPermitido]);
+        $pedido = Pedido::findOrFail($pedidoId);
+        $pedido->update(['estado_pedidos_id' => $estado->id]);
+
+        $this->putJson("/api/pedidos/{$pedidoId}", [
+            'estado_pedidos_id' => $estadoCancelado->id,
+        ])->assertOk();
+
+        expect($pedido->fresh()->estadoPedido->nombre)->toBe('Cancelado');
+    }
 });

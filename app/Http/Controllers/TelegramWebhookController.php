@@ -47,6 +47,11 @@ class TelegramWebhookController extends Controller
             return $this->consultarUltimoEstado((int) $chatId, $frontendUrl);
         }
 
+        // Comando o botón de cancelación (antes de extraer números de pedido para evitar confirmar al escribir "Cancelar pedido #N")
+        if (preg_match('/^\/?cancelar\b/i', $text) || preg_match('/cancelar\s+(mi\s+)?pedido/i', $text)) {
+            return $this->cancelarPedidoDesdeTelegram((int) $chatId, $text);
+        }
+
         // Buscar si el texto contiene "/start <id>" o "Pedido #<id>" o un número de pedido directo
         $pedidoId = null;
         if (preg_match('/\/start\s+(\d+)/i', $text, $matches)) {
@@ -187,6 +192,7 @@ class TelegramWebhookController extends Controller
         return [
             'keyboard' => [
                 [['text' => '📦 ¿Cómo viene mi pedido?'], ['text' => '🌐 Ver Menú']],
+                [['text' => '❌ Cancelar mi pedido']],
             ],
             'resize_keyboard' => true,
         ];
@@ -275,5 +281,147 @@ class TelegramWebhookController extends Controller
         );
 
         return response()->json(['status' => 'order_status_sent', 'pedido_id' => $ultimoPedido->id, 'estado' => $estadoNombre], 200);
+    }
+
+    /**
+     * Cancela un pedido vinculado al chat actual siempre que aún no haya pasado a preparación.
+     */
+    protected function cancelarPedidoDesdeTelegram(int $chatId, string $text): JsonResponse
+    {
+        $pedidoIdSolicitado = null;
+        if (preg_match('/\b(\d+)\b/', $text, $matches)) {
+            $pedidoIdSolicitado = (int) $matches[1];
+        }
+
+        $pedidoEncontrado = $pedidoIdSolicitado !== null
+            ? Pedido::where('id', $pedidoIdSolicitado)
+                ->where('telegram_chat_id', $chatId)
+                ->first()
+            : Pedido::where('telegram_chat_id', $chatId)
+                ->orderBy('id', 'desc')
+                ->first();
+
+        if (! $pedidoEncontrado) {
+            $mensajeNoEncontrado = $pedidoIdSolicitado !== null
+                ? "⚠️ No pudimos encontrar el <b>Pedido #{$pedidoIdSolicitado}</b> vinculado a este chat de Telegram."
+                : '🔍 No encontramos ningún pedido vinculado a este chat de Telegram para cancelar.';
+
+            $this->telegramService->enviarMensaje($chatId, $mensajeNoEncontrado, $this->tecladoPrincipal());
+
+            return response()->json(['status' => 'no_orders_found'], 200);
+        }
+
+        $resultado = DB::transaction(function () use ($pedidoEncontrado, $chatId): array {
+            $pedido = Pedido::with('estadoPedido')
+                ->where('id', $pedidoEncontrado->id)
+                ->where('telegram_chat_id', $chatId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $pedido) {
+                return ['status' => 'no_orders_found'];
+            }
+
+            $estadoNombre = $pedido->estadoPedido?->nombre ?? 'Desconocido';
+            $estadoActual = mb_strtolower(trim($estadoNombre));
+
+            if ($estadoActual === 'cancelado') {
+                return [
+                    'status' => 'already_cancelled',
+                    'pedido_id' => $pedido->id,
+                    'estado' => $estadoNombre,
+                ];
+            }
+
+            if (! in_array($estadoActual, ['pre-pedido', 'sin asignar', 'pendiente'], true)) {
+                return [
+                    'status' => 'cancel_not_allowed',
+                    'pedido_id' => $pedido->id,
+                    'estado' => $estadoNombre,
+                    'motivo' => 'estado',
+                ];
+            }
+
+            $pagos = $pedido->pagos()
+                ->with(['estadoPago', 'comprobantes'])
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($pagos as $pago) {
+                $estadoPago = mb_strtolower(trim($pago->estadoPago?->nombre ?? ''));
+                if (! in_array($estadoPago, ['pendiente', 'fallido'], true) || $pago->comprobantes->isNotEmpty()) {
+                    return [
+                        'status' => 'cancel_not_allowed',
+                        'pedido_id' => $pedido->id,
+                        'estado' => $estadoNombre,
+                        'motivo' => 'pago',
+                    ];
+                }
+            }
+
+            foreach ($pagos as $pago) {
+                $pago->delete();
+            }
+
+            $estadoCancelado = EstadoPedido::whereRaw('LOWER(TRIM(nombre)) = ?', ['cancelado'])->firstOrFail();
+            $pedido->estado_pedidos_id = $estadoCancelado->id;
+            $pedido->save();
+
+            return [
+                'status' => 'cancelled',
+                'pedido_id' => $pedido->id,
+                'estado' => 'Cancelado',
+            ];
+        });
+
+        if ($resultado['status'] === 'no_orders_found') {
+            $this->telegramService->enviarMensaje(
+                $chatId,
+                '🔍 No encontramos ningún pedido vinculado a este chat de Telegram para cancelar.',
+                $this->tecladoPrincipal()
+            );
+
+            return response()->json(['status' => 'no_orders_found'], 200);
+        }
+
+        if ($resultado['status'] === 'already_cancelled') {
+            $this->telegramService->enviarMensaje(
+                $chatId,
+                "ℹ️ El <b>Pedido #{$resultado['pedido_id']}</b> ya se encuentra cancelado.",
+                $this->tecladoPrincipal()
+            );
+
+            return response()->json([
+                'status' => 'already_cancelled',
+                'pedido_id' => $resultado['pedido_id'],
+                'estado' => $resultado['estado'],
+            ], 200);
+        }
+
+        if ($resultado['status'] === 'cancel_not_allowed') {
+            $mensajeRechazo = ($resultado['motivo'] ?? 'estado') === 'pago'
+                ? "⚠️ No se puede cancelar el <b>Pedido #{$resultado['pedido_id']}</b> porque ya registra un pago confirmado o facturado."
+                : "⚠️ No se puede cancelar el <b>Pedido #{$resultado['pedido_id']}</b> porque ya se encuentra en estado <b>{$resultado['estado']}</b>. Solo se puede cancelar antes de que pase a preparación.";
+
+            $this->telegramService->enviarMensaje($chatId, $mensajeRechazo, $this->tecladoPrincipal());
+
+            return response()->json([
+                'status' => 'cancel_not_allowed',
+                'pedido_id' => $resultado['pedido_id'],
+                'estado' => $resultado['estado'],
+            ], 200);
+        }
+
+        $this->telegramService->enviarMensaje(
+            $chatId,
+            "❌ <b>Pedido #{$resultado['pedido_id']} cancelado correctamente.</b>\nSi querés hacer un nuevo pedido, tocá <b>🌐 Ver Menú</b>.",
+            $this->tecladoPrincipal()
+        );
+
+        return response()->json([
+            'status' => 'cancelled',
+            'pedido_id' => $resultado['pedido_id'],
+            'estado' => 'Cancelado',
+        ], 200);
     }
 }
