@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PedidoController extends Controller
 {
@@ -340,6 +341,7 @@ class PedidoController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: 'Pedido actualizado correctamente.'),
+            new OA\Response(response: 400, description: 'Transición de estado no permitida.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 404, description: 'Pedido no encontrado.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
@@ -433,10 +435,11 @@ class PedidoController extends Controller
 
             [$pedido, $cambioEstado] = DB::transaction(function () use ($id, $validated) {
                 $pedido = Pedido::with('estadoPedido')->lockForUpdate()->findOrFail($id);
-                if (mb_strtolower(trim($pedido->estadoPedido?->nombre ?? '')) === 'entregado') {
+                $estadoActual = mb_strtolower(trim($pedido->estadoPedido?->nombre ?? ''));
+                if ($estadoActual === 'entregado') {
                     throw ValidationException::withMessages(['pedido' => 'No se puede modificar un pedido entregado.']);
                 }
-                if (mb_strtolower(trim($pedido->estadoPedido?->nombre ?? '')) === 'cancelado') {
+                if ($estadoActual === 'cancelado') {
                     throw ValidationException::withMessages(['pedido' => 'No se puede modificar un pedido cancelado.']);
                 }
                 if ($pedido->pagos()->exists() &&
@@ -453,6 +456,9 @@ class PedidoController extends Controller
                 if ($cambioEstado) {
                     $destino = EstadoPedido::findOrFail($validated['estado_pedidos_id']);
                     if (mb_strtolower(trim($destino->nombre)) === 'cancelado') {
+                        if (! in_array($estadoActual, ['pre-pedido', 'sin asignar', 'pendiente'], true)) {
+                            throw new HttpException(400, 'Solo se puede cancelar un pedido antes de que pase a En preparación.');
+                        }
                         $pagos = $pedido->pagos()->with('estadoPago')->lockForUpdate()->get();
                         foreach ($pagos as $pago) {
                             if (! in_array(mb_strtolower(trim($pago->estadoPago?->nombre ?? '')), ['pendiente', 'fallido'], true)
@@ -482,6 +488,10 @@ class PedidoController extends Controller
             ], 404);
         } catch (AuthorizationException $e) {
             return response()->json(['message' => 'No tenés permiso para confirmar esta entrega.'], 403);
+        } catch (HttpException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], $e->getStatusCode());
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => collect($e->errors())->flatten()->first() ?? 'Error de validación.',
