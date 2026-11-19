@@ -23,5 +23,9 @@ class RoleSeeder extends Seeder
             'nombre' => 'Repartidor',
             'descripcion' => 'Entrega de pedidos a los clientes',
         ]);
+        Role::create([
+            'nombre' => 'SuperAdmin',
+            'descripcion' => 'Tiene acceso a todos los menus y funcionalidades del sistema',
+        ]);
     }
 }

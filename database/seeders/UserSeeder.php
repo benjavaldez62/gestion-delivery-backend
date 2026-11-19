@@ -63,5 +63,12 @@ class UserSeeder extends Seeder
             'role_id' => 3, // Repartidor
             'activo' => true,
         ]);
+        User::create([
+            'name' => 'SuperAdmin',
+            'email' => 'superadmin@test.com',
+            'password' => bcrypt('12345678'),
+            'role_id' => 4, // SuperAdmin
+            'activo' => true,
+        ]);
     }
 }
