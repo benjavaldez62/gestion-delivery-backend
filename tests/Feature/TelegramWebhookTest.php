@@ -713,3 +713,201 @@ it('cancela unicamente el pedido indicado con /cancelar_<id> y al quedar uno can
         ->and(Pago::find($pago1->id))->toBeNull()
         ->and(Pago::withTrashed()->findOrFail($pago1->id)->trashed())->toBeTrue();
 });
+
+it('lista comandos clickeables /estado_<id> solo de pedidos activos del chat o username y excluye entregados, cancelados o pre-pedidos', function () {
+    Http::fake();
+
+    $estadoEnPreparacion = EstadoPedido::firstOrCreate(['nombre' => 'En preparación'], ['descripcion' => 'En cocina']);
+    $estadoEnCamino = EstadoPedido::firstOrCreate(['nombre' => 'En camino'], ['descripcion' => 'En reparto']);
+    $estadoEntregado = EstadoPedido::firstOrCreate(['nombre' => 'Entregado'], ['descripcion' => 'Entregado']);
+    $estadoCancelado = EstadoPedido::firstOrCreate(['nombre' => 'Cancelado'], ['descripcion' => 'Cancelado']);
+
+    $chatId = 807007;
+    $chatAlternoMismoUser = 807099;
+    $otroChatId = 807888;
+
+    $pedidoPre = crearPrePedidoParaTelegram();
+    Pedido::findOrFail($pedidoPre)->update([
+        'telegram_chat_id' => $chatId,
+        'telegram_username' => 'benja_tg',
+    ]);
+
+    $pedidoEntregado = crearPrePedidoParaTelegram();
+    $pedidoCancelado = crearPrePedidoParaTelegram();
+    $pedidoActivo1 = crearPrePedidoParaTelegram();
+    $pedidoActivo2 = crearPrePedidoParaTelegram();
+    $pedidoAjeno = crearPrePedidoParaTelegram();
+
+    foreach ([$pedidoEntregado, $pedidoCancelado, $pedidoActivo1] as $id) {
+        $this->postJson('/api/telegram/webhook', [
+            'message' => [
+                'chat' => ['id' => $chatId],
+                'from' => ['username' => 'benja_tg'],
+                'text' => "/start {$id}",
+            ],
+        ])->assertOk()->assertJsonPath('status', 'confirmed');
+    }
+
+    // Segundo pedido activo creado con mismo username desde otro chat_id
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatAlternoMismoUser],
+            'from' => ['username' => 'Benja_TG'],
+            'text' => "/start {$pedidoActivo2}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    // Pedido perteneciente a otro usuario completamente distinto
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $otroChatId],
+            'from' => ['username' => 'otro_usuario'],
+            'text' => "/start {$pedidoAjeno}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    Pedido::findOrFail($pedidoEntregado)->update(['estado_pedidos_id' => $estadoEntregado->id]);
+    Pedido::findOrFail($pedidoCancelado)->update(['estado_pedidos_id' => $estadoCancelado->id]);
+    Pedido::findOrFail($pedidoActivo1)->update(['estado_pedidos_id' => $estadoEnPreparacion->id]);
+    Pedido::findOrFail($pedidoActivo2)->update(['estado_pedidos_id' => $estadoEnCamino->id]);
+
+    // 1. Tocar "¿Cómo viene mi pedido?" lista únicamente los 2 activos (/estado_<id>)
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'from' => ['username' => 'benja_tg'],
+            'text' => '📦 ¿Cómo viene mi pedido?',
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'status_selection_required')
+        ->assertJsonPath('pedidos_activos', [$pedidoActivo2, $pedidoActivo1]);
+
+    Http::assertSent(function ($request) use ($chatId, $pedidoActivo1, $pedidoActivo2, $pedidoEntregado, $pedidoCancelado, $pedidoPre, $pedidoAjeno) {
+        $text = $request['text'] ?? '';
+
+        return $request['chat_id'] === $chatId
+            && str_contains($text, 'Tenés más de un pedido en curso')
+            && str_contains($text, "/estado_{$pedidoActivo1}")
+            && str_contains($text, "/estado_{$pedidoActivo2}")
+            && ! str_contains($text, "<code>/estado_{$pedidoActivo1}</code>")
+            && ! str_contains($text, "/estado_{$pedidoEntregado}")
+            && ! str_contains($text, "/estado_{$pedidoCancelado}")
+            && ! str_contains($text, "/estado_{$pedidoPre}")
+            && ! str_contains($text, "/estado_{$pedidoAjeno}");
+    });
+
+    // 2. Enviar /estado_<id> devuelve el detalle puntual del pedido elegido
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'from' => ['username' => 'benja_tg'],
+            'text' => "/estado_{$pedidoActivo2}",
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'order_status_sent')
+        ->assertJsonPath('pedido_id', $pedidoActivo2)
+        ->assertJsonPath('estado', 'En camino');
+});
+
+it('cae al ultimo pedido historico si no hay pedidos activos para ese chat o username', function () {
+    Http::fake();
+
+    $estadoEntregado = EstadoPedido::firstOrCreate(['nombre' => 'Entregado'], ['descripcion' => 'Entregado']);
+    $chatId = 808008;
+    $pedidoId = crearPrePedidoParaTelegram();
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'from' => ['username' => 'solo_historial'],
+            'text' => "/start {$pedidoId}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    Pedido::findOrFail($pedidoId)->update(['estado_pedidos_id' => $estadoEntregado->id]);
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'from' => ['username' => 'solo_historial'],
+            'text' => '📦 ¿Cómo viene mi pedido?',
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'order_status_sent')
+        ->assertJsonPath('pedido_id', $pedidoId)
+        ->assertJsonPath('estado', 'Entregado');
+});
+
+it('bloquea la consulta de estado de un pedido ajeno por /estado_<id> y por reenvio de Pedido #<id> cuando no coincide chat_id ni username', function () {
+    Http::fake();
+
+    $chatPropietario = 809001;
+    $chatIntruso = 809999;
+
+    $pedidoConUser = crearPrePedidoParaTelegram();
+    $pedidoSinUser = crearPrePedidoParaTelegram();
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatPropietario],
+            'from' => ['username' => 'duenio_real'],
+            'text' => "/start {$pedidoConUser}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatPropietario],
+            'text' => "/start {$pedidoSinUser}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    // 1. Intruso intenta /estado_<id> con otro chat y otro username
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatIntruso],
+            'from' => ['username' => 'intruso'],
+            'text' => "/estado_{$pedidoConUser}",
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'unauthorized')
+        ->assertJsonPath('pedido_id', $pedidoConUser);
+
+    // 2. Intruso intenta reenviar "Pedido #<id>" sobre pedido ya confirmado
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatIntruso],
+            'from' => ['username' => 'intruso'],
+            'text' => "Pedido #{$pedidoConUser}",
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'unauthorized')
+        ->assertJsonPath('pedido_id', $pedidoConUser);
+
+    // 3. Dos chats sin username (null) NO deben coincidir entre sí
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatIntruso],
+            'text' => "/estado_{$pedidoSinUser}",
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'unauthorized')
+        ->assertJsonPath('pedido_id', $pedidoSinUser);
+
+    Http::assertNotSent(function ($request) use ($chatIntruso) {
+        return $request['chat_id'] === $chatIntruso
+            && str_contains($request['text'] ?? '', 'Sin Asignar');
+    });
+
+    // 4. Otro chat que comparte el mismo username SÍ puede consultar
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => 809555],
+            'from' => ['username' => 'DUENIO_REAL'],
+            'text' => "/estado_{$pedidoConUser}",
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'order_status_sent')
+        ->assertJsonPath('pedido_id', $pedidoConUser)
+        ->assertJsonPath('estado', 'Sin Asignar');
+});
