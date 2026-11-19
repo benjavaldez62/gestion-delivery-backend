@@ -294,7 +294,7 @@ class TelegramWebhookController extends Controller
             if ($usernameNormalizado !== '') {
                 $subQuery->orWhereRaw("LOWER(TRIM(COALESCE(telegram_username, ''))) IN (?, ?)", [
                     $usernameNormalizado,
-                    '@' . $usernameNormalizado,
+                    '@'.$usernameNormalizado,
                 ]);
             }
         });
