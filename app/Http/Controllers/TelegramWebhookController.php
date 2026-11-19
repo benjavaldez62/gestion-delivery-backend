@@ -67,7 +67,7 @@ class TelegramWebhookController extends Controller
             $cacheKey = "tg_welcome_sent_{$chatId}";
             $tecladoPrincipal = $this->tecladoPrincipal();
 
-            if (preg_match('/men[uú]/i', $text)) {
+            if (preg_match('/men[uú]/iu', $text)) {
                 $urlMenu = "{$frontendUrl}/menu";
                 $enlaceMenu = $this->esUrlPublicaParaTelegram($urlMenu)
                     ? "<a href=\"{$urlMenu}\">{$urlMenu}</a>"
@@ -82,7 +82,7 @@ class TelegramWebhookController extends Controller
                 return response()->json(['status' => 'menu_sent'], 200);
             }
 
-            if (preg_match('/c[oó]mo viene/i', $text)) {
+            if (preg_match('/c[oó]mo viene/iu', $text)) {
                 return $this->consultarUltimoEstado((int) $chatId, $frontendUrl);
             }
 

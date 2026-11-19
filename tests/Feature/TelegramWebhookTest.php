@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\TelegramService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
@@ -176,6 +177,43 @@ it('responde estado en tiempo real al enviar comando /estado o boton de consulta
         return $request['chat_id'] === 555666
             && str_contains($request['text'], 'Estado de tu Pedido')
             && str_contains($request['text'], 'Sin Asignar');
+    });
+});
+
+it('responde estado del pedido al presionar el boton exacto con tilde y emoji sin caer en el fallback anti-spam', function () {
+    Http::fake();
+
+    $pedidoId = crearPrePedidoParaTelegram();
+    $chatId = 555777;
+
+    // Vincular el pedido al chat y dejar activa la marca anti-spam en caché
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => "/start {$pedidoId}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    Cache::put("tg_welcome_sent_{$chatId}", true, now()->addHours(2));
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => '📦 ¿Cómo viene mi pedido?',
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'order_status_sent')
+        ->assertJsonPath('pedido_id', $pedidoId)
+        ->assertJsonPath('estado', 'Sin Asignar');
+
+    Http::assertSent(function ($request) use ($chatId, $pedidoId) {
+        return $request['chat_id'] === $chatId
+            && str_contains($request['text'], "Estado de tu Pedido #{$pedidoId}")
+            && str_contains($request['text'], 'Sin Asignar');
+    });
+
+    Http::assertNotSent(function ($request) {
+        return str_contains($request['text'] ?? '', 'o tocá <b>¿Cómo viene mi pedido?</b>');
     });
 });
 
