@@ -4,15 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\UserResource;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Unique;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
-use Symfony\Contracts\Service\Attribute\Required;
 
 class UserController extends Controller
 {
@@ -61,7 +58,7 @@ class UserController extends Controller
     *  ============== */
     #[OA\Get(
         path: '/api/users',
-        summary: "Listar todos los usuarios",
+        summary: 'Listar todos los usuarios',
         tags: ['Usuarios'],
         responses: [
             new OA\Response(response: 200, description: 'Usuarios obtenidos correctamente.'),
@@ -79,19 +76,19 @@ class UserController extends Controller
             // Caso NO hay usuarios
             if ($users->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay usuarios disponibles para mostrar.'
+                    'message' => 'No hay usuarios disponibles para mostrar.',
                 ], 404);
             }
 
             // Caso SÍ hay usuarios para mostrar
             return response()->json([
                 'message' => 'Usuarios obtenidos correctamente.',
-                'usuarios' => UserResource::collection($users)
+                'usuarios' => UserResource::collection($users),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener los usuarios.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -129,18 +126,18 @@ class UserController extends Controller
             // CASO 200: Mostramos el usuario obtenido
             return response()->json([
                 'message' => 'Usuario obtenido correctamente.',
-                'usuario' => new UserResource($user)
+                'usuario' => new UserResource($user),
             ], 200);
         } catch (ModelNotFoundException $e) {
             // CASO 404: No encontrado
             return response()->json([
-                'message' => 'Usuario no encontrado.'
+                'message' => 'Usuario no encontrado.',
             ], 404);
         } catch (\Exception $e) {
             // CASO 500: cualquier otro error
             return response()->json([
                 'message' => 'Error al obtener el usuario.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -189,7 +186,7 @@ class UserController extends Controller
                     'name' => ['required', 'string', 'max:150'],
                     'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                     'password' => ['required', 'string', 'min:8'],
-                    'role_id' => ['required', 'integer', 'exists:roles,id']
+                    'role_id' => ['required', 'integer', 'exists:roles,id'],
                 ],
                 [
                     'name.required' => 'El campo nombre es obligatorio.',
@@ -222,17 +219,17 @@ class UserController extends Controller
             // CASO 201, mandamos mensaje
             return response()->json([
                 'message' => 'Usuario creado correctamente.',
-                'user' => $user
+                'user' => $user,
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Los datos proporcionados no son válidos.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al intentar crear el usuario',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -272,7 +269,7 @@ class UserController extends Controller
                     new OA\Property(property: 'role_id', type: 'integer', example: 2),
                     new OA\Property(property: 'telefono', type: 'string', minLength: 7, maxLength: 10, example: '+5493455124468'),
                     new OA\Property(property: 'direccion', type: 'string', maxLength: 255, minLength: 5, example: 'SM de Oro 79'),
-                    new OA\Property(property: 'activo', type: 'boolean', example: true)
+                    new OA\Property(property: 'activo', type: 'boolean', example: true),
                 ]
             )
         ),
@@ -291,7 +288,13 @@ class UserController extends Controller
             // Buscamos el usuario a actualizar
             $user = User::findOrFail($id);
 
-            // validamos 
+            if ($request->user()->id === $user->id && $request->exists('role_id')) {
+                return response()->json([
+                    'message' => 'No puedes modificar el rol de tu propia cuenta.',
+                ], 403);
+            }
+
+            // validamos
             $validated = $request->validate(
                 [
                     'name' => [
@@ -299,7 +302,7 @@ class UserController extends Controller
                         'required',
                         'string',
                         'min:8',
-                        'max:150'
+                        'max:150',
                     ],
                     'email' => [
                         'sometimes',
@@ -307,41 +310,41 @@ class UserController extends Controller
                         'string',
                         'email',
                         'max:255',
-                        Rule::unique('users', 'email')->ignore($user->id)
+                        Rule::unique('users', 'email')->ignore($user->id),
                     ],
                     'password' => [
                         'sometimes',
                         'required',
                         'string',
-                        'min:8'
+                        'min:8',
                     ],
                     'role_id' => [
                         'sometimes',
                         'required',
                         'integer',
-                        'exists:roles,id'
+                        'exists:roles,id',
                     ],
                     'telefono' => [
                         'sometimes',
                         'required',
                         'string',
                         'min:10',
-                        'max:15'
+                        'max:15',
                     ],
                     'direccion' => [
                         'sometimes',
                         'required',
                         'string',
                         'min:5',
-                        'max:255'
+                        'max:255',
                     ],
                     'activo' => [
                         'sometimes',
                         'required',
-                        'boolean'
+                        'boolean',
                     ],
                 ],
-                //mensajes de validación
+                // mensajes de validación
                 [
                     'name.required' => 'Es obligatiorio el campo name.',
                     'name.string' => 'El nombre debe ser una cadena de texto.',
@@ -367,7 +370,7 @@ class UserController extends Controller
                     'direccion.min' => 'La dirección debe tener al menos 5 caracteres.',
                     'direccion.max' => 'La dirección no debe superar los 255 caracteres.',
                     'activo.required' => 'El campo activo es obligatorio.',
-                    'activo.boolean' => 'El campo activo debe ser booleano.'
+                    'activo.boolean' => 'El campo activo debe ser booleano.',
                 ]
             );
 
@@ -378,22 +381,22 @@ class UserController extends Controller
             // Retornamos respuesta exitosa
             return response()->json([
                 'message' => 'Usuario actualizado correctamente.',
-                'user' => new UserResource($user)
+                'user' => new UserResource($user),
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Usuario no encontrado.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Los datos proporcionados no son válidos.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al intentar actualizar el usuario',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -412,7 +415,7 @@ class UserController extends Controller
                 required: true,
                 description: 'ID del usuario a eliminar',
                 schema: new OA\Schema(type: 'integer')
-            )
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Usuario eliminado correctamente.'),
@@ -443,7 +446,7 @@ class UserController extends Controller
             // Importante 2 - Verificamos si el usuario existe antes de eliminarlo
             if (! $user) {
                 return response()->json([
-                    'message' => 'Usuario no encontrado.'
+                    'message' => 'Usuario no encontrado.',
                 ], 404);
             }
 
@@ -459,12 +462,11 @@ class UserController extends Controller
             $authRole = strtolower($authUser->role?->nombre ?? '');
             $userRole = strtolower($user->role?->nombre ?? '');
 
-
             // 1er validación: NADIE puede eliminar a un superadmin
             if ($userRole === 'superadmin') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No puedes eliminar a un superadmin.'
+                    'message' => 'No puedes eliminar a un superadmin.',
                 ], 403);
             }
 
@@ -472,7 +474,7 @@ class UserController extends Controller
             if ($userRole === 'administrador' && $authRole !== 'superadmin') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No puedes eliminar a un administrador.'
+                    'message' => 'No puedes eliminar a un administrador.',
                 ], 403);
             }
 
@@ -485,17 +487,17 @@ class UserController extends Controller
 
             // Mostramos respuesta exitosa
             return response()->json([
-                'message' => 'Usuario eliminado correctamente.'
+                'message' => 'Usuario eliminado correctamente.',
             ], 200);
         } catch (QueryException $e) {
             return response()->json([
                 'message' => 'No se puede eliminar el usuario porque está siendo utilizado en otros registros.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 409);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al intentar eliminar al usuario.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -532,7 +534,7 @@ class UserController extends Controller
             // Validamos que se nos pase un ID válido
             if (! is_numeric($id) || (int) $id <= 0) {
                 return response()->json([
-                    'message' => 'El ID proporcionado no es válido.'
+                    'message' => 'El ID proporcionado no es válido.',
                 ], 422);
             }
 
@@ -542,14 +544,14 @@ class UserController extends Controller
             // CASO 404: no se encuentra el user pasado por ID
             if (! $user) {
                 return response()->json([
-                    'message' => 'Usuario no encontrado.'
+                    'message' => 'Usuario no encontrado.',
                 ], 404);
             }
 
             // CASO 409: el user pasado NO está eliminado
             if (! $user->trashed()) {
                 return response()->json([
-                    'message' => 'El usuario no está eliminado.'
+                    'message' => 'El usuario no está eliminado.',
                 ], 409);
             }
 
@@ -562,12 +564,12 @@ class UserController extends Controller
 
             return response()->json([
                 'message' => 'Usuario restaurado correctamente.',
-                'user' => new UserResource($user)
+                'user' => new UserResource($user),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al intentar restaurar al usuario.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -596,20 +598,20 @@ class UserController extends Controller
             // Caso 404: NO hay nada inhabilitado -> retornamos mensaje.
             if ($usersDesactivados->isEmpty()) {
                 return response()->json([
-                    'message' => 'No hay usuarios desactivados para mostrar.'
+                    'message' => 'No hay usuarios desactivados para mostrar.',
                 ], 404);
             }
 
             // Caso 200: retornamos lo desactivado
             return response()->json([
                 'message' => 'Usuarios desactivados obtenidos correctamente.',
-                'usuariosDesactivados' => UserResource::collection($usersDesactivados)
+                'usuariosDesactivados' => UserResource::collection($usersDesactivados),
             ], 200);
         } catch (\Exception $e) {
             // Caso 500: Falla en el servidor -> retornamos mensaje.
             return response()->json([
                 'message' => 'Error al intentar obtener los usuarios desactivados.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
