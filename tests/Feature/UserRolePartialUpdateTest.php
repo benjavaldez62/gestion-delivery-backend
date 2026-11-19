@@ -124,3 +124,37 @@ test('UserController@update actualiza parcialmente solo el estado activo sin mod
     expect($targetUser->activo)->toBeFalse()
         ->and($targetUser->name)->toBe('Empleado Activo');
 });
+
+test('un usuario no puede modificar el rol de su propia cuenta', function () {
+    $otherRole = Role::create([
+        'nombre' => 'Cocinero',
+        'descripcion' => 'Personal de cocina',
+    ]);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$this->admin->id}", [
+            'role_id' => $otherRole->id,
+        ])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'No puedes modificar el rol de tu propia cuenta.');
+
+    $this->admin->refresh();
+    expect($this->admin->role_id)->toBe($this->adminRole->id);
+});
+
+test('un Administrador no puede modificar ni desactivar el rol asignado a su cuenta', function () {
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/roles/{$this->adminRole->id}", [
+            'nombre' => 'Administrador General',
+        ])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'No puedes modificar el rol asignado a tu cuenta.');
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->deleteJson("/api/roles/{$this->adminRole->id}")
+        ->assertForbidden()
+        ->assertJsonPath('message', 'No puedes desactivar el rol asignado a tu cuenta.');
+
+    $this->adminRole->refresh();
+    expect($this->adminRole->nombre)->toBe('Administrador');
+});

@@ -46,7 +46,7 @@ class RoleController extends Controller
             ], 500);
         }
     }
-    
+
     #[OA\Get(
         path: '/api/roles-desactivados',
         summary: 'Listar todos los roles desactivados',
@@ -241,6 +241,13 @@ class RoleController extends Controller
         try {
             // Buscar el rol por su ID
             $role = Role::findOrFail($id);
+            $authRole = $request->user()->role?->nombre;
+
+            if ($authRole && strcasecmp(trim($authRole), trim($role->nombre)) === 0) {
+                return response()->json([
+                    'message' => 'No puedes modificar el rol asignado a tu cuenta.',
+                ], 403);
+            }
 
             // Validar los datos
             $validated = $request->validate([
@@ -320,7 +327,7 @@ class RoleController extends Controller
             new OA\Response(response: 500, description: 'Error interno al eliminar el rol.'),
         ]
     )]
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         try {
             // Verificar que el ID sea válido
@@ -332,6 +339,13 @@ class RoleController extends Controller
 
             // Buscar el rol
             $role = Role::findOrFail($id);
+
+            $authRole = $request->user()->role?->nombre;
+            if ($authRole && strcasecmp(trim($authRole), trim($role->nombre)) === 0) {
+                return response()->json([
+                    'message' => 'No puedes desactivar el rol asignado a tu cuenta.',
+                ], 403);
+            }
 
             // Verificar si el rol existe antes de eliminarlo
             if (! $role) {
