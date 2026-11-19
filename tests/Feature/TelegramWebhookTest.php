@@ -809,22 +809,30 @@ it('lista comandos clickeables /estado_<id> solo de pedidos activos del chat o u
         ->assertJsonPath('estado', 'En camino');
 });
 
-it('cae al ultimo pedido historico si no hay pedidos activos para ese chat o username', function () {
+it('muestra aviso sin pedidos en curso y lista hasta los ultimos 5 historicos cuando todos estan entregados o cancelados', function () {
     Http::fake();
 
     $estadoEntregado = EstadoPedido::firstOrCreate(['nombre' => 'Entregado'], ['descripcion' => 'Entregado']);
+    $estadoCancelado = EstadoPedido::firstOrCreate(['nombre' => 'Cancelado'], ['descripcion' => 'Cancelado']);
+    $cliente = Cliente::create(['username' => 'solo_historial']);
     $chatId = 808008;
-    $pedidoId = crearPrePedidoParaTelegram();
+    $idsHistoricos = [];
 
-    $this->postJson('/api/telegram/webhook', [
-        'message' => [
-            'chat' => ['id' => $chatId],
-            'from' => ['username' => 'solo_historial'],
-            'text' => "/start {$pedidoId}",
-        ],
-    ])->assertOk()->assertJsonPath('status', 'confirmed');
+    for ($i = 0; $i < 6; $i++) {
+        $pedido = Pedido::create([
+            'subtotal' => 5000 + ($i * 500),
+            'monto_total' => 5000 + ($i * 500),
+            'cliente_id' => $cliente->id,
+            'nombre_cliente' => 'Historial Test',
+            'telegram_chat_id' => $chatId,
+            'telegram_username' => 'solo_historial',
+            'estado_pedidos_id' => $i % 2 === 0 ? $estadoCancelado->id : $estadoEntregado->id,
+        ]);
+        $idsHistoricos[] = $pedido->id;
+    }
 
-    Pedido::findOrFail($pedidoId)->update(['estado_pedidos_id' => $estadoEntregado->id]);
+    $masAntiguo = $idsHistoricos[0];
+    $ultimosCincoDesc = array_reverse(array_slice($idsHistoricos, 1));
 
     $this->postJson('/api/telegram/webhook', [
         'message' => [
@@ -833,8 +841,35 @@ it('cae al ultimo pedido historico si no hay pedidos activos para ese chat o use
             'text' => '📦 ¿Cómo viene mi pedido?',
         ],
     ])->assertOk()
+        ->assertJsonPath('status', 'no_active_orders_history_sent')
+        ->assertJsonPath('pedidos_historicos', $ultimosCincoDesc);
+
+    Http::assertSent(function ($request) use ($chatId, $ultimosCincoDesc, $masAntiguo) {
+        $text = $request['text'] ?? '';
+        if ($request['chat_id'] !== $chatId || ! str_contains($text, 'No tenés pedidos en curso en este momento')) {
+            return false;
+        }
+
+        foreach ($ultimosCincoDesc as $id) {
+            if (! str_contains($text, "/estado_{$id}")) {
+                return false;
+            }
+        }
+
+        return ! str_contains($text, "/estado_{$masAntiguo}");
+    });
+
+    // Tocar uno de los comandos históricos muestra el detalle del pedido
+    $ultimoId = $ultimosCincoDesc[0];
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'from' => ['username' => 'solo_historial'],
+            'text' => "/estado_{$ultimoId}",
+        ],
+    ])->assertOk()
         ->assertJsonPath('status', 'order_status_sent')
-        ->assertJsonPath('pedido_id', $pedidoId)
+        ->assertJsonPath('pedido_id', $ultimoId)
         ->assertJsonPath('estado', 'Entregado');
 });
 

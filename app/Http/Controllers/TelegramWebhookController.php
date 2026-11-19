@@ -9,6 +9,7 @@ use App\Services\PagoEfectivoService;
 use App\Services\TelegramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
@@ -318,6 +319,22 @@ class TelegramWebhookController extends Controller
     }
 
     /**
+     * Formatea una colección de pedidos como lista con comandos clickeables de Telegram.
+     *
+     * @param  Collection<int, Pedido>  $pedidos
+     */
+    protected function formatearLineasPedidos(Collection $pedidos, string $comandoPrefijo): string
+    {
+        return $pedidos->map(function (Pedido $pedido) use ($comandoPrefijo): string {
+            $estado = $pedido->estadoPedido?->nombre ?? 'En proceso';
+            $emoji = $this->emojiEstadoPedido($estado);
+            $total = number_format((float) $pedido->monto_total, 2, ',', '.');
+
+            return "• <b>Pedido #{$pedido->id}</b> ({$emoji} {$estado} — \${$total}) ➔ /{$comandoPrefijo}_{$pedido->id}";
+        })->implode("\n");
+    }
+
+    /**
      * Envía la respuesta formateada con el estado en tiempo real de un pedido autorizado.
      */
     protected function responderEstadoPedido(int $chatId, Pedido $pedido, string $frontendUrl): JsonResponse
@@ -386,12 +403,7 @@ class TelegramWebhookController extends Controller
             ->get();
 
         if ($pedidosActivos->count() >= 2) {
-            $lineas = $pedidosActivos->map(function (Pedido $pedido): string {
-                $estado = $pedido->estadoPedido?->nombre ?? 'En proceso';
-                $total = number_format((float) $pedido->monto_total, 2, ',', '.');
-
-                return "• <b>Pedido #{$pedido->id}</b> ({$estado} — \${$total}) ➔ /estado_{$pedido->id}";
-            })->implode("\n");
+            $lineas = $this->formatearLineasPedidos($pedidosActivos, 'estado');
 
             $this->telegramService->enviarMensaje(
                 $chatId,
@@ -409,16 +421,28 @@ class TelegramWebhookController extends Controller
             return $this->responderEstadoPedido($chatId, $pedidosActivos->first(), $frontendUrl);
         }
 
-        $ultimoHistorico = Pedido::with('estadoPedido')
+        $pedidosHistoricos = Pedido::with('estadoPedido')
             ->tap(fn ($query) => $this->filtrarPedidosPorChatOUsuario($query, $chatId, $usernameNormalizado))
             ->whereHas('estadoPedido', function ($query): void {
-                $query->whereRaw("LOWER(TRIM(nombre)) != 'pre-pedido'");
+                $query->whereRaw("LOWER(TRIM(nombre)) IN ('entregado', 'cancelado')");
             })
             ->orderBy('id', 'desc')
-            ->first();
+            ->limit(5)
+            ->get();
 
-        if ($ultimoHistorico) {
-            return $this->responderEstadoPedido($chatId, $ultimoHistorico, $frontendUrl);
+        if ($pedidosHistoricos->isNotEmpty()) {
+            $lineas = $this->formatearLineasPedidos($pedidosHistoricos, 'estado');
+
+            $this->telegramService->enviarMensaje(
+                $chatId,
+                "ℹ️ No tenés pedidos en curso en este momento.\n\n📋 <b>Tus últimos pedidos:</b>\n\n{$lineas}\n\nTocá el comando de un pedido si querés ver su detalle.",
+                $this->tecladoPrincipal()
+            );
+
+            return response()->json([
+                'status' => 'no_active_orders_history_sent',
+                'pedidos_historicos' => $pedidosHistoricos->pluck('id')->values()->all(),
+            ], 200);
         }
 
         $this->telegramService->enviarMensaje(
@@ -454,12 +478,7 @@ class TelegramWebhookController extends Controller
                 ->get();
 
             if ($pedidosCancelables->count() >= 2) {
-                $lineas = $pedidosCancelables->map(function (Pedido $pedido): string {
-                    $estado = $pedido->estadoPedido?->nombre ?? 'Pendiente';
-                    $total = number_format((float) $pedido->monto_total, 2, ',', '.');
-
-                    return "• <b>Pedido #{$pedido->id}</b> ({$estado} — \${$total}) ➔ /cancelar_{$pedido->id}";
-                })->implode("\n");
+                $lineas = $this->formatearLineasPedidos($pedidosCancelables, 'cancelar');
 
                 $this->telegramService->enviarMensaje(
                     $chatId,
