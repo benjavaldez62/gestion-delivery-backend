@@ -87,6 +87,18 @@ it('retorna 200 al Administrador con KPIs, distribuciones, disponibilidad de sta
         'role_id' => $roles['repartidor']->id,
         'activo' => true,
     ]);
+    User::factory()->create([
+        'name' => 'Cocinero Inactivo',
+        'email' => 'cocinero.inactivo@test.com',
+        'role_id' => $roles['cocinero']->id,
+        'activo' => false,
+    ]);
+    User::factory()->create([
+        'name' => 'Repartidor Inactivo',
+        'email' => 'repartidor.inactivo@test.com',
+        'role_id' => $roles['repartidor']->id,
+        'activo' => false,
+    ]);
 
     $estadoSinAsignar = EstadoPedido::create(['nombre' => 'Sin asignar', 'descripcion' => 'Sin asignar']);
     $estadoEnPreparacion = EstadoPedido::create(['nombre' => 'En preparación', 'descripcion' => 'En preparación']);
@@ -206,14 +218,16 @@ it('retorna 200 al Administrador con KPIs, distribuciones, disponibilidad de sta
         ->and($cocineros['cocinero.ocupado@test.com']['pedidos_completados_periodo'])->toBe(1)
         ->and($cocineros['cocinero.ocupado@test.com']['pedidos_activos'][0]['id'])->toBe($pedidoActivoAsignado->id)
         ->and($cocineros['cocinero.libre@test.com']['disponible'])->toBeTrue()
-        ->and($cocineros['cocinero.libre@test.com']['pedidos_activos_count'])->toBe(0);
+        ->and($cocineros['cocinero.libre@test.com']['pedidos_activos_count'])->toBe(0)
+        ->and($cocineros->has('cocinero.inactivo@test.com'))->toBeFalse();
 
     // Verificar disponibilidad de repartidores
     $repartidores = collect($response->json('dashboard.staff.repartidores'))->keyBy('email');
     expect($repartidores['repartidor.ocupado@test.com']['disponible'])->toBeFalse()
         ->and($repartidores['repartidor.ocupado@test.com']['pedidos_activos_count'])->toBe(1)
         ->and($repartidores['repartidor.ocupado@test.com']['pedidos_completados_periodo'])->toBe(1)
-        ->and($repartidores['repartidor.libre@test.com']['disponible'])->toBeTrue();
+        ->and($repartidores['repartidor.libre@test.com']['disponible'])->toBeTrue()
+        ->and($repartidores->has('repartidor.inactivo@test.com'))->toBeFalse();
 
     // Verificar cola de pedidos para asignar
     $paraAsignar = $response->json('dashboard.pedidos_para_asignar');

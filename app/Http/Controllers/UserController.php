@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\UserResource;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
@@ -206,13 +207,29 @@ class UserController extends Controller
                 ]
             );
 
+            $role = Role::find($validated['role_id']);
+            if (! $role) {
+                return response()->json([
+                    'message' => 'El rol proporcionado no existe o está desactivado.',
+                ], 422);
+            }
+
+            if (
+                mb_strtolower(trim($role->nombre)) === 'superadmin'
+                && mb_strtolower(trim($request->user()->role?->nombre ?? '')) !== 'superadmin'
+            ) {
+                return response()->json([
+                    'message' => 'Solo un SuperAdmin puede asignar ese rol.',
+                ], 403);
+            }
+
             // Creamos el usuario
             $user = new User;
             $user->name = $validated['name'];
             $user->email = $validated['email'];
             $user->password = $validated['password'];
             $user->activo = true; // por defecto, está activo al crearse
-            $user->role_id = $validated['role_id'];
+            $user->role_id = $role->id;
 
             $user->save();
 
@@ -276,7 +293,7 @@ class UserController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Usuario actualizado correctamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
-            new OA\Response(response: 403, description: 'No autorizado.'),
+            new OA\Response(response: 403, description: 'No autorizado o se intentó modificar el rol o desactivar la propia cuenta.'),
             new OA\Response(response: 404, description: 'Usuario no encontrado.'),
             new OA\Response(response: 422, description: 'Los datos proporcionados no son válidos.'),
             new OA\Response(response: 500, description: 'Error al intentar actualizar un usuario.'),
@@ -287,12 +304,6 @@ class UserController extends Controller
         try {
             // Buscamos el usuario a actualizar
             $user = User::findOrFail($id);
-
-            if ($request->user()->id === $user->id && $request->exists('role_id')) {
-                return response()->json([
-                    'message' => 'No puedes modificar el rol de tu propia cuenta.',
-                ], 403);
-            }
 
             // validamos
             $validated = $request->validate(
@@ -373,6 +384,37 @@ class UserController extends Controller
                     'activo.boolean' => 'El campo activo debe ser booleano.',
                 ]
             );
+
+            if ($request->user()->is($user)) {
+                if (array_key_exists('role_id', $validated)) {
+                    return response()->json([
+                        'message' => 'No puedes modificar el rol de tu propia cuenta.',
+                    ], 403);
+                }
+
+                if (array_key_exists('activo', $validated) && ! $request->boolean('activo')) {
+                    return response()->json([
+                        'message' => 'No puedes desactivar tu propia cuenta.',
+                    ], 403);
+                }
+            }
+
+            $authRole = mb_strtolower(trim($request->user()->role?->nombre ?? ''));
+            $targetRole = mb_strtolower(trim($user->role?->nombre ?? ''));
+            $newRole = isset($validated['role_id'])
+                ? mb_strtolower(trim(Role::find($validated['role_id'])?->nombre ?? ''))
+                : null;
+
+            if (
+                $authRole !== 'superadmin'
+                && array_key_exists('role_id', $validated)
+                && (int) $validated['role_id'] !== (int) $user->role_id
+                && ($targetRole === 'superadmin' || $newRole === 'superadmin')
+            ) {
+                return response()->json([
+                    'message' => 'Solo un SuperAdmin puede cambiar asignaciones de ese rol.',
+                ], 403);
+            }
 
             // Actualizamos el usuario de forma segura únicamente con los campos validados presentes
             $user->fill($validated);

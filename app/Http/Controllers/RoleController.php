@@ -13,6 +13,8 @@ use OpenApi\Attributes as OA;
 
 class RoleController extends Controller
 {
+    private const ROLES_BASE = ['administrador', 'superadmin', 'cocinero', 'repartidor'];
+
     #[OA\Get(
         path: '/api/roles',
         summary: 'Listar todos los roles',
@@ -110,6 +112,7 @@ class RoleController extends Controller
             new OA\Response(response: 201, description: 'Rol creado correctamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 403, description: 'No autorizado.'),
+            new OA\Response(response: 409, description: 'No se puede crear un rol con nombre reservado del sistema.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al crear el rol.'),
         ]
@@ -118,6 +121,16 @@ class RoleController extends Controller
     {
         //
         try {
+            $nombre = $request->input('nombre');
+            if (
+                is_string($nombre)
+                && in_array(mb_strtolower(trim($nombre)), self::ROLES_BASE, true)
+            ) {
+                return response()->json([
+                    'message' => 'No se puede crear un rol con nombre reservado del sistema.',
+                ], 409);
+            }
+
             $validated = $request->validate([
                 'nombre' => 'required|string|max:30|unique:roles,nombre',
                 'descripcion' => 'nullable|string|max:255',
@@ -232,6 +245,7 @@ class RoleController extends Controller
             new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Rol no encontrado.'),
+            new OA\Response(response: 409, description: 'No se puede cambiar el nombre de un rol base del sistema.'),
             new OA\Response(response: 422, description: 'Error de validación.'),
             new OA\Response(response: 500, description: 'Error interno al actualizar el rol.'),
         ]
@@ -242,12 +256,6 @@ class RoleController extends Controller
             // Buscar el rol por su ID
             $role = Role::findOrFail($id);
             $authRole = $request->user()->role?->nombre;
-
-            if ($authRole && strcasecmp(trim($authRole), trim($role->nombre)) === 0) {
-                return response()->json([
-                    'message' => 'No puedes modificar el rol asignado a tu cuenta.',
-                ], 403);
-            }
 
             // Validar los datos
             $validated = $request->validate([
@@ -267,6 +275,31 @@ class RoleController extends Controller
                 'descripcion.string' => 'La descripción del rol debe ser una cadena de texto.',
                 'descripcion.max' => 'La descripción del rol no debe exceder los 255 caracteres.',
             ]);
+
+            $isBaseRole = in_array(strtolower(trim($role->nombre)), self::ROLES_BASE, true);
+            $isRenaming = array_key_exists('nombre', $validated) && $validated['nombre'] !== $role->nombre;
+
+            if (
+                $authRole
+                && strcasecmp(trim($authRole), trim($role->nombre)) === 0
+                && $isRenaming
+            ) {
+                return response()->json([
+                    'message' => 'No puedes modificar el rol asignado a tu cuenta.',
+                ], 403);
+            }
+
+            if (
+                $isRenaming
+                && (
+                    $isBaseRole
+                    || in_array(strtolower(trim($validated['nombre'])), self::ROLES_BASE, true)
+                )
+            ) {
+                return response()->json([
+                    'message' => 'No se puede cambiar el nombre de un rol base ni asignar ese nombre a otro rol.',
+                ], 409);
+            }
 
             // Actualizar el rol
             if (array_key_exists('nombre', $validated)) {
@@ -322,7 +355,7 @@ class RoleController extends Controller
             new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Rol no encontrado.'),
-            new OA\Response(response: 409, description: 'No se puede eliminar el rol porque está siendo utilizado por otros registros.'),
+            new OA\Response(response: 409, description: 'No se puede desactivar un rol base o un rol con usuarios asociados.'),
             new OA\Response(response: 422, description: 'El ID del rol no es válido.'),
             new OA\Response(response: 500, description: 'Error interno al eliminar el rol.'),
         ]
@@ -340,18 +373,16 @@ class RoleController extends Controller
             // Buscar el rol
             $role = Role::findOrFail($id);
 
-            $authRole = $request->user()->role?->nombre;
-            if ($authRole && strcasecmp(trim($authRole), trim($role->nombre)) === 0) {
+            if (in_array(strtolower(trim($role->nombre)), self::ROLES_BASE, true)) {
                 return response()->json([
-                    'message' => 'No puedes desactivar el rol asignado a tu cuenta.',
-                ], 403);
+                    'message' => 'No se puede desactivar un rol base del sistema.',
+                ], 409);
             }
 
-            // Verificar si el rol existe antes de eliminarlo
-            if (! $role) {
+            if ($role->users()->withTrashed()->exists()) {
                 return response()->json([
-                    'message' => 'Rol no encontrado.',
-                ], 404);
+                    'message' => 'No se puede desactivar un rol que tiene usuarios asociados.',
+                ], 409);
             }
 
             // Eliminar el rol

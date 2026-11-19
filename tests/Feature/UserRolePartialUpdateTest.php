@@ -40,6 +40,42 @@ test('RoleController@store crea un rol exitosamente omitiendo el campo opcional 
     ]);
 });
 
+test('RoleController@store impide crear roles con nombres reservados', function (string $nombre) {
+    $nombreNormalizado = mb_strtolower(trim($nombre));
+    $rolesReservadosExistentes = Role::whereRaw('LOWER(TRIM(nombre)) = ?', [$nombreNormalizado])->count();
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->postJson('/api/roles', [
+            'nombre' => $nombre,
+        ])
+        ->assertStatus(409)
+        ->assertJsonPath('message', 'No se puede crear un rol con nombre reservado del sistema.');
+
+    expect(Role::whereRaw('LOWER(TRIM(nombre)) = ?', [$nombreNormalizado])->count())
+        ->toBe($rolesReservadosExistentes);
+})->with([
+    'Administrador',
+    ' SuperAdmin ',
+    'cocinero',
+    'REPARTIDOR',
+]);
+
+test('un Administrador no puede crear usuarios con rol SuperAdmin', function () {
+    $superAdminRole = Role::create(['nombre' => 'SuperAdmin']);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->postJson('/api/users', [
+            'name' => 'Nuevo Super Admin',
+            'email' => 'nuevo.superadmin@laposta.com',
+            'password' => 'secret1234',
+            'role_id' => $superAdminRole->id,
+        ])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Solo un SuperAdmin puede asignar ese rol.');
+
+    expect(User::where('email', 'nuevo.superadmin@laposta.com')->exists())->toBeFalse();
+});
+
 test('RoleController@update permite actualizar parcialmente solo el nombre sin omitir descripcion existente', function () {
     $role = Role::create([
         'nombre' => 'Subgerente',
@@ -77,6 +113,121 @@ test('RoleController@update permite actualizar solo la descripcion de forma inde
     $role->refresh();
     expect($role->nombre)->toBe('Personal Limpieza')
         ->and($role->descripcion)->toBe('Mantenimiento e higiene de cocina y salon');
+});
+
+test('RoleController@update impide renombrar roles base', function (string $nombre) {
+    $superAdminRole = Role::create(['nombre' => 'SuperAdmin']);
+    $this->admin->role_id = $superAdminRole->id;
+    $this->admin->save();
+
+    $role = match ($nombre) {
+        'Administrador' => $this->adminRole,
+        'SuperAdmin' => $superAdminRole,
+        default => Role::create(['nombre' => $nombre]),
+    };
+
+    $response = $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/roles/{$role->id}", [
+            'nombre' => 'Rol Renombrado',
+        ]);
+
+    if ($nombre === 'SuperAdmin') {
+        $response->assertForbidden()
+            ->assertJsonPath('message', 'No puedes modificar el rol asignado a tu cuenta.');
+    } else {
+        $response->assertStatus(409)
+            ->assertJsonPath('message', 'No se puede cambiar el nombre de un rol base ni asignar ese nombre a otro rol.');
+    }
+
+    expect($role->refresh()->nombre)->toBe($nombre);
+})->with([
+    'Administrador',
+    'SuperAdmin',
+    'Cocinero',
+    'Repartidor',
+]);
+
+test('RoleController@update permite editar la descripcion del rol base propio', function () {
+    $response = $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/roles/{$this->adminRole->id}", [
+            'descripcion' => 'Administración protegida',
+        ]);
+
+    $response->assertOk();
+    expect($this->adminRole->refresh()->descripcion)->toBe('Administración protegida');
+});
+
+test('RoleController@update no permite renombrar un rol adicional a un nombre reservado', function (string $nombre) {
+    $role = Role::create(['nombre' => 'Auditor']);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/roles/{$role->id}", [
+            'nombre' => $nombre,
+        ])
+        ->assertStatus(409)
+        ->assertJsonPath('message', 'No se puede cambiar el nombre de un rol base ni asignar ese nombre a otro rol.');
+
+    expect($role->refresh()->nombre)->toBe('Auditor');
+})->with([
+    'SuperAdmin',
+    'administrador',
+    ' Cocinero ',
+    'Repartidor',
+]);
+
+test('RoleController@destroy impide dar de baja roles base', function (string $nombre) {
+    $role = $nombre === 'Administrador'
+        ? $this->adminRole
+        : Role::create(['nombre' => $nombre]);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->deleteJson("/api/roles/{$role->id}")
+        ->assertStatus(409)
+        ->assertJsonPath('message', 'No se puede desactivar un rol base del sistema.');
+
+    expect($role->refresh()->trashed())->toBeFalse();
+})->with([
+    'Administrador',
+    'SuperAdmin',
+    'Cocinero',
+    'Repartidor',
+]);
+
+test('RoleController@destroy impide dar de baja roles con usuarios asociados', function () {
+    $role = Role::create(['nombre' => 'Auditor']);
+    User::factory()->create(['role_id' => $role->id]);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->deleteJson("/api/roles/{$role->id}")
+        ->assertStatus(409)
+        ->assertJsonPath('message', 'No se puede desactivar un rol que tiene usuarios asociados.');
+
+    expect($role->refresh()->trashed())->toBeFalse();
+});
+
+test('RoleController@destroy permite dar de baja un rol adicional sin usuarios asociados', function () {
+    $role = Role::create(['nombre' => 'Auditor']);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->deleteJson("/api/roles/{$role->id}")
+        ->assertOk()
+        ->assertJsonPath('message', 'Rol eliminado correctamente.');
+
+    expect($role->fresh()?->trashed())->toBeTrue()
+        ->and(Role::withTrashed()->find($role->id))->not->toBeNull();
+});
+
+test('RoleController@destroy considera usuarios eliminados logicamente como asociados al rol', function () {
+    $role = Role::create(['nombre' => 'Auditor']);
+    $user = User::factory()->create(['role_id' => $role->id]);
+    $user->delete();
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->deleteJson("/api/roles/{$role->id}")
+        ->assertStatus(409)
+        ->assertJsonPath('message', 'No se puede desactivar un rol que tiene usuarios asociados.');
+
+    expect($role->refresh()->trashed())->toBeFalse();
 });
 
 test('UserController@update actualiza parcialmente telefono y direccion sin requerir los demas campos', function () {
@@ -142,6 +293,88 @@ test('un usuario no puede modificar el rol de su propia cuenta', function () {
     expect($this->admin->role_id)->toBe($this->adminRole->id);
 });
 
+test('un usuario no puede desactivar su propia cuenta', function () {
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$this->admin->id}", [
+            'activo' => false,
+        ])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'No puedes desactivar tu propia cuenta.');
+
+    expect($this->admin->refresh()->activo)->toBeTrue();
+});
+
+test('un usuario puede actualizar su cuenta sin cambiar su rol ni desactivarse', function () {
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$this->admin->id}", [
+            'activo' => true,
+            'name' => 'Admin Actualizado',
+        ])
+        ->assertOk();
+
+    $this->admin->refresh();
+    expect($this->admin->activo)->toBeTrue()
+        ->and($this->admin->role_id)->toBe($this->adminRole->id)
+        ->and($this->admin->name)->toBe('Admin Actualizado');
+});
+
+test('un Administrador puede cambiar el rol de otro usuario', function () {
+    $otherRole = Role::create(['nombre' => 'Cocinero']);
+    $targetUser = User::factory()->create(['role_id' => $this->adminRole->id]);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$targetUser->id}", [
+            'role_id' => $otherRole->id,
+        ])
+        ->assertOk();
+
+    expect($targetUser->refresh()->role_id)->toBe($otherRole->id);
+});
+
+test('un Administrador no puede cambiar el rol de una cuenta SuperAdmin', function () {
+    $superAdminRole = Role::create(['nombre' => 'SuperAdmin']);
+    $otherRole = Role::create(['nombre' => 'Cocinero']);
+    $superAdmin = User::factory()->create(['role_id' => $superAdminRole->id]);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$superAdmin->id}", [
+            'role_id' => $otherRole->id,
+        ])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Solo un SuperAdmin puede cambiar asignaciones de ese rol.');
+
+    expect($superAdmin->refresh()->role_id)->toBe($superAdminRole->id);
+});
+
+test('un Administrador no puede asignar el rol SuperAdmin a otra cuenta', function () {
+    $superAdminRole = Role::create(['nombre' => 'SuperAdmin']);
+    $targetUser = User::factory()->create(['role_id' => $this->adminRole->id]);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$targetUser->id}", [
+            'role_id' => $superAdminRole->id,
+        ])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Solo un SuperAdmin puede cambiar asignaciones de ese rol.');
+
+    expect($targetUser->refresh()->role_id)->toBe($this->adminRole->id);
+});
+
+test('un SuperAdmin puede cambiar el rol de otros usuarios', function () {
+    $superAdminRole = Role::create(['nombre' => 'SuperAdmin']);
+    $otherRole = Role::create(['nombre' => 'Cocinero']);
+    $superAdmin = User::factory()->create(['role_id' => $superAdminRole->id, 'activo' => true]);
+    $targetUser = User::factory()->create(['role_id' => $this->adminRole->id]);
+
+    $this->actingAs($superAdmin, 'sanctum')
+        ->putJson("/api/users/{$targetUser->id}", [
+            'role_id' => $otherRole->id,
+        ])
+        ->assertOk();
+
+    expect($targetUser->refresh()->role_id)->toBe($otherRole->id);
+});
+
 test('un Administrador no puede modificar ni desactivar el rol asignado a su cuenta', function () {
     $this->actingAs($this->admin, 'sanctum')
         ->putJson("/api/roles/{$this->adminRole->id}", [
@@ -152,8 +385,8 @@ test('un Administrador no puede modificar ni desactivar el rol asignado a su cue
 
     $this->actingAs($this->admin, 'sanctum')
         ->deleteJson("/api/roles/{$this->adminRole->id}")
-        ->assertForbidden()
-        ->assertJsonPath('message', 'No puedes desactivar el rol asignado a tu cuenta.');
+        ->assertStatus(409)
+        ->assertJsonPath('message', 'No se puede desactivar un rol base del sistema.');
 
     $this->adminRole->refresh();
     expect($this->adminRole->nombre)->toBe('Administrador');
