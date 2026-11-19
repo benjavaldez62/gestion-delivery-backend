@@ -3216,6 +3216,9 @@
                     "200": {
                         "description": "Pedido actualizado correctamente."
                     },
+                    "400": {
+                        "description": "Transición de estado no permitida."
+                    },
                     "401": {
                         "description": "No autenticado."
                     },
@@ -4152,6 +4155,9 @@
                     "403": {
                         "description": "No autorizado."
                     },
+                    "409": {
+                        "description": "No se puede crear un rol con nombre reservado del sistema."
+                    },
                     "422": {
                         "description": "Error de validación."
                     },
@@ -4279,6 +4285,9 @@
                     "404": {
                         "description": "Rol no encontrado."
                     },
+                    "409": {
+                        "description": "No se puede cambiar el nombre de un rol base del sistema."
+                    },
                     "422": {
                         "description": "Error de validación."
                     },
@@ -4318,7 +4327,7 @@
                         "description": "Rol no encontrado."
                     },
                     "409": {
-                        "description": "No se puede eliminar el rol porque está siendo utilizado por otros registros."
+                        "description": "No se puede desactivar un rol base o un rol con usuarios asociados."
                     },
                     "422": {
                         "description": "El ID del rol no es válido."
@@ -4660,10 +4669,13 @@
                         "description": "No autenticado."
                     },
                     "403": {
-                        "description": "No autorizado."
+                        "description": "No autorizado o se intentó modificar una cuenta SuperAdmin, el rol propio o desactivar la propia cuenta."
                     },
                     "404": {
                         "description": "Usuario no encontrado."
+                    },
+                    "409": {
+                        "description": "No se puede cambiar el rol mientras tenga pedidos activos asignados."
                     },
                     "422": {
                         "description": "Los datos proporcionados no son válidos."
@@ -4704,7 +4716,7 @@
                         "description": "Usuario no encontrado."
                     },
                     "409": {
-                        "description": "No se puede eliminar el usuario porque está siendo utilizado en otros registros."
+                        "description": "No se puede desactivar personal con pedidos activos asignados o usuarios relacionados."
                     },
                     "422": {
                         "description": "El ID del usuario no es válido."
