@@ -492,11 +492,34 @@ class TelegramWebhookController extends Controller
                 ], 200);
             }
 
-            $pedidoEncontrado = $pedidosCancelables->count() === 1
-                ? $pedidosCancelables->first()
-                : Pedido::where('telegram_chat_id', $chatId)
+            if ($pedidosCancelables->count() === 1) {
+                $pedidoEncontrado = $pedidosCancelables->first();
+            } else {
+                $pedidoActivoNoCancelable = Pedido::with('estadoPedido')
+                    ->where('telegram_chat_id', $chatId)
+                    ->whereHas('estadoPedido', function ($query): void {
+                        $query->whereRaw("LOWER(TRIM(nombre)) NOT IN ('pre-pedido', 'sin asignar', 'pendiente', 'entregado', 'cancelado')");
+                    })
                     ->orderBy('id', 'desc')
                     ->first();
+
+                if ($pedidoActivoNoCancelable) {
+                    $pedidoEncontrado = $pedidoActivoNoCancelable;
+                } else {
+                    $tieneHistorial = Pedido::where('telegram_chat_id', $chatId)->exists();
+                    if ($tieneHistorial) {
+                        $this->telegramService->enviarMensaje(
+                            $chatId,
+                            'ℹ️ No tenés ningún pedido activo para cancelar en este momento.',
+                            $this->tecladoPrincipal()
+                        );
+
+                        return response()->json(['status' => 'no_active_orders_to_cancel'], 200);
+                    }
+
+                    $pedidoEncontrado = null;
+                }
+            }
         }
 
         if (! $pedidoEncontrado) {

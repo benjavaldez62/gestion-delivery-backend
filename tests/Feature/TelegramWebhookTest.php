@@ -946,3 +946,52 @@ it('bloquea la consulta de estado de un pedido ajeno por /estado_<id> y por reen
         ->assertJsonPath('pedido_id', $pedidoConUser)
         ->assertJsonPath('estado', 'Sin Asignar');
 });
+
+it('responde aviso general al tocar cancelar si todos los pedidos ya estan entregados o cancelados', function () {
+    Http::fake();
+
+    $estadoEntregado = EstadoPedido::firstOrCreate(['nombre' => 'Entregado'], ['descripcion' => 'Entregado']);
+    $estadoCancelado = EstadoPedido::firstOrCreate(['nombre' => 'Cancelado'], ['descripcion' => 'Cancelado']);
+    $cliente = Cliente::create(['username' => 'todo_cerrado']);
+    $chatId = 810010;
+
+    Pedido::create([
+        'subtotal' => 5000,
+        'monto_total' => 5000,
+        'cliente_id' => $cliente->id,
+        'nombre_cliente' => 'Cerrado Uno',
+        'telegram_chat_id' => $chatId,
+        'estado_pedidos_id' => $estadoCancelado->id,
+    ]);
+
+    $pedidoEntregado = Pedido::create([
+        'subtotal' => 7000,
+        'monto_total' => 7000,
+        'cliente_id' => $cliente->id,
+        'nombre_cliente' => 'Cerrado Dos',
+        'telegram_chat_id' => $chatId,
+        'estado_pedidos_id' => $estadoEntregado->id,
+    ]);
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => '❌ Cancelar mi pedido',
+        ],
+    ])->assertOk()->assertJsonPath('status', 'no_active_orders_to_cancel');
+
+    Http::assertSent(function ($request) use ($chatId) {
+        return $request['chat_id'] === $chatId
+            && str_contains($request['text'] ?? '', 'No tenés ningún pedido activo para cancelar en este momento');
+    });
+
+    // Con comando explícito sigue informando sobre ese pedido específico
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => "/cancelar_{$pedidoEntregado->id}",
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'cancel_not_allowed')
+        ->assertJsonPath('pedido_id', $pedidoEntregado->id);
+});
