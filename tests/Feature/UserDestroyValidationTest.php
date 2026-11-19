@@ -78,7 +78,7 @@ test('un usuario no puede auto-eliminarse y recibe 403', function () {
     ]);
 });
 
-test('nadie puede eliminar a un SuperAdmin y recibe 403', function () {
+test('un Administrador no puede eliminar a un SuperAdmin pero otro SuperAdmin sí', function () {
     $otherSuperAdmin = User::factory()->create([
         'name' => 'Super Admin Dos',
         'email' => 'superadmin2@laposta.com',
@@ -97,9 +97,10 @@ test('nadie puede eliminar a un SuperAdmin y recibe 403', function () {
 
     $this->actingAs($otherSuperAdmin, 'sanctum')
         ->deleteJson("/api/users/{$this->superAdmin->id}")
-        ->assertForbidden()
-        ->assertJsonPath('success', false)
-        ->assertJsonPath('message', 'No puedes eliminar a un superadmin.');
+        ->assertOk()
+        ->assertJsonPath('message', 'Usuario eliminado correctamente.');
+
+    $this->assertSoftDeleted('users', ['id' => $this->superAdmin->id]);
 });
 
 test('un Administrador no puede eliminar a otro Administrador y recibe 403', function () {
@@ -154,4 +155,3 @@ test('eliminar un usuario inexistente devuelve 404 en lugar de 500', function ()
         ->assertNotFound()
         ->assertJsonPath('message', 'Usuario no encontrado.');
 });
-
