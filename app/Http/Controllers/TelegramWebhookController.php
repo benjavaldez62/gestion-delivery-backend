@@ -48,7 +48,10 @@ class TelegramWebhookController extends Controller
         }
 
         // Comando o botón de cancelación (antes de extraer números de pedido para evitar confirmar al escribir "Cancelar pedido #N")
-        if (preg_match('/^\/?cancelar\b/i', $text) || preg_match('/cancelar\s+(mi\s+)?pedido/i', $text)) {
+        if (
+            preg_match('/^\/?cancelar(?:[\s_#]+\d+)?(?:@[a-z0-9_]+)?\b/iu', $text)
+            || preg_match('/cancelar\s+(mi\s+)?pedido/iu', $text)
+        ) {
             return $this->cancelarPedidoDesdeTelegram((int) $chatId, $text);
         }
 
@@ -289,17 +292,49 @@ class TelegramWebhookController extends Controller
     protected function cancelarPedidoDesdeTelegram(int $chatId, string $text): JsonResponse
     {
         $pedidoIdSolicitado = null;
-        if (preg_match('/\b(\d+)\b/', $text, $matches)) {
+        if (preg_match('/(?:cancelar(?:@[a-z0-9_]+)?[\s_#]+|pedido\s*#?\s*)(\d+)/iu', $text, $matches)) {
             $pedidoIdSolicitado = (int) $matches[1];
         }
 
-        $pedidoEncontrado = $pedidoIdSolicitado !== null
-            ? Pedido::where('id', $pedidoIdSolicitado)
+        if ($pedidoIdSolicitado !== null) {
+            $pedidoEncontrado = Pedido::where('id', $pedidoIdSolicitado)
                 ->where('telegram_chat_id', $chatId)
-                ->first()
-            : Pedido::where('telegram_chat_id', $chatId)
-                ->orderBy('id', 'desc')
                 ->first();
+        } else {
+            $pedidosCancelables = Pedido::with('estadoPedido')
+                ->where('telegram_chat_id', $chatId)
+                ->whereHas('estadoPedido', function ($query): void {
+                    $query->whereRaw("LOWER(TRIM(nombre)) IN ('pre-pedido', 'sin asignar', 'pendiente')");
+                })
+                ->orderBy('id', 'desc')
+                ->get();
+
+            if ($pedidosCancelables->count() >= 2) {
+                $lineas = $pedidosCancelables->map(function (Pedido $pedido): string {
+                    $estado = $pedido->estadoPedido?->nombre ?? 'Pendiente';
+                    $total = number_format((float) $pedido->monto_total, 2, ',', '.');
+
+                    return "• <b>Pedido #{$pedido->id}</b> ({$estado} — \${$total}) ➔ /cancelar_{$pedido->id}";
+                })->implode("\n");
+
+                $this->telegramService->enviarMensaje(
+                    $chatId,
+                    "📋 <b>Tenés más de un pedido disponible para cancelar:</b>\n\n{$lineas}\n\nTocá el comando del pedido que querés cancelar.",
+                    $this->tecladoPrincipal()
+                );
+
+                return response()->json([
+                    'status' => 'cancel_selection_required',
+                    'pedidos_cancelables' => $pedidosCancelables->pluck('id')->values()->all(),
+                ], 200);
+            }
+
+            $pedidoEncontrado = $pedidosCancelables->count() === 1
+                ? $pedidosCancelables->first()
+                : Pedido::where('telegram_chat_id', $chatId)
+                    ->orderBy('id', 'desc')
+                    ->first();
+        }
 
         if (! $pedidoEncontrado) {
             $mensajeNoEncontrado = $pedidoIdSolicitado !== null

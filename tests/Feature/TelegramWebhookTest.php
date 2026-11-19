@@ -599,3 +599,117 @@ it('PUT /api/pedidos/{id} rechaza pasar a Cancelado con HTTP 400 desde En prepar
         expect($pedido->fresh()->estadoPedido->nombre)->toBe('Cancelado');
     }
 });
+
+it('lista comandos clickeables /cancelar_<id> cuando el chat tiene multiples pedidos cancelables', function () {
+    Http::fake();
+
+    EstadoPedido::firstOrCreate(['nombre' => 'Cancelado'], ['descripcion' => 'El pedido fue cancelado']);
+    $estadoPendiente = EstadoPedido::firstOrCreate(['nombre' => 'Pendiente'], ['descripcion' => 'Pedido asignado pendiente de preparación']);
+
+    $chatId = 805005;
+    $pedido1Id = crearPrePedidoParaTelegram();
+    $pedido2Id = crearPrePedidoParaTelegram();
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => "/start {$pedido1Id}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => "/start {$pedido2Id}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    // Dejar un pedido en Pendiente y el otro en Sin Asignar
+    Pedido::findOrFail($pedido1Id)->update(['estado_pedidos_id' => $estadoPendiente->id]);
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => '❌ Cancelar mi pedido',
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'cancel_selection_required')
+        ->assertJsonPath('pedidos_cancelables', [$pedido2Id, $pedido1Id]);
+
+    expect(Pedido::findOrFail($pedido1Id)->estadoPedido->nombre)->toBe('Pendiente')
+        ->and(Pedido::findOrFail($pedido2Id)->estadoPedido->nombre)->toBe('Sin Asignar');
+
+    Http::assertSent(function ($request) use ($chatId, $pedido1Id, $pedido2Id) {
+        $text = $request['text'] ?? '';
+
+        return $request['chat_id'] === $chatId
+            && str_contains($text, 'Tenés más de un pedido disponible para cancelar')
+            && str_contains($text, "/cancelar_{$pedido1Id}")
+            && str_contains($text, "/cancelar_{$pedido2Id}")
+            && ! str_contains($text, "<code>/cancelar_{$pedido1Id}</code>")
+            && ! str_contains($text, "<code>/cancelar_{$pedido2Id}</code>")
+            && isset($request['reply_markup']['keyboard']);
+    });
+});
+
+it('cancela unicamente el pedido indicado con /cancelar_<id> y al quedar uno cancelable lo cancela directo aunque haya otro mas reciente cancelado', function () {
+    Http::fake();
+
+    EstadoPedido::firstOrCreate(['nombre' => 'Cancelado'], ['descripcion' => 'El pedido fue cancelado']);
+    $estadoPendiente = EstadoPedido::firstOrCreate(['nombre' => 'Pendiente'], ['descripcion' => 'Pedido asignado pendiente de preparación']);
+
+    $chatId = 806006;
+    $pedido1Id = crearPrePedidoParaTelegram();
+    $pedido2Id = crearPrePedidoParaTelegram();
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => "/start {$pedido1Id}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => "/start {$pedido2Id}",
+        ],
+    ])->assertOk()->assertJsonPath('status', 'confirmed');
+
+    Pedido::findOrFail($pedido1Id)->update(['estado_pedidos_id' => $estadoPendiente->id]);
+
+    $pago1 = Pago::where('pedido_id', $pedido1Id)->firstOrFail();
+    $pago2 = Pago::where('pedido_id', $pedido2Id)->firstOrFail();
+
+    // 1. Cancelar únicamente el pedido más reciente mediante /cancelar_<id>
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => "/cancelar_{$pedido2Id}",
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'cancelled')
+        ->assertJsonPath('pedido_id', $pedido2Id)
+        ->assertJsonPath('estado', 'Cancelado');
+
+    expect(Pedido::findOrFail($pedido2Id)->estadoPedido->nombre)->toBe('Cancelado')
+        ->and(Pago::find($pago2->id))->toBeNull()
+        ->and(Pago::withTrashed()->findOrFail($pago2->id)->trashed())->toBeTrue()
+        ->and(Pedido::findOrFail($pedido1Id)->estadoPedido->nombre)->toBe('Pendiente')
+        ->and(Pago::find($pago1->id))->not->toBeNull();
+
+    // 2. Presionar nuevamente "❌ Cancelar mi pedido" cancela directamente el único pedido cancelable restante
+    $this->postJson('/api/telegram/webhook', [
+        'message' => [
+            'chat' => ['id' => $chatId],
+            'text' => '❌ Cancelar mi pedido',
+        ],
+    ])->assertOk()
+        ->assertJsonPath('status', 'cancelled')
+        ->assertJsonPath('pedido_id', $pedido1Id)
+        ->assertJsonPath('estado', 'Cancelado');
+
+    expect(Pedido::findOrFail($pedido1Id)->estadoPedido->nombre)->toBe('Cancelado')
+        ->and(Pago::find($pago1->id))->toBeNull()
+        ->and(Pago::withTrashed()->findOrFail($pago1->id)->trashed())->toBeTrue();
+});
