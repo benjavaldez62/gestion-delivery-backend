@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Cliente;
+use App\Models\EstadoPedido;
+use App\Models\Pedido;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -320,7 +323,8 @@ test('un usuario puede actualizar su cuenta sin cambiar su rol ni desactivarse',
 
 test('un Administrador puede cambiar el rol de otro usuario', function () {
     $otherRole = Role::create(['nombre' => 'Cocinero']);
-    $targetUser = User::factory()->create(['role_id' => $this->adminRole->id]);
+    $currentRole = Role::create(['nombre' => 'Cajero']);
+    $targetUser = User::factory()->create(['role_id' => $currentRole->id]);
 
     $this->actingAs($this->admin, 'sanctum')
         ->putJson("/api/users/{$targetUser->id}", [
@@ -341,14 +345,213 @@ test('un Administrador no puede cambiar el rol de una cuenta SuperAdmin', functi
             'role_id' => $otherRole->id,
         ])
         ->assertForbidden()
-        ->assertJsonPath('message', 'Solo un SuperAdmin puede cambiar asignaciones de ese rol.');
+        ->assertJsonPath('message', 'Solo un SuperAdmin puede modificar cuentas SuperAdmin.');
 
     expect($superAdmin->refresh()->role_id)->toBe($superAdminRole->id);
 });
 
+test('un Administrador no puede editar el perfil de una cuenta SuperAdmin', function () {
+    $superAdminRole = Role::create(['nombre' => 'SuperAdmin']);
+    $superAdmin = User::factory()->create([
+        'name' => 'Super Administrador',
+        'role_id' => $superAdminRole->id,
+    ]);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$superAdmin->id}", [
+            'name' => 'Nombre Modificado',
+        ])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Solo un SuperAdmin puede modificar cuentas SuperAdmin.');
+
+    expect($superAdmin->refresh()->name)->toBe('Super Administrador');
+});
+
+test('un SuperAdmin puede editar el perfil de otra cuenta SuperAdmin', function () {
+    $superAdminRole = Role::create(['nombre' => 'SuperAdmin']);
+    $superAdmin = User::factory()->create(['role_id' => $superAdminRole->id, 'activo' => true]);
+    $otherSuperAdmin = User::factory()->create([
+        'name' => 'Super Administrador',
+        'role_id' => $superAdminRole->id,
+    ]);
+
+    $this->actingAs($superAdmin, 'sanctum')
+        ->putJson("/api/users/{$otherSuperAdmin->id}", [
+            'name' => 'Super Administrador Editado',
+        ])
+        ->assertOk();
+
+    expect($otherSuperAdmin->refresh()->name)->toBe('Super Administrador Editado');
+});
+
+test('un Administrador no puede cambiar el rol de otra cuenta Administrador', function () {
+    $targetAdmin = User::factory()->create([
+        'name' => 'Admin Secundario',
+        'email' => 'admin.secundario@laposta.com',
+        'role_id' => $this->adminRole->id,
+    ]);
+    $otherRole = Role::create(['nombre' => 'Cocinero']);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$targetAdmin->id}", [
+            'role_id' => $otherRole->id,
+        ])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Solo un SuperAdmin puede cambiar el rol de una cuenta Administrador.');
+
+    expect($targetAdmin->refresh()->role_id)->toBe($this->adminRole->id);
+});
+
+test('un Administrador puede cambiar otros datos sin cambiar el rol de otra cuenta Administrador', function () {
+    $targetAdmin = User::factory()->create([
+        'name' => 'Admin Secundario',
+        'email' => 'admin.secundario@laposta.com',
+        'role_id' => $this->adminRole->id,
+    ]);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$targetAdmin->id}", [
+            'name' => 'Admin Actualizado',
+        ])
+        ->assertOk();
+
+    expect($targetAdmin->refresh()->name)->toBe('Admin Actualizado')
+        ->and($targetAdmin->role_id)->toBe($this->adminRole->id);
+});
+
+test('un SuperAdmin puede cambiar el rol de una cuenta Administrador', function () {
+    $superAdminRole = Role::create(['nombre' => 'SuperAdmin']);
+    $otherRole = Role::create(['nombre' => 'Cocinero']);
+    $superAdmin = User::factory()->create(['role_id' => $superAdminRole->id, 'activo' => true]);
+    $targetAdmin = User::factory()->create(['role_id' => $this->adminRole->id]);
+
+    $this->actingAs($superAdmin, 'sanctum')
+        ->putJson("/api/users/{$targetAdmin->id}", [
+            'role_id' => $otherRole->id,
+        ])
+        ->assertOk();
+
+    expect($targetAdmin->refresh()->role_id)->toBe($otherRole->id);
+});
+
+test('no se puede cambiar el rol de un Cocinero con un pedido activo asignado', function () {
+    $cocineroRole = Role::create(['nombre' => 'Cocinero']);
+    $cocinero = User::factory()->create(['role_id' => $cocineroRole->id]);
+    $pedido = crearPedidoAsignadoAUsuario($cocinero, 'cocinero_id', 'En preparación');
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$cocinero->id}", [
+            'role_id' => $this->adminRole->id,
+        ])
+        ->assertStatus(409)
+        ->assertJsonPath('message', 'No se puede cambiar el rol porque tiene pedidos activos asignados.');
+
+    expect($cocinero->refresh()->role_id)->toBe($cocineroRole->id)
+        ->and($pedido->fresh()->cocinero_id)->toBe($cocinero->id);
+});
+
+test('no se puede cambiar el rol de un Repartidor con un pedido activo asignado', function () {
+    $repartidorRole = Role::create(['nombre' => 'Repartidor']);
+    $repartidor = User::factory()->create(['role_id' => $repartidorRole->id]);
+    $pedido = crearPedidoAsignadoAUsuario($repartidor, 'repartidor_id', 'En camino');
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$repartidor->id}", [
+            'role_id' => $this->adminRole->id,
+        ])
+        ->assertStatus(409)
+        ->assertJsonPath('message', 'No se puede cambiar el rol porque tiene pedidos activos asignados.');
+
+    expect($repartidor->refresh()->role_id)->toBe($repartidorRole->id)
+        ->and($pedido->fresh()->repartidor_id)->toBe($repartidor->id);
+});
+
+test('se puede cambiar el rol de personal sin pedidos activos aunque conserve pedidos completados', function () {
+    $repartidorRole = Role::create(['nombre' => 'Repartidor']);
+    $repartidor = User::factory()->create(['role_id' => $repartidorRole->id]);
+    crearPedidoAsignadoAUsuario($repartidor, 'repartidor_id', 'Entregado');
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->putJson("/api/users/{$repartidor->id}", [
+            'role_id' => $this->adminRole->id,
+        ])
+        ->assertOk();
+
+    expect($repartidor->refresh()->role_id)->toBe($this->adminRole->id);
+});
+
+test('no se puede desactivar un Cocinero con un pedido activo asignado', function () {
+    $cocineroRole = Role::create(['nombre' => 'Cocinero']);
+    $cocinero = User::factory()->create(['role_id' => $cocineroRole->id]);
+    $pedido = crearPedidoAsignadoAUsuario($cocinero, 'cocinero_id', 'En preparación');
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->deleteJson("/api/users/{$cocinero->id}")
+        ->assertStatus(409)
+        ->assertJsonPath('message', 'No se puede desactivar al usuario porque tiene pedidos activos asignados. Completa esos pedidos antes de continuar. ');
+
+    expect($cocinero->refresh()->activo)->toBeTrue()
+        ->and($cocinero->trashed())->toBeFalse()
+        ->and($pedido->fresh()->cocinero_id)->toBe($cocinero->id);
+});
+
+test('no se puede desactivar un Repartidor con un pedido activo asignado', function () {
+    $repartidorRole = Role::create(['nombre' => 'Repartidor']);
+    $repartidor = User::factory()->create(['role_id' => $repartidorRole->id]);
+    $pedido = crearPedidoAsignadoAUsuario($repartidor, 'repartidor_id', 'En camino');
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->deleteJson("/api/users/{$repartidor->id}")
+        ->assertStatus(409)
+        ->assertJsonPath('message', 'No se puede desactivar al usuario porque tiene pedidos activos asignados. Completa esos pedidos antes de continuar. ');
+
+    expect($repartidor->refresh()->activo)->toBeTrue()
+        ->and($repartidor->trashed())->toBeFalse()
+        ->and($pedido->fresh()->repartidor_id)->toBe($repartidor->id);
+});
+
+test('se puede desactivar personal que solo conserva pedidos entregados o cancelados', function (string $estadoNombre) {
+    $cocineroRole = Role::create(['nombre' => 'Cocinero']);
+    $cocinero = User::factory()->create(['role_id' => $cocineroRole->id]);
+    crearPedidoAsignadoAUsuario($cocinero, 'cocinero_id', $estadoNombre);
+
+    $this->actingAs($this->admin, 'sanctum')
+        ->deleteJson("/api/users/{$cocinero->id}")
+        ->assertOk()
+        ->assertJsonPath('message', 'Usuario eliminado correctamente.');
+
+    $this->assertSoftDeleted('users', ['id' => $cocinero->id]);
+    $this->assertDatabaseHas('users', ['id' => $cocinero->id, 'activo' => false]);
+})->with([
+    'Entregado',
+    'Cancelado',
+]);
+
+function crearPedidoAsignadoAUsuario(User $user, string $campoAsignacion, string $estadoNombre): Pedido
+{
+    $cliente = Cliente::create([
+        'username' => 'cliente-'.strtolower($estadoNombre).'-'.$user->id,
+        'telefono' => '1234567890',
+        'direccion' => 'Calle de prueba 123',
+    ]);
+    $estado = EstadoPedido::create([
+        'nombre' => $estadoNombre,
+        'descripcion' => 'Estado para prueba de cambio de rol',
+    ]);
+
+    return Pedido::create([
+        'cliente_id' => $cliente->id,
+        'estado_pedidos_id' => $estado->id,
+        $campoAsignacion => $user->id,
+        'subtotal' => 1000,
+        'monto_total' => 1000,
+    ]);
+}
+
 test('un Administrador no puede asignar el rol SuperAdmin a otra cuenta', function () {
     $superAdminRole = Role::create(['nombre' => 'SuperAdmin']);
-    $targetUser = User::factory()->create(['role_id' => $this->adminRole->id]);
+    $currentRole = Role::create(['nombre' => 'Cajero']);
+    $targetUser = User::factory()->create(['role_id' => $currentRole->id]);
 
     $this->actingAs($this->admin, 'sanctum')
         ->putJson("/api/users/{$targetUser->id}", [
@@ -357,7 +560,7 @@ test('un Administrador no puede asignar el rol SuperAdmin a otra cuenta', functi
         ->assertForbidden()
         ->assertJsonPath('message', 'Solo un SuperAdmin puede cambiar asignaciones de ese rol.');
 
-    expect($targetUser->refresh()->role_id)->toBe($this->adminRole->id);
+    expect($targetUser->refresh()->role_id)->toBe($currentRole->id);
 });
 
 test('un SuperAdmin puede cambiar el rol de otros usuarios', function () {

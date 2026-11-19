@@ -293,8 +293,9 @@ class UserController extends Controller
         responses: [
             new OA\Response(response: 200, description: 'Usuario actualizado correctamente.'),
             new OA\Response(response: 401, description: 'No autenticado.'),
-            new OA\Response(response: 403, description: 'No autorizado o se intentó modificar el rol o desactivar la propia cuenta.'),
+            new OA\Response(response: 403, description: 'No autorizado o se intentó modificar una cuenta SuperAdmin, el rol propio o desactivar la propia cuenta.'),
             new OA\Response(response: 404, description: 'Usuario no encontrado.'),
+            new OA\Response(response: 409, description: 'No se puede cambiar el rol mientras tenga pedidos activos asignados.'),
             new OA\Response(response: 422, description: 'Los datos proporcionados no son válidos.'),
             new OA\Response(response: 500, description: 'Error al intentar actualizar un usuario.'),
         ]
@@ -304,8 +305,20 @@ class UserController extends Controller
         try {
             // Buscamos el usuario a actualizar
             $user = User::findOrFail($id);
+            $authUser = $request->user();
+            $authRole = mb_strtolower(trim($authUser->role?->nombre ?? ''));
+            $targetRole = mb_strtolower(trim($user->role?->nombre ?? ''));
 
-            // validamos
+            if (
+                $targetRole === 'superadmin'
+                && $authRole !== 'superadmin'
+                && ! $authUser->is($user)
+            ) {
+                return response()->json([
+                    'message' => 'Solo un SuperAdmin puede modificar cuentas SuperAdmin.',
+                ], 403);
+            }
+
             $validated = $request->validate(
                 [
                     'name' => [
@@ -399,8 +412,15 @@ class UserController extends Controller
                 }
             }
 
-            $authRole = mb_strtolower(trim($request->user()->role?->nombre ?? ''));
-            $targetRole = mb_strtolower(trim($user->role?->nombre ?? ''));
+            $roleIdChanged = array_key_exists('role_id', $validated)
+                && (int) $validated['role_id'] !== (int) $user->role_id;
+
+            if ($roleIdChanged && $targetRole === 'administrador' && $authRole !== 'superadmin') {
+                return response()->json([
+                    'message' => 'Solo un SuperAdmin puede cambiar el rol de una cuenta Administrador.',
+                ], 403);
+            }
+
             $newRole = isset($validated['role_id'])
                 ? mb_strtolower(trim(Role::find($validated['role_id'])?->nombre ?? ''))
                 : null;
@@ -414,6 +434,16 @@ class UserController extends Controller
                 return response()->json([
                     'message' => 'Solo un SuperAdmin puede cambiar asignaciones de ese rol.',
                 ], 403);
+            }
+
+            if (
+                $roleIdChanged
+                && in_array($targetRole, ['cocinero', 'repartidor'], true)
+                && $this->tienePedidosActivosAsignados($user)
+            ) {
+                return response()->json([
+                    'message' => 'No se puede cambiar el rol porque tiene pedidos activos asignados.',
+                ], 409);
             }
 
             // Actualizamos el usuario de forma segura únicamente con los campos validados presentes
@@ -464,7 +494,7 @@ class UserController extends Controller
             new OA\Response(response: 401, description: 'No autenticado.'),
             new OA\Response(response: 403, description: 'No autorizado.'),
             new OA\Response(response: 404, description: 'Usuario no encontrado.'),
-            new OA\Response(response: 409, description: 'No se puede eliminar el usuario porque está siendo utilizado en otros registros.'),
+            new OA\Response(response: 409, description: 'No se puede desactivar personal con pedidos activos asignados o usuarios relacionados.'),
             new OA\Response(response: 422, description: 'El ID del usuario no es válido.'),
             new OA\Response(response: 500, description: 'Error al intentar eliminar al usuario.'),
         ]
@@ -504,8 +534,8 @@ class UserController extends Controller
             $authRole = strtolower($authUser->role?->nombre ?? '');
             $userRole = strtolower($user->role?->nombre ?? '');
 
-            // 1er validación: NADIE puede eliminar a un superadmin
-            if ($userRole === 'superadmin') {
+            // Solo un SuperAdmin puede eliminar otra cuenta SuperAdmin.
+            if ($userRole === 'superadmin' && $authRole !== 'superadmin') {
                 return response()->json([
                     'success' => false,
                     'message' => 'No puedes eliminar a un superadmin.',
@@ -518,6 +548,16 @@ class UserController extends Controller
                     'success' => false,
                     'message' => 'No puedes eliminar a un administrador.',
                 ], 403);
+            }
+
+            if (
+                in_array($userRole, ['cocinero', 'repartidor'], true)
+                && $this->tienePedidosActivosAsignados($user)
+            ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se puede desactivar al usuario porque tiene pedidos activos asignados. Completa esos pedidos antes de continuar. ',
+                ], 409);
             }
 
             // Cambiamos la disponibilidad a 'false' antes de eliminarlo
@@ -656,5 +696,15 @@ class UserController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function tienePedidosActivosAsignados(User $user): bool
+    {
+        return $user->pedidosComoCocinero()
+            ->whereDoesntHave('estadoPedido', fn ($query) => $query->whereRaw("LOWER(TRIM(nombre)) IN ('entregado', 'cancelado')"))
+            ->exists()
+            || $user->pedidosComoRepartidor()
+                ->whereDoesntHave('estadoPedido', fn ($query) => $query->whereRaw("LOWER(TRIM(nombre)) IN ('entregado', 'cancelado')"))
+                ->exists();
     }
 }
